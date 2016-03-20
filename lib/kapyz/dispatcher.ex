@@ -1,6 +1,9 @@
 defmodule Dobar.Kapyz.Dispatcher do
   use GenServer
 
+  alias Dobar.Kapyz.Error.NoIntentHandlerError
+  alias Dobar.Kapyz.Error.InvalidIntentName
+
   def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
@@ -25,18 +28,19 @@ defmodule Dobar.Kapyz.Dispatcher do
   def handle_cast({:process_intent, %{name: name, data: data}}, state) do
     case name do
       name when is_atom(name) ->
-        call_intent_handler state, name, data
+        call_intent_handler! name, data, state
       name when is_binary(name) ->
-        call_intent_handler state, String.to_atom(name), data
-      _ -> raise "cannot process intent: invalid intent name given!"
+        call_intent_handler! String.to_atom(name), data, state
+      _ -> raise InvalidIntentName
     end
     {:noreply, state}
   end
 
-  defp call_intent_handler(handlers, name, message) do
+  defp call_intent_handler!(name, message, handlers) do
     case handlers[name] do
-      nil -> raise "cannot process intent: intent not defined!"
-      pid -> send pid, {:test, message}
+      nil -> raise NoIntentHandlerError
+      pid -> if Process.alive?(pid),
+        do: send(pid, {:test, message}), else: raise NoIntentHandlerError
     end
   end
 end
