@@ -6,4 +6,8 @@ defmodule Dobar.Kapyz.Error do
   defmodule InvalidIntentName do
     defexception message: "invalid intent name given"
   end
+
+  defmodule InvalidCapabilityName do
+    defexception message: "invalid capability name provided"
+  end
 end

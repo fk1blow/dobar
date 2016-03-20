@@ -40,7 +40,8 @@ defmodule Dobar.Kapyz.Dispatcher do
     case handlers[name] do
       nil -> raise NoIntentHandlerError
       pid -> if Process.alive?(pid),
-        do: send(pid, {:test, message}), else: raise NoIntentHandlerError
+        do: send(pid, {:handle_capability, message}),
+        else: raise NoIntentHandlerError
     end
   end
 end
