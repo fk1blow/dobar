@@ -7,7 +7,8 @@ defmodule Dobar.Kapyz.Intent.Supervisor do
 
   def init(_) do
     children = [
-      worker(Dobar.Kapyz.Intent.AccountInfo, [])
+      worker(Dobar.Kapyz.Intent.AccountInfo, []),
+      worker(Dobar.Kapyz.Intent.SearchFiles, [])
     ]
     supervise children, strategy: :one_for_one
   end
