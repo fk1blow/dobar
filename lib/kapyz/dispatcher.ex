@@ -23,11 +23,20 @@ defmodule Dobar.Kapyz.Dispatcher do
   end
 
   def handle_cast({:process_intent, %{name: name, data: data}}, state) do
-    case state[String.to_atom(name)] do
-      nil -> IO.puts ".......... plm......"
-      pid -> send pid, :test
+    case name do
+      name when is_atom(name) ->
+        call_intent_handler state, name, data
+      name when is_binary(name) ->
+        call_intent_handler state, String.to_atom(name), data
+      _ -> raise "cannot process intent: invalid intent name given!"
     end
-
     {:noreply, state}
+  end
+
+  defp call_intent_handler(handlers, name, message) do
+    case handlers[name] do
+      nil -> raise "cannot process intent: intent not defined!"
+      pid -> send pid, {:test, message}
+    end
   end
 end

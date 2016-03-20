@@ -1,10 +1,9 @@
 defmodule Dobar.Kapyz.Intent.AccountInfo do
-  use Dobar.Kapyz.Intent, name: :account_info
+  use Dobar.Kapyz.Capability, name: :account_info
+  alias Dobar.Kapyz.Intent
 
-  #
-  # %Intent{name: "account_info", entities: []}
-
-  def process_intent(data) do
-    IO.puts "should process intent data"
+  def react_intention(%Intent{text: text}) do
+    IO.puts "should react to the :account_info intention"
+    IO.puts "text data: #{inspect text}"
   end
 end
