@@ -18,6 +18,7 @@ defmodule Dobar.Kapyz.Capability do
         {:ok, nil}
       end
 
+      # TODO: fucking replace :test with a more NORMAL parameter
       def handle_info({:test, data}, state) do
         react_intention %Intent{text: data}
         {:noreply, state}
