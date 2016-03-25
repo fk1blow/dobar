@@ -3,7 +3,8 @@ defmodule Dobar.Intent.Supervisor do
 
   alias Dobar.Intent.IntentHandler
 
-  @intent_event_manager Dobar.Intent.EventManager
+  # @intent_event_manager Dobar.Intent.EventManager
+  @intent_event_manager :xrx
 
   def start_link do
     Supervisor.start_link __MODULE__, [], name: __MODULE__
@@ -11,17 +12,20 @@ defmodule Dobar.Intent.Supervisor do
 
   def init(_) do
     children = [
-      worker(GenEvent, [[name: @intent_event_manager]], []),
+      worker(GenEvent, [[name: @intent_event_manager]]),
       worker(Dobar.Intent.State, [])
     ]
     opts = [strategy: :one_for_one]
 
-    IntentHandler.register_with_manager(@intent_event_manager)
 
     # with {:ok, spec} <- supervise(children, opts),
     #   :ok <- IntentHandler.register_with_manager(@intent_event_manager),
     #   do: {:ok, spec}
 
-    supervise(children, opts)
+    r = supervise(children, opts)
+
+    IntentHandler.register_with_manager(@intent_event_manager)
+
+    r
   end
 end
