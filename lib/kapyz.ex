@@ -8,7 +8,7 @@ defmodule Dobar.Kapyz do
   def init(_) do
     children = [
       worker(Dobar.Kapyz.Dispatcher, []),
-      supervisor(Dobar.Kapyz.Capability.Supervisor, [])
+      supervisor(Dobar.Kapyz.Intent.Supervisor, [])
     ]
     supervise children, strategy: :one_for_all
   end
