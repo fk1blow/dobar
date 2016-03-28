@@ -1,12 +1,13 @@
 defmodule Dobar.Kapyz.Capability do
   @moduledoc """
-    should unregister the intent from the Dispatcher, although
-    not necesarely, because the Dispatcher, automagically replaces the
-    leftovers, and attaches the same process, registered with the sama name, etc
+  Should unregister the intent from the Dispatcher, although
+  not necesarely, because the Dispatcher, automagically replaces the
+  leftovers, and attaches the same process, registered with the sama name, etc
   """
 
   alias Dobar.Kapyz.Error.InvalidCapabilityName
 
+  # the cability can react to an intention?
   @callback react(Map.t) :: any
 
   defmacro __using__(opts) do
