@@ -9,7 +9,6 @@ defmodule Dobar.Intent do
     children = [
       worker(Dobar.Intent.Resolver, [])
     ]
-    opts = [strategy: :one_for_one]
-    supervise children, opts
+    supervise children, strategy: :one_for_one
   end
 end

@@ -1,6 +1,6 @@
 defmodule Dobar.Intent.Resolver do
   @moduledoc """
-  Has the responsability to resolve a text expression, to an intent.
+  Has the responsability to resolve or transform a text expression, to an intent.
   It communicates with an external service in order to evaluate the input.
   Right now, the only current available service is wit.ai
   """
@@ -15,7 +15,7 @@ defmodule Dobar.Intent.Resolver do
   end
 
   def evaluate_input({:text, input}) do
-    GenServer.cast {:evaluate_input, input}
+    GenServer.cast @name, {:evaluate_input, input}
   end
 
   def handle_cast({:evaluate_input, input}, state) do
