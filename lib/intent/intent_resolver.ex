@@ -24,6 +24,18 @@ defmodule Dobar.Intent.Resolver do
   end
 
   def init(_) do
+    start_intent_manager
     {:ok, nil}
+  end
+
+  defp start_intent_manager do
+    import Supervisor.Spec, warn: false
+    children = [
+      worker(GenEvent, [[name: :intent_mananger]])
+    ]
+    opts = [strategy: :one_for_one]
+    with {:ok, pid} <- Supervisor.start_link(children, opts),
+          :ok <- GenEvent.add_handler(:intent_mananger, pid, nil),
+      do: :ok
   end
 end
