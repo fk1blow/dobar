@@ -1,5 +1,6 @@
 defmodule Dobar.Intent.Resolver do
   use GenServer
+  import Dobar.Intent.Evaluator
 
   @name __MODULE__
 
@@ -7,7 +8,28 @@ defmodule Dobar.Intent.Resolver do
     GenServer.start_link __MODULE__, [], name: @name
   end
 
+  def evaluate_input({:text, input}) do
+    GenServer.cast {:evaluate_input, input}
+  end
+
+  def handle_cast({:evaluate_input, input}, state) do
+    evaluate_intention {:text, input}
+    {:noreply, state}
+  end
+
   def init(_) do
+    start_intent_manager
     {:ok, nil}
+  end
+
+  defp start_intent_manager do
+    import Supervisor.Spec, warn: false
+    children = [
+      worker(GenEvent, [[name: :intent_mananger]])
+    ]
+    opts = [strategy: :one_for_one]
+    with {:ok, pid} <- Supervisor.start_link(children, opts),
+        :ok <- Dobar.Intent.IntentHandler.register_with_manager(pid),
+      do: :ok
   end
 end
