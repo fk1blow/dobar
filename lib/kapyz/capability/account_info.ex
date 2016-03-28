@@ -1,6 +1,6 @@
 defmodule Dobar.Kapyz.Capability.AccountInfo do
   use Dobar.Kapyz.Capability, name: :account_info
-  alias Dobar.Kapyz.Intent
+  alias Dobar.Models.Intent
 
   def react(%Intent{text: text}) do
     IO.puts "should react to the :account_info intention"

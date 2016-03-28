@@ -13,7 +13,7 @@ defmodule Dobar.Kapyz.Capability do
   defmacro __using__(opts) do
     quote do
       use GenServer
-      alias Dobar.Kapyz.Intent
+      alias Dobar.Models.Intent
 
       @behaviour Dobar.Kapyz.Capability
       @name unquote(opts[:name] || raise InvalidCapabilityName)

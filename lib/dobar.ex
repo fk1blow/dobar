@@ -11,14 +11,12 @@ defmodule Dobar do
       supervisor(Dobar.Endpoint, []),
       # Start the Ecto repository
       supervisor(Dobar.Repo, []),
-      # Here you could define other workers and supervisors as children
-      # worker(Dobar.Worker, [arg1, arg2, arg3]),
+      # capability module
       supervisor(Dobar.Kapyz, []),
-      supervisor(Dobar.Intent.Supervisor, [])
+      # intention supervisor
+      supervisor(Dobar.Intent, [])
     ]
 
-    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
     Supervisor.start_link(children, opts)
   end
