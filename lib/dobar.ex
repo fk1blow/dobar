@@ -11,10 +11,10 @@ defmodule Dobar do
       supervisor(Dobar.Endpoint, []),
       # Start the Ecto repository
       supervisor(Dobar.Repo, []),
-      # Here you could define other workers and supervisors as children
-      # worker(Dobar.Worker, [arg1, arg2, arg3]),
+      # capability module
       supervisor(Dobar.Kapyz, []),
-      supervisor(Dobar.Intent.Supervisor, [])
+      # intention supervisor
+      supervisor(Dobar.Intent, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
