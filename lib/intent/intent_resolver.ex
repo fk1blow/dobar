@@ -16,6 +16,11 @@ defmodule Dobar.Intent.Resolver do
     GenServer.start_link @name, [], name: @name
   end
 
+  def init(_) do
+    start_intent_manager
+    {:ok, %{dialog: nil}}
+  end
+
   def evaluate_input({:text, input}) do
     GenServer.cast @name, {:evaluate_input, input}
   end
@@ -24,11 +29,15 @@ defmodule Dobar.Intent.Resolver do
     GenServer.cast @name, {:evaluate_intent, intent}
   end
 
+  def evaluate_capability(capability) do
+    GenServer.cast @name, {:evaluate_capability, capability}
+  end
+
   # callback functions
   #
 
   def handle_cast({:evaluate_input, input}, state) do
-    IntentEvaluator.evaluate_input {:text, input}
+    IntentEvaluator.evaluate_input {:text, input, state: state.dialog}
     {:noreply, state}
   end
 
@@ -37,13 +46,20 @@ defmodule Dobar.Intent.Resolver do
     {:noreply, state}
   end
 
-  # initialization and private functions
-  #
+  def handle_cast({:evaluate_capability, capability}, state) do
+    IO.puts "intent resolver should evaluate the capability and shit"
 
-  def init(_) do
-    start_intent_manager
-    {:ok, nil}
+    case capability do
+      %{dialog: dialog} -> state = %{dialog: capability[:dialog]}
+      %{response: response} -> state = %{dialog: nil}
+      _ -> IO.puts "pfff, dunno man, dunno"
+    end
+
+    {:noreply, state}
   end
+
+  # private functions
+  #
 
   # TODO: maybe i should add the child to the intent supervisor instead
   defp start_intent_manager do

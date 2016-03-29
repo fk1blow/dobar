@@ -16,7 +16,7 @@ defmodule Dobar.Spub.IntentHandler do
 
   def handle_event({:intention_evaluation_error, error}, state) do
     # TODO: what should i do with this?!?! can i signal the interface user?
-    # What message should i send him the plain error?!
+    # What message should i send him, the plain error, something else?!
     Logger.info "error while trying to evaluate the input intent"
     {:ok, state}
   end
@@ -29,7 +29,8 @@ defmodule Dobar.Spub.IntentHandler do
   end
 
   def handle_event({:capability_evaluated, capability}, state) do
-    Logger.debug "should distribute the results of the capability"
+    Logger.info "capability evaluated to: #{inspect capability}"
+    Dobar.Intent.Resolver.evaluate_capability capability
     {:ok, state}
   end
 end
