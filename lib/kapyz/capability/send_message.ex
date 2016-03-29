@@ -3,8 +3,9 @@ defmodule Dobar.Kapyz.Capability.SendMessage do
   alias Dobar.Models.Intent
 
   # TODO: find out why this doesn't work
-  def react(%Intent{entities: %{email: email}}) do
-    IO.puts "pfff,a re si email???"
+  def react(intent) do
+    IO.puts "pfff, are si email???"
+    IO.inspect intent
   end
 
   def react(%Intent{input: text}) do

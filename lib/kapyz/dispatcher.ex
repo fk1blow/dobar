@@ -34,9 +34,9 @@ defmodule Dobar.Kapyz.Dispatcher do
     name = intent.name
     case intent.name do
       name when is_atom(name) ->
-        call_intent_handler! intent.name, intent.entities, handlers
+        call_intent_handler! intent.name, intent, handlers
       name when is_binary(name) ->
-        call_intent_handler! String.to_atom(intent.name), intent.entities, handlers
+        call_intent_handler! String.to_atom(intent.name), intent, handlers
       _ -> raise InvalidIntentName
     end
     {:noreply, handlers}
