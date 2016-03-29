@@ -6,31 +6,34 @@ defmodule Dobar.Intent.Resolver do
   """
 
   use GenServer
-  alias Dobar.Intent.Evaluator
+
+  alias Dobar.Intent.Evaluator, as: IntentEvaluator
+  alias Dobar.Kapyz.Dispatcher, as: KapyzDispatcher
 
   @name __MODULE__
 
   def start_link do
-    GenServer.start_link __MODULE__, [], name: @name
+    GenServer.start_link @name, [], name: @name
   end
 
   def evaluate_input({:text, input}) do
     GenServer.cast @name, {:evaluate_input, input}
   end
 
+  def evaluate_intent(intent) do
+    GenServer.cast @name, {:evaluate_intent, intent}
+  end
+
   # callback functions
   #
 
-  def handle_cast({:evaluate_intent, intent}, state) do
-    # IO.puts "should evaluate intent: #{inspect intent}"
-    # maybe, it should call:
-    # Capability.evaluate_intent intent
-    # or Kapyz.dispatcher something...
+  def handle_cast({:evaluate_input, input}, state) do
+    IntentEvaluator.evaluate_input {:text, input}
     {:noreply, state}
   end
 
-  def handle_cast({:evaluate_input, input}, state) do
-    Evaluator.evaluate_input {:text, input}
+  def handle_cast({:evaluate_intent, intent}, state) do
+    KapyzDispatcher.evaluate_intent intent
     {:noreply, state}
   end
 
@@ -42,16 +45,17 @@ defmodule Dobar.Intent.Resolver do
     {:ok, nil}
   end
 
+  # TODO: maybe i should add the child to the intent supervisor instead
   defp start_intent_manager do
     import Supervisor.Spec, warn: false
-    alias Dobar.Intent.ResolverHandler
+    alias Dobar.Spub.IntentHandler
 
     children = [
-      worker(GenEvent, [[name: :intent_mananger]])
+      worker(GenEvent, [[name: :intent_events]])
     ]
     opts = [strategy: :one_for_one]
     with {:ok, pid} <- Supervisor.start_link(children, opts),
-          :ok <- GenEvent.add_handler(:intent_mananger, ResolverHandler, nil),
+          :ok <- GenEvent.add_handler(:intent_events, IntentHandler, nil),
       do: :ok
   end
 end

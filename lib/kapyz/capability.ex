@@ -13,6 +13,7 @@ defmodule Dobar.Kapyz.Capability do
   defmacro __using__(opts) do
     quote do
       use GenServer
+
       alias Dobar.Models.Intent
 
       @behaviour Dobar.Kapyz.Capability
@@ -25,7 +26,7 @@ defmodule Dobar.Kapyz.Capability do
       def init(_) do
         # no need to unregister the handler - the capability callback module will
         # always restart and override the previous(dead) registration entry
-        Dobar.Kapyz.Dispatcher.register_intent @name, self
+        Dobar.Kapyz.Dispatcher.register_capability @name, self
         {:ok, nil}
       end
 

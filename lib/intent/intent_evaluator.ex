@@ -16,7 +16,7 @@ defmodule Dobar.Intent.Evaluator do
     intent = apply(show_wrapper, :text_query, [input])
     |> parse_response
     |> parse_intention
-    GenEvent.notify(:intent_mananger, {:evaluator_intention, intent})
+    GenEvent.notify(:intent_events, {:intention_evaluated, intent})
   end
 
   defp parse_response({:ok, intention}), do: {:ok, intention}

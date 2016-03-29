@@ -1,5 +1,5 @@
 defmodule Dobar.Kapyz.Capability.SendMessage do
-  use Dobar.Kapyz.Capability, name: :send_text_message
+  use Dobar.Kapyz.Capability, name: :send_message
   alias Dobar.Models.Intent
 
   def react(%Intent{input: text}) do
