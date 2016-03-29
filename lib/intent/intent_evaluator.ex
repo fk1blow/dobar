@@ -16,20 +16,24 @@ defmodule Dobar.Intent.Evaluator do
     intent = apply(show_wrapper, :text_query, [input])
     |> parse_response
     |> parse_intention
-    GenEvent.notify(:intent_events, {:intention_evaluated, intent})
+    |> notify_handlers
   end
 
-  defp parse_response({:ok, intention}), do: {:ok, intention}
   defp parse_response({:error, error}), do: {:error, error}
+  defp parse_response({:ok, intention}), do: {:ok, intention}
 
+  defp parse_intention({:error, error}), do: {:error, error}
   defp parse_intention({:ok, intention}) do
     intent = hd intention.outcomes
-    %Intent{name: intent.intent, input: intent._text,
-      entities: intent.entities, confidence: intent.confidence}
+    {:ok, %Intent{name: intent.intent, input: intent._text,
+      entities: intent.entities, confidence: intent.confidence}}
   end
-  defp parse_intention({:error, error}) do
-    # TODO: maybe i should add a more descriptive error
-    {:error, error}
+
+  defp notify_handlers({:error, error}) do
+    GenEvent.notify(:intent_events, {:intention_evaluation_error})
+  end
+  defp notify_handlers({:ok, intent}) do
+    GenEvent.notify(:intent_events, {:intention_evaluated, intent})
   end
 
   defp show_wrapper do

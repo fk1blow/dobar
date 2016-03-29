@@ -14,8 +14,9 @@ defmodule Dobar.Spub.IntentHandler do
 
   use GenEvent
 
-  def handle_event({:intention_evaluated, {:error, error}}, state) do
-    # TODO: what should i do with this?!?!
+  def handle_event({:intention_evaluation_error, error}, state) do
+    # TODO: what should i do with this?!?! can i signal the interface user?
+    # What message should i send him the plain error?!
     Logger.info "error while trying to evaluate the input intent"
     {:ok, state}
   end
