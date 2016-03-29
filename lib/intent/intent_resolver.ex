@@ -6,7 +6,7 @@ defmodule Dobar.Intent.Resolver do
   """
 
   use GenServer
-  import Dobar.Intent.Evaluator
+  alias Dobar.Intent.Evaluator
 
   @name __MODULE__
 
@@ -18,10 +18,24 @@ defmodule Dobar.Intent.Resolver do
     GenServer.cast @name, {:evaluate_input, input}
   end
 
-  def handle_cast({:evaluate_input, input}, state) do
-    evaluate_intention {:text, input}
+  # callback functions
+  #
+
+  def handle_cast({:evaluate_intent, intent}, state) do
+    # IO.puts "should evaluate intent: #{inspect intent}"
+    # maybe, it should call:
+    # Capability.evaluate_intent intent
+    # or Kapyz.dispatcher something...
     {:noreply, state}
   end
+
+  def handle_cast({:evaluate_input, input}, state) do
+    Evaluator.evaluate_input {:text, input}
+    {:noreply, state}
+  end
+
+  # initialization and private functions
+  #
 
   def init(_) do
     start_intent_manager
@@ -30,12 +44,14 @@ defmodule Dobar.Intent.Resolver do
 
   defp start_intent_manager do
     import Supervisor.Spec, warn: false
+    alias Dobar.Intent.ResolverHandler
+
     children = [
       worker(GenEvent, [[name: :intent_mananger]])
     ]
     opts = [strategy: :one_for_one]
     with {:ok, pid} <- Supervisor.start_link(children, opts),
-          :ok <- GenEvent.add_handler(:intent_mananger, pid, nil),
+          :ok <- GenEvent.add_handler(:intent_mananger, ResolverHandler, nil),
       do: :ok
   end
 end

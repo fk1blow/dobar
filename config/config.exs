@@ -27,3 +27,8 @@ import_config "#{Mix.env}.exs"
 config :phoenix, :generators,
   migration: true,
   binary_id: false
+
+# Configure dobar intent evaluators
+config :dobar, Intent.Evaluator,
+  use_wrapper: Dobar.Intent.Evaluator.Wit,
+  wit_token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"

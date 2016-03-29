@@ -10,7 +10,30 @@ defmodule Dobar.Intent.Evaluator do
     and concise - self healing(through supervision), better api clarity, etc
   """
 
-  def evaluate_intention({:text, input}) do
-    IO.puts "should evaluate the intention of the input"
+  alias Dobar.Models.Intent
+
+  def evaluate_input({:text, input}) do
+    intent = apply(show_wrapper, :text_query, [input])
+    |> parse_response
+    |> parse_intention
+    GenEvent.notify(:intent_mananger, {:evaluator_intention, intent})
+  end
+
+  defp parse_response({:ok, intention}), do: {:ok, intention}
+  defp parse_response({:error, error}), do: {:error, error}
+
+  defp parse_intention({:ok, intention}) do
+    intent = hd intention.outcomes
+    %Intent{name: intent.intent, input: intent._text,
+      entities: intent.entities, confidence: intent.confidence}
+  end
+  defp parse_intention({:error, error}) do
+    # TODO: maybe i should add a more descriptive error
+    {:error, error}
+  end
+
+  defp show_wrapper do
+    evaluator = Application.get_env(:dobar, Intent.Evaluator)
+    evaluator[:use_wrapper] || Dobar.Intent.Evaluator.Wit
   end
 end
