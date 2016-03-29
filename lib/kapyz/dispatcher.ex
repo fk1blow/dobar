@@ -31,9 +31,7 @@ defmodule Dobar.Kapyz.Dispatcher do
   end
 
   def handle_cast({:evaluate_intent, %Dobar.Models.Intent{} = intent}, handlers) do
-    IO.puts "handle :evaluate_intent: #{inspect intent}"
     name = intent.name
-
     case intent.name do
       name when is_atom(name) ->
         call_intent_handler! intent.name, intent.entities, handlers
@@ -41,7 +39,6 @@ defmodule Dobar.Kapyz.Dispatcher do
         call_intent_handler! String.to_atom(intent.name), intent.entities, handlers
       _ -> raise InvalidIntentName
     end
-
     {:noreply, handlers}
   end
 

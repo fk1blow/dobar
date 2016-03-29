@@ -23,8 +23,8 @@ defmodule Dobar.Spub.IntentHandler do
 
   # triggered from `Intent.Evaluator`
   def handle_event({:intention_evaluated, intent}, state) do
-    Dobar.Intent.Resolver.evaluate_intent intent
     Logger.info "intention evaluated to: #{inspect intent}"
+    Dobar.Intent.Resolver.evaluate_intent intent
     {:ok, state}
   end
 
