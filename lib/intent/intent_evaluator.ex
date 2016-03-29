@@ -14,13 +14,9 @@ defmodule Dobar.Intent.Evaluator do
 
   def evaluate_input({:text, input}) do
     intent = apply(show_wrapper, :text_query, [input])
-    |> parse_response
     |> parse_intention
     |> notify_handlers
   end
-
-  defp parse_response({:error, error}), do: {:error, error}
-  defp parse_response({:ok, intention}), do: {:ok, intention}
 
   defp parse_intention({:error, error}), do: {:error, error}
   defp parse_intention({:ok, intention}) do
