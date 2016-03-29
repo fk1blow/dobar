@@ -34,9 +34,8 @@ defmodule Dobar.Kapyz.Capability do
       Handles the capability and calls the `react_intention/1` function
       on the callback module, eg: `Dobar.Kapyz.Capability.SendMessage`
       """
-      def handle_info({:handle_capability, data}, state) do
-        # TODO: the Intent struct shouln't be here in the first place ?!?!?!?
-        react %Intent{name: data}
+      def handle_info({:handle_capability, intent}, state) do
+        react intent
         {:noreply, state}
       end
     end
