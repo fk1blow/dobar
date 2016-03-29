@@ -4,7 +4,7 @@ defmodule Dobar.Mixfile do
   def project do
     [app: :dobar,
      version: "0.0.1",
-     elixir: "~> 1.2.3",
+     elixir: "~> 1.2.2",
      elixirc_paths: elixirc_paths(Mix.env),
      compilers: [:phoenix, :gettext] ++ Mix.compilers,
      build_embedded: Mix.env == :prod,
