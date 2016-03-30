@@ -1,7 +1,7 @@
 defmodule Dobar.Spub.IntentHandler do
   @moduledoc """
-    Has the responsability to handle events and notifications related to an intent.
-    An intent is/represents an expression that was evaluated and its intention was detected.
+  Has the responsability to handle events and notifications related to an intent.
+  An intent is/represents an expression that was evaluated and its intention was detected.
   """
 
   require Logger

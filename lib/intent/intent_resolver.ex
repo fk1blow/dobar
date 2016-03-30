@@ -1,8 +1,9 @@
 defmodule Dobar.Intent.Resolver do
   @moduledoc """
-  Has the responsability to resolve or transform a text expression, to an intent.
-  It communicates with an external service in order to evaluate the input.
-  Right now, the only current available service is wit.ai
+  Has the responsability to evaluate an input to an intent using the capability module.
+  It provides 3 api functions for each step - user input, intent evaluation and
+  capability evaluation.
+  This module (Intent) isn't responsible for the output that must reach the user!
   """
 
   use GenServer
@@ -42,6 +43,8 @@ defmodule Dobar.Intent.Resolver do
     {:noreply, state}
   end
 
+  # This won't treat the error in case an intent wasn't evaluated
+  # TODO: define the case for which an intent has errord
   def handle_cast({:evaluate_intent, intent}, state) do
     KapyzDispatcher.evaluate_intent intent
     {:noreply, state}

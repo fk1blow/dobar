@@ -1,7 +1,7 @@
 defmodule Dobar.Intent.Evaluator.Wit do
   @moduledoc """
-    This module has to communicate with the expression api provided by wit.ai
-    It has to provide 2 basic functions: `text_query` and `voice_query`.
+  This module has to communicate with the expression api provided by wit.ai
+  It has to provide 2 basic functions: `text_query` and `voice_query`.
   """
 
   alias HTTPoison.Response
