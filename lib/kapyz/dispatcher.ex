@@ -3,6 +3,7 @@ defmodule Dobar.Kapyz.Dispatcher do
 
   alias Dobar.Kapyz.Error.NoIntentHandlerError
   alias Dobar.Kapyz.Error.InvalidIntentName
+  alias Dobar.Model.Intent
 
   @name __MODULE__
 
@@ -30,7 +31,7 @@ defmodule Dobar.Kapyz.Dispatcher do
     {:noreply, Map.merge(handlers, intent_handler)}
   end
 
-  def handle_cast({:evaluate_intent, %Dobar.Models.Intent{} = intent}, handlers) do
+  def handle_cast({:evaluate_intent, %Dobar.Model.Intent{} = intent}, handlers) do
     name = intent.name
     case intent.name do
       name when is_atom(name) ->

@@ -1,6 +1,6 @@
 defmodule Dobar.Kapyz.Capability.SearchFiles do
   use Dobar.Kapyz.Capability, name: :search_files
-  alias Dobar.Models.Intent
+  alias Dobar.Model.Intent
 
   def react(%Intent{name: text}) do
     IO.puts "should react to the :search_files intention"

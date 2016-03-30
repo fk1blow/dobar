@@ -18,7 +18,7 @@ defmodule Dobar.Intent.Resolver do
 
   def init(_) do
     start_intent_manager
-    {:ok, %{dialog: nil}}
+    {:ok, %{context: Map.new}}
   end
 
   def evaluate_input({:text, input}) do
@@ -37,7 +37,8 @@ defmodule Dobar.Intent.Resolver do
   #
 
   def handle_cast({:evaluate_input, input}, state) do
-    IntentEvaluator.evaluate_input {:text, input, state: state.dialog}
+    # HERE BE dragons n shit
+    IntentEvaluator.evaluate_input {:text, input, state.context}
     {:noreply, state}
   end
 
@@ -50,8 +51,8 @@ defmodule Dobar.Intent.Resolver do
     IO.puts "intent resolver should evaluate the capability and shit"
 
     case capability do
-      %{dialog: dialog} -> state = %{dialog: capability[:dialog]}
-      %{response: response} -> state = %{dialog: nil}
+      %{dialog: dialog} -> state = %{context: capability[:dialog]}
+      %{response: response} -> state = %{context: Map.new}
       _ -> IO.puts "pfff, dunno man, dunno"
     end
 
@@ -65,6 +66,7 @@ defmodule Dobar.Intent.Resolver do
   defp start_intent_manager do
     import Supervisor.Spec, warn: false
     alias Dobar.Spub.IntentHandler
+    alias Dobar.Spub.CapabilityHandler
 
     children = [
       worker(GenEvent, [[name: :intent_events]])

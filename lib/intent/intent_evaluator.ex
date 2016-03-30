@@ -10,10 +10,15 @@ defmodule Dobar.Intent.Evaluator do
     and concise - self healing(through supervision), better api clarity, etc
   """
 
-  alias Dobar.Models.Intent
+  alias Dobar.Model.Intent
 
-  def evaluate_input({:text, input}) do
+  def evaluate_input({:text, input, nil}) do
     intent = apply(show_wrapper, :text_query, [input])
+    |> parse_intention
+    |> notify_handlers
+  end
+  def evaluate_input({:text, input, dialog}) do
+    intent = apply(show_wrapper, :text_query, [input, dialog])
     |> parse_intention
     |> notify_handlers
   end
@@ -26,7 +31,7 @@ defmodule Dobar.Intent.Evaluator do
   end
 
   defp notify_handlers({:error, error}) do
-    GenEvent.notify(:intent_events, {:intention_evaluation_error})
+    GenEvent.notify(:intent_events, {:intention_evaluation_error, error})
   end
   defp notify_handlers({:ok, intent}) do
     GenEvent.notify(:intent_events, {:intention_evaluated, intent})

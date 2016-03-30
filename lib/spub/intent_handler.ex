@@ -1,23 +1,18 @@
 defmodule Dobar.Spub.IntentHandler do
   @moduledoc """
     Has the responsability to handle events and notifications related to an intent.
-    An intent is an expression that was evaluated and its intention was detected.
-
-    TODO: should be renamed to intent parser handler and break the parsing
-    from the processing(coming as a result of the capability) stages in two
-    distinct event handlers
-      - when the response from wit.ai has arrived
-      - when the capability has resolved the intention
+    An intent is/represents an expression that was evaluated and its intention was detected.
   """
 
   require Logger
 
   use GenEvent
 
+  # triggered from `Intent.Evaluator`
   def handle_event({:intention_evaluation_error, error}, state) do
     # TODO: what should i do with this?!?! can i signal the interface user?
     # What message should i send him, the plain error, something else?!
-    Logger.info "error while trying to evaluate the input intent"
+    Logger.info "error while trying to evaluate the input intent: #{inspect error}"
     {:ok, state}
   end
 
