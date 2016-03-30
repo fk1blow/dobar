@@ -18,7 +18,7 @@ defmodule Dobar.Intent.Resolver do
   end
 
   def init(_) do
-    start_intent_manager
+    GenEvent.add_handler(:intent_events, IntentHandler, nil)
     {:ok, %{context: Map.new}}
   end
 
@@ -60,23 +60,5 @@ defmodule Dobar.Intent.Resolver do
     end
 
     {:noreply, state}
-  end
-
-  # private functions
-  #
-
-  # TODO: maybe i should add the child to the intent supervisor instead
-  defp start_intent_manager do
-    import Supervisor.Spec, warn: false
-    alias Dobar.Spub.IntentHandler
-    alias Dobar.Spub.CapabilityHandler
-
-    children = [
-      worker(GenEvent, [[name: :intent_events]])
-    ]
-    opts = [strategy: :one_for_one]
-    with {:ok, pid} <- Supervisor.start_link(children, opts),
-          :ok <- GenEvent.add_handler(:intent_events, IntentHandler, nil),
-      do: :ok
   end
 end
