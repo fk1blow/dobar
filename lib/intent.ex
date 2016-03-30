@@ -7,7 +7,9 @@ defmodule Dobar.Intent do
 
   def init(_) do
     children = [
+      # start the `intent_events` event manager
       worker(GenEvent, [[name: :intent_events]]),
+      # start the intent resolver gen server
       worker(Dobar.Intent.Resolver, [])
     ]
     supervise children, strategy: :one_for_one
