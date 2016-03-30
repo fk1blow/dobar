@@ -20,7 +20,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def handle_response({:ok, %Response{status_code: 200, body: body}}) do
     {:ok, body}
   end
-
   def handle_response({:ok, %Response{body: body}}) do
     {:error, body}
   end
@@ -31,7 +30,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
       error -> {:error, "unable to parse wit response"}
     end
   end
-
   def parse_response({:error, body}) do
     {:error, body}
   end
@@ -46,7 +44,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
     end
     URI.encode(message) |> fn msg -> msg <> context end.() |> build_request
   end
-
   def generate_request(_, _), do: {:error, "the message must be a string"}
 
   defp build_request(message) do
