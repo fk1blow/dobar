@@ -6,8 +6,8 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   alias HTTPoison.Response
 
-  def text_query(message, options \\ %{}) do
-    case prepare_request(message, options) do
+  def text_query(message, context \\ %{}) do
+    case generate_request(message, context) do
       {:ok, request} ->
         HTTPoison.get(request[:url], request[:headers])
         |> handle_response
@@ -21,10 +21,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
         IO.puts "hell nowaaah"
         {:error, "unknown something-something broke"}
     end
-    # {url, headers} = prepare_request message, options
-    # HTTPoison.get(url, headers)
-    # |> handle_response
-    # |> parse_response
   end
 
   def handle_response({:ok, %Response{status_code: 200, body: body}}) do
@@ -46,30 +42,26 @@ defmodule Dobar.Intent.Evaluator.Wit do
     {:error, body}
   end
 
-  # defp prepare_request(message) when is_bitstring message do
-  #   url = "https://api.wit.ai/message?v=20141022&q=#{URI.encode message}"
-  #   config = Application.get_env(:dobar, Intent.Evaluator)
-  #   headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
-  #   {url, headers}
-  # end
-
-  defp prepare_request(message, options) when is_bitstring message do
-    context = case Map.keys(options) do
-      [h | t] -> "&context=#{URI.encode(Poison.encode options)}"
-      _ -> ""
+  def generate_request(message, context) when is_bitstring message do
+    if is_map(context) do
+      context = Poison.encode(context)
+      |> (fn({:ok, r}) -> URI.encode(r) end).()
+      |> (fn(t) -> "&context=#{t}" end).()
+    else
+      context = ""
     end
-    URI.encode(message) <> context |> build_request
+
+    URI.encode(message)
+    |> fn msg -> msg <> context end.()
+    |> build_request
   end
 
-  defp prepare_request(_, _), do: {:error, "the message must be a string"}
+  def generate_request(_, _), do: {:error, "the message must be a string"}
 
   defp build_request(message) do
-    IO.puts "message: #{inspect message}"
-    # url = "https://api.wit.ai/message?v=20141022&q=#{URI.encode message}"
     url = "https://api.wit.ai/message?v=20141022&q=#{message}"
     config = Application.get_env(:dobar, Intent.Evaluator)
     headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
-    # {:ok, url, headers}
     {:ok, %{url: url, headers: headers}}
   end
 end
