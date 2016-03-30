@@ -6,7 +6,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   alias HTTPoison.Response
 
-  def text_query(message, context \\ %{}) do
+  def text_query(message, context \\ nil) do
     case generate_request(message, context) do
       {:ok, request} ->
         HTTPoison.get(request[:url], request[:headers])
