@@ -13,13 +13,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
         |> handle_response
         |> parse_response
 
-      {:error, message} ->
-        IO.puts "hell neaaaah"
-        {:error, message}
-
-      _ ->
-        IO.puts "hell nowaaah"
-        {:error, "unknown something-something broke"}
+      {:error, message} -> {:error, message}
     end
   end
 
