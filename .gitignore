@@ -5,6 +5,8 @@
 /*.ez
 .DS_Store
 *.beam
+*.sublime-project
+*.sublime-workspace
 
 # Generate on crash by the VM
 erl_crash.dump
