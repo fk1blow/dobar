@@ -10,6 +10,8 @@ defmodule Dobar.Intent.Resolver do
 
   alias Dobar.Intent.Evaluator, as: IntentEvaluator
   alias Dobar.Kapyz.Dispatcher, as: KapyzDispatcher
+  alias Dobar.Model.Input.Text, as: TextInput
+  alias Dobar.Model.Input.Text, as: AudioInput
 
   @name __MODULE__
 
@@ -22,8 +24,11 @@ defmodule Dobar.Intent.Resolver do
     {:ok, %{context: Map.new}}
   end
 
-  def evaluate_input({:text, input}) do
+  def evaluate_input(%TextInput{data: input}) do
     GenServer.cast @name, {:evaluate_input, input}
+  end
+  def evaluate_input(%AudioInput{data: input}) do
+    raise "cannot evaluate audio input, just yet!"
   end
 
   def evaluate_intent(intent) do
