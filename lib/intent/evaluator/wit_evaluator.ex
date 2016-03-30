@@ -44,10 +44,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
     else
       context = ""
     end
-
-    URI.encode(message)
-    |> fn msg -> msg <> context end.()
-    |> build_request
+    URI.encode(message) |> fn msg -> msg <> context end.() |> build_request
   end
 
   def generate_request(_, _), do: {:error, "the message must be a string"}
