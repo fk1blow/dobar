@@ -38,6 +38,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
     if is_map(context) do
       context = Poison.encode(context)
       |> (fn({:ok, r}) -> URI.encode(r) end).()
+      |> (fn(t) -> String.replace(t, ":", "%3A") end).()
       |> (fn(t) -> "&context=#{t}" end).()
     else
       context = ""

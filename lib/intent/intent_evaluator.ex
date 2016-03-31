@@ -14,8 +14,8 @@ defmodule Dobar.Intent.Evaluator do
     |> parse_intention
     |> notify_handlers
   end
-  def evaluate_input({:text, input, dialog}) do
-    intent = apply(intention_api, :text_query, [input, dialog])
+  def evaluate_input({:text, input, context}) do
+    intent = apply(intention_api, :text_query, [input, context])
     |> parse_intention
     |> notify_handlers
   end
