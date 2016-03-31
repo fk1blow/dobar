@@ -41,7 +41,6 @@ defmodule Dobar.Interface.Controller do
   end
 
   def handle_cast({:parse_output, output}, _state) do
-    IO.puts "now it should try and parse or send the output, gen"
     {:noreply, nil}
   end
 end

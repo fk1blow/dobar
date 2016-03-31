@@ -47,7 +47,6 @@ defmodule Dobar.Intent.Resolver do
   #
 
   def handle_cast({:evaluate_input, input}, state) do
-    IO.puts "will evaluate input: [#{input}] and context: #{inspect state.context}"
     IntentEvaluator.evaluate_input {:text, input, state.context}
     {:noreply, state}
   end
