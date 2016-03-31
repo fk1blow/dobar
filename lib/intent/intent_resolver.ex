@@ -52,10 +52,8 @@ defmodule Dobar.Intent.Resolver do
     {:noreply, state}
   end
 
-  # This won't treat the error in case an intent wasn't evaluated
-  # TODO: define the case for which an intent has errord
   def handle_cast({:evaluate_intent, intent}, state) do
-    KapyzDispatcher.evaluate_intent intent
+    KapyzDispatcher.evaluate_intent state.intent, intent
     {:noreply, state}
   end
 

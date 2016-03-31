@@ -8,7 +8,8 @@ defmodule Dobar.Kapyz.Capability do
 
   alias Dobar.Kapyz.Error.InvalidCapabilityName
 
-  @callback react(Map.t) :: any
+  # receives the old intent and the new intent and returns anything
+  @callback react(Map.t, Map.t) :: any
 
   defmacro __using__(opts) do
     quote do

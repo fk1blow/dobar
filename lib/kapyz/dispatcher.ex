@@ -19,7 +19,7 @@ defmodule Dobar.Kapyz.Dispatcher do
     GenServer.cast(@name, {:register_capability, name, pid})
   end
 
-  def evaluate_intent(intent) do
+  def evaluate_intent(old_intent, intent) do
     GenServer.cast(@name, {:evaluate_intent, intent})
   end
 
@@ -31,31 +31,31 @@ defmodule Dobar.Kapyz.Dispatcher do
     {:noreply, Map.merge(handlers, intent_handler)}
   end
 
-  def handle_cast({:evaluate_intent, %Dobar.Model.Intent{} = intent}, handlers) do
-    name = intent.name
-    case intent.name do
+  def handle_cast({:evaluate_intent, old_intent, new_intent}, handlers) do
+    name = new_intent.name
+    case name do
       name when is_atom(name) ->
-        call_intent_handler! intent.name, intent, handlers
+        call_intent_handler! new_intent.name, {old_intent, new_intent}, handlers
       name when is_binary(name) ->
-        call_intent_handler! String.to_atom(intent.name), intent, handlers
+        name = String.to_atom(new_intent.name)
+        call_intent_handler! name, {old_intent, new_intent}, handlers
       _ -> raise InvalidIntentName
     end
     {:noreply, handlers}
   end
 
   def handle_cast({:evaluate_intent, {:error, error}}, handlers) do
-    IO.puts "intent"
     {:noreply, handlers}
   end
 
   # private
   #
 
-  defp call_intent_handler!(name, message, handlers) do
+  defp call_intent_handler!(name, intents, handlers) do
     case handlers[name] do
       nil -> raise NoIntentHandlerError
       pid -> if Process.alive?(pid),
-        do: send(pid, {:handle_capability, message}),
+        do: send(pid, {:handle_capability, intents}),
         else: raise NoIntentHandlerError
     end
   end
