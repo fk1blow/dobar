@@ -2,7 +2,7 @@ defmodule Dobar.Interface.Controller do
   use GenServer
 
   alias Dobar.Interface.Receiver
-  alias Dobar.Spub.OutputHandler
+  alias Dobar.Spub.InterfaceHandler
 
   @name __MODULE__
 
@@ -11,7 +11,7 @@ defmodule Dobar.Interface.Controller do
   end
 
   def init(_) do
-    GenEvent.add_handler :interface_events, OutputHandler, nil
+    GenEvent.add_handler :interface_events, InterfaceHandler, nil
     {:ok, nil}
   end
 
@@ -41,7 +41,7 @@ defmodule Dobar.Interface.Controller do
   end
 
   def handle_cast({:parse_output, output}, _state) do
-    IO.puts "now it should try and parse the output, gen"
+    IO.puts "now it should try and parse or send the output, gen"
     {:noreply, nil}
   end
 end

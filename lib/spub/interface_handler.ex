@@ -1,4 +1,4 @@
-defmodule Dobar.Spub.OutputHandler do
+defmodule Dobar.Spub.InterfaceHandler do
   @moduledoc """
   Has the responsability to handle events and notifications related to the output
   that will reach the ui/user.
@@ -11,7 +11,7 @@ defmodule Dobar.Spub.OutputHandler do
   alias Dobar.Model.Response
 
   def handle_event({:response_evaluated, %Response{} = response}, _state) do
-    Logger.info "response was evaluated to: #{inspect response}"
+    Logger.info "response has been evaluated to: #{inspect response}"
     Dobar.Interface.Controller.parse_output response
     {:ok, nil}
   end
