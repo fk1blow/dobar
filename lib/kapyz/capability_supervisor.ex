@@ -11,6 +11,8 @@ defmodule Dobar.Kapyz.Capability.Supervisor do
       worker(Dobar.Kapyz.Capability.SearchFiles, []),
       worker(Dobar.Kapyz.Capability.SendMessage, []),
       worker(Dobar.Kapyz.Capability.AddMessageContact, []),
+      worker(Dobar.Kapyz.Capability.AddMessageApp, []),
+      worker(Dobar.Kapyz.Capability.AddMessageBody, []),
     ]
     supervise children, strategy: :one_for_one
   end

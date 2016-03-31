@@ -4,8 +4,9 @@ defmodule Dobar.Kapyz.Capability.AddMessageContact do
   alias Dobar.Model.Intent
   alias Dobar.Model.Capability
 
-  def react(%Intent{} = intent) do
+  def react(old_intent, %Intent{} = new_intent) do
     IO.puts "woowooo, a ajuns aici-sa"
-    IO.inspect intent
+    IO.puts "old intent: #{inspect old_intent}"
+    IO.puts "new intent: #{inspect new_intent}"
   end
 end

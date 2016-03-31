@@ -35,8 +35,8 @@ defmodule Dobar.Kapyz.Capability do
       Handles the capability and calls the `react_intention/1` function
       on the callback module, eg: `Dobar.Kapyz.Capability.SendMessage`
       """
-      def handle_info({:handle_capability, intent}, _) do
-        react intent
+      def handle_info({:handle_capability, {old_intent, new_intent}}, _) do
+        react(old_intent, new_intent)
         {:noreply, nil}
       end
     end

@@ -19,8 +19,8 @@ defmodule Dobar.Kapyz.Dispatcher do
     GenServer.cast(@name, {:register_capability, name, pid})
   end
 
-  def evaluate_intent(old_intent, intent) do
-    GenServer.cast(@name, {:evaluate_intent, intent})
+  def evaluate_intent(old_intent, new_intent) do
+    GenServer.cast(@name, {:evaluate_intent, old_intent, new_intent})
   end
 
   # callbacks
