@@ -7,6 +7,7 @@ defmodule Dobar.Interface.Receiver.Text do
     raise "cannot evaluate nil as an input!"
   end
   def parse(input) do
-    Dobar.Intent.Resolver.evaluate_input %Text{type: :text, data: input}
+    IO.puts "lwlll"
+    GenEvent.notify :intent_events, {:text_input_evaluated, %Text{type: :text, data: input}}
   end
 end

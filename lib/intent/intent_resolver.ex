@@ -47,17 +47,18 @@ defmodule Dobar.Intent.Resolver do
   #
 
   def handle_cast({:evaluate_input, input}, state) do
-    # HERE BE dragons n shit
     IO.puts "will evaluate input: [#{input}] and context: #{inspect state.context}"
     IntentEvaluator.evaluate_input {:text, input, state.context}
     {:noreply, state}
   end
+
   # This won't treat the error in case an intent wasn't evaluated
   # TODO: define the case for which an intent has errord
   def handle_cast({:evaluate_intent, intent}, state) do
     KapyzDispatcher.evaluate_intent intent
     {:noreply, state}
   end
+
   def handle_cast({:evaluate_capability, %Capability{} = capability}, _) do
     {:noreply, capability}
   end

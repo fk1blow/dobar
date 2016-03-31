@@ -13,7 +13,8 @@ defmodule Dobar.Spub.IntentHandler do
 
   # triggered from `Interface.Controller`
   def handle_event({:text_input_evaluated, input}, _state) do
-    Logger.info "text input evaluated to: #{input}"
+    Logger.info "text input evaluated to: #{inspect input}"
+    Dobar.Intent.Resolver.evaluate_input input
     {:ok, nil}
   end
 
@@ -38,12 +39,5 @@ defmodule Dobar.Spub.IntentHandler do
     Dobar.Intent.Resolver.evaluate_capability capability
     {:ok, nil}
   end
-
-  # TODO: this is the place where the `context` and `intent` will arrive
-  # def handle_event({:capability_evaluated, capability}, _state) do
-  #   Logger.info "capability was evaluated to: #{inspect capability}"
-  #   Dobar.Intent.Resolver.evaluate_capability capability
-  #   {:ok, nil}
-  # end
 end
 

@@ -22,10 +22,4 @@ defmodule Dobar.Kapyz.Capability.SendMessage do
     capability = %Capability{context: %{state: "message_receiver"}, intent: intent}
     GenEvent.notify :intent_events, {:capability_evaluated, capability}
   end
-
-  # dafk is dis shit?!?!
-  # def react(%Intent{entities: %{}}) do
-  #   capabiltiy = %{dialog: "message_receiver"}
-  #   GenEvent.notify :intent_events, {:capability_evaluated, capabiltiy}
-  # end
 end
