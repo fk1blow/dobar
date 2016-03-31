@@ -3,14 +3,21 @@ defmodule Dobar.Kapyz.Capability.AddMessageBody do
 
   alias Dobar.Model.Intent
   alias Dobar.Model.Capability
+  alias Dobar.Model.Response
 
-  def react(old_intent, %Intent{} = new_intent) do
-    # IO.puts "and the message is....."
-    IO.puts "new intent is: #{inspect new_intent}"
+  def react(%Intent{entities: %{app_name: _, email: _}} = intent, _) do
+    capability = %Capability{context: nil, intent: %Intent{}}
+    GenEvent.notify :intent_events, {:capability_evaluated, capability}
 
-    # entities = Map.merge(old_intent.entities, new_intent.entities)
-    # intent = Map.put old_intent, :entities, entities
-    # capability = %Capability{context: nil, intent: %Intent{}}
-    # GenEvent.notify :intent_events, {:capability_evaluated, capability}
+    response = %Response{text: "ok, now it should send the message"}
+    GenEvent.notify :interface_events, {:response_evaluated, response}
+  end
+
+  def react(%Intent{entities: %{app_name: _, contact: _}} = intent, _) do
+    capability = %Capability{context: nil, intent: %Intent{}}
+    GenEvent.notify :intent_events, {:capability_evaluated, capability}
+
+    response = %Response{text: "ok, now it should send the message"}
+    GenEvent.notify :interface_events, {:response_evaluated, response}
   end
 end

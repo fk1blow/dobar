@@ -12,12 +12,13 @@ defmodule Dobar.Kapyz.Capability.SendMessage do
     IO.puts "has application and email; should require the text message"
   end
 
-  def react(old_intent, %Intent{entities: %{contact: contact}}) do
-    IO.puts "has only the contact; should require the application to use"
+  def react(old_intent, %Intent{entities: %{email: _}} = intent) do
+    IO.puts "has only the email entity; should require the application to use"
+    capability = %Capability{context: %{state: "message_application"}, intent: intent}
+    GenEvent.notify :intent_events, {:capability_evaluated, capability}
   end
 
-  # DISSz
-  def react(old_intent, %Intent{entities: %{email: email}} = intent) do
+  def react(old_intent, %Intent{entities: %{contact: _}} = intent) do
     IO.puts "has only the email entity; should require the application to use"
     capability = %Capability{context: %{state: "message_application"}, intent: intent}
     GenEvent.notify :intent_events, {:capability_evaluated, capability}

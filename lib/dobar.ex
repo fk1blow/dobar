@@ -11,9 +11,11 @@ defmodule Dobar do
       supervisor(Dobar.Endpoint, []),
       # Start the Ecto repository
       supervisor(Dobar.Repo, []),
-      # capability module
+      # start the interface supervisor
+      supervisor(Dobar.Interface, []),
+      # start capability module
       supervisor(Dobar.Kapyz, []),
-      # intention supervisor
+      # start the intention supervisor
       supervisor(Dobar.Intent, [])
     ]
 
