@@ -49,6 +49,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   defp build_request(message) do
     url = "https://api.wit.ai/message?v=20141022&q=#{message}"
+    IO.puts "wit q: #{message}"
     config = Application.get_env(:dobar, Intent.Evaluator)
     headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
     {:ok, %{url: url, headers: headers}}
