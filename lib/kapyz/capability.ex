@@ -15,8 +15,6 @@ defmodule Dobar.Kapyz.Capability do
     quote do
       use GenServer
 
-      alias Dobar.Model.Intent
-
       @behaviour Dobar.Kapyz.Capability
       @name unquote(opts[:name] || raise InvalidCapabilityName)
 
