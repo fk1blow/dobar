@@ -16,7 +16,9 @@ defmodule Dobar do
       # start capability module
       supervisor(Dobar.Kapyz, []),
       # start the intention supervisor
-      supervisor(Dobar.Intent, [])
+      supervisor(Dobar.Intent, []),
+      # start the conversation supervisor
+      supervisor(Dobar.Conversation, [])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
