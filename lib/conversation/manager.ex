@@ -11,7 +11,10 @@ defmodule Dobar.Conversation.Manager do
   end
 
   def init(_) do
-    {:ok, %Conversation{}}
+    # {:ok, %Conversation{......}} is the alternate state for
+    # when a conversation is taking place; also, can easily be checked for
+    # times when you need to know if a conversation is active or not.
+    {:ok, nil}
   end
 
   #
@@ -24,7 +27,7 @@ defmodule Dobar.Conversation.Manager do
   #
   # callbacks
 
-  def handle_cast({:eval_intent, intent}, state) do
+  def handle_call({:eval_intent, intent}, _from, state) do
     {:noreply, state}
   end
 end
