@@ -28,6 +28,21 @@ defmodule Dobar.Conversation.Intention do
         IO.puts "should process the expected capability"
         expected_capability(expected, old_intent, new_intent)
       end
+
+      defp next_capability([], _intent) do
+        {:error, "cannot find a capability willing to become the next dialog"}
+      end
+      defp next_capability([capability | tail], intent) do
+        become_next = apply(capability.module, :become_next, [intent])
+        case become_next do
+          {:become_next, reply} -> {:next, capability}
+          _ -> next_capability tail, intent
+        end
+      end
+
+      defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
+        apply(module, :handle_expected, [old_intent, new_intent])
+      end
     end
   end
 
@@ -38,20 +53,5 @@ defmodule Dobar.Conversation.Intention do
         entitiy: unquote(entity)}
       @capabilities [capability | @capabilities]
     end
-  end
-
-  def next_capability([], _intent) do
-    {:error, "cannot find a capability willing to become the next dialog"}
-  end
-  def next_capability([capability | tail], intent) do
-    become_next = apply(capability.module, :become_next, [intent])
-    case become_next do
-      {:become_next, reply} -> {:next, capability}
-      _ -> next_capability tail, intent
-    end
-  end
-
-  def expected_capability(%Capability{module: module}, old_intent, new_intent) do
-    apply(module, :handle_expected, [old_intent, new_intent])
   end
 end
