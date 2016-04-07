@@ -1,3 +1,3 @@
-defmodule Dobar.Conversation.Capability do
+defmodule Dobar.Conversation.Model.Capability do
   defstruct name: nil, module: nil, entitiy: nil
 end

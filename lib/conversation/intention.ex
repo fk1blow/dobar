@@ -8,7 +8,7 @@ defmodule Dobar.Conversation.Intention do
   intent process.
   """
 
-  alias Dobar.Conversation.Capability
+  alias Dobar.Conversation.Model.Capability
 
   defmacro __using__(_opts) do
     quote do
