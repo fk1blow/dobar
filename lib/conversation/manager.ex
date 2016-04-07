@@ -4,7 +4,6 @@ defmodule Dobar.Conversation.Manager do
   alias Dobar.Conversation.Model.Conversation
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
-  alias Dobar.Conversation.Intention
 
   @name __MODULE__
 
@@ -28,7 +27,6 @@ defmodule Dobar.Conversation.Manager do
 
   def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
     conversation = process_expected(intent, conversation)
-    IO.puts "nnnn conversation: #{inspect conversation}"
     {:reply, nil, conversation}
   end
 

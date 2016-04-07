@@ -20,7 +20,7 @@ defmodule Dobar.Conversation.Intention.MessageBody do
       new_entities = Map.merge(old_intent.entities, found_entities)
       {:ok, Map.put(old_intent, :entities, new_entities)}
     else
-      {:error, @halt_reason}
+      {:halt, @halt_reason}
     end
   end
 end

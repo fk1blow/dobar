@@ -34,7 +34,8 @@ defmodule Dobar.Conversation.Intention do
 
       defp next_capability([], intent) do
         case ending_capability(intent) do
-          {:ok, reply} -> {:ended, reply}
+          {:ok, reply} ->
+            {:ended, reply}
           _ ->
             {:error, "cannot find a capability willing to become the next dialog"}
         end
@@ -53,13 +54,7 @@ defmodule Dobar.Conversation.Intention do
       end
 
       defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
-        # TODO actually, i do not need the `case` statement at all, i guess
-        expected = apply(module, :handle_expected, [old_intent, new_intent])
-        case expected do
-          {:ok, intent} -> {:ok, intent}
-          {:halt, reason} -> {:halt, reason}
-          other -> other
-        end
+        apply(module, :handle_expected, [old_intent, new_intent])
       end
     end
   end
