@@ -26,24 +26,37 @@ defmodule Dobar.Conversation.Manager do
   #
   # callbacks
 
-  def handle_call({:evaluate, intent}, _from, %Conversation{expected: nil}) do
-    IO.puts "expected is nil - should start a new conversation"
+  def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
+    conversation = process_expected(intent, conversation)
+    {:reply, nil, conversation}
+  end
+
+  # private
+  #
+
+  defp process_expected(intent, %Conversation{expected: %{capability: nil}}) do
+    IO.puts "expected capability is nil - start a new conversation"
 
     intention = IntentionProvider.intention String.to_atom intent.name
     next = apply intention, :process_next, [intent]
 
     conversation = case next do
-      {:next, capability} ->
-        Map.put %Conversation{}, :expected, capability
+      {:next, reply, capability} ->
+        IO.puts "### reply from #{capability.name} is: #{reply}"
+        %Conversation{expected: %{capability: capability, intention: intent.name},
+                      intent: intent}
       _ ->
         raise "cannot evaluate the intention"
     end
-
-    {:reply, nil, conversation}
   end
 
-  def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
-    IO.puts "expected exists - proceed with the current conversation"
-    {:reply, nil, conversation}
+  defp process_expected(intent, %Conversation{} = conversation) do
+    IO.puts "expected exists - continue dialog"
+
+    intention = IntentionProvider.intention String.to_atom conversation.expected.intention
+    expected = apply intention, :process_expected,
+      [conversation.expected.capability, conversation.intent, intent]
+
+    IO.puts "### evaluated expected is: #{inspect expected}"
   end
 end

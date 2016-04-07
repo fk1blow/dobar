@@ -6,12 +6,14 @@ defmodule Dobar.Conversation.Intention.MessageApp do
 
   alias Dobar.Model.Intent
 
+  # TODO: generic shit - implement it inside a protocol or something
   def become_next(%Intent{} = intent) do
     unless intent.entities[:app_name] do
       {:become_next, @next_reply}
     end
   end
 
+  # TODO: generic shit - implement it inside a protocol or something
   def handle_expected(%Intent{} = old_intent, %Intent{} = new_intent) do
     if new_intent.entities[:app_name] do
       found_entities = %{app_name: new_intent.entities[:app_name]}

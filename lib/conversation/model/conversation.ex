@@ -1,3 +1,3 @@
 defmodule Dobar.Conversation.Model.Conversation do
-  defstruct expected: nil, intent: %Dobar.Model.Intent{}
+  defstruct expected: %{capability: nil, intention: nil}, intent: %Dobar.Model.Intent{}
 end
