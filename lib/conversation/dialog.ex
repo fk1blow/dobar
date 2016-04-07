@@ -3,12 +3,54 @@ defmodule Dobar.Conversation.Dialog do
   defmacro __using__(_opts) do
     quote do
       import Dobar.Conversation.Dialog
+
       @conversations %{}
       @intention_module nil
+
+      @before_compile Dobar.Conversation.Dialog
+    end
+  end
+
+  defmacro __before_compile__(env) do
+    quote do
+      use GenServer
+
+      @name __MODULE__
+
+      def start_link do
+        GenServer.start_link @name, [], name: @name
+      end
+
+      def init(_) do
+        {:ok, nil}
+      end
+
+      # api
+      #
+
+      def begin_dialog(intent) do
+        GenServer.call @name, {:begin, intent}
+      end
+
+      def continue_dialog(_) do
+        nil
+      end
+
+      def end_dialog, do: nil
+
+      # callbacks
+      #
+
+      def handle_call({:begin, intent}, _from, state) do
+        IO.puts "module: #{inspect @intention_module}"
+        {:ok, pid} = apply(@intention_module, :start_link, [%{}])
+        {:reply, "fuck", state}
+      end
     end
   end
 
   defmacro conversation(name, intention, do: block) when is_nil(block), do: nil
+  # TODO: pass only the filtered capabilites, to the compile_intention/2 function
   defmacro conversation(name, intention, do: block) do
     quote do
       @intention_module unquote(intention)

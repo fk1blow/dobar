@@ -1,3 +1,4 @@
+# HIGHLY DEPRECATED SHIT GOING ON HERE
 defmodule Dobar.Conversation.IntentRouter do
   use Dobar.Conversation.Dialog, includes: :cancel_action
 
@@ -8,7 +9,4 @@ defmodule Dobar.Conversation.IntentRouter do
     expect :message_receiver, entity: :contact
     expect :message_body, entity: :contact
   end
-
-  IO.inspect @conversations
-  IO.inspect @intention_module
 end

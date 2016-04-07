@@ -8,6 +8,7 @@ defmodule Dobar.Conversation do
   def init(_) do
     children = [
       worker(Dobar.Conversation.Manager, []),
+      # worker(Dobar.Conversation.IntentRouter, []),
       # worker(Dobar.Conversation.Intention.SendMessage, [])
     ]
 
