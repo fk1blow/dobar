@@ -50,14 +50,14 @@ defmodule Dobar.Conversation.Manager do
       [conversation.expected.capability, conversation.intent, intent]
 
     case expected do
-      {:ok, intent} ->
+      {:continue, intent} ->
         next = apply intention, :process_next, [intent]
         process_next(next, intent)
       {:halt, reason} ->
         IO.puts "### halting because: #{reason}"
         conversation
-      _ ->
-        raise "cannot evaluated the expected intention"
+      {:error, reason} ->
+        raise reason
     end
   end
 
@@ -69,8 +69,8 @@ defmodule Dobar.Conversation.Manager do
                       intent: intent}
       {:ended, reply} ->
         IO.puts "fuuuuuuck, this is it: #{reply}"
-      _ ->
-        raise "cannot evaluate the next intention"
+      {:error, reason} ->
+        raise reason
     end
   end
 end

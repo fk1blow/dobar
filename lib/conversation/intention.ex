@@ -54,7 +54,12 @@ defmodule Dobar.Conversation.Intention do
       end
 
       defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
-        apply(module, :handle_expected, [old_intent, new_intent])
+        expected = apply(module, :handle_expected, [old_intent, new_intent])
+        case expected do
+          {:ok, intent} -> {:continue, intent}
+          {:halt, reason} -> {:halt, reason}
+          _ -> {:error, "cannot process the expected capability"}
+        end
       end
     end
   end

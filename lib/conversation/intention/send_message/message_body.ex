@@ -2,7 +2,7 @@ defmodule Dobar.Conversation.Intention.MessageBody do
   @behaviour Dobar.Conversation.Intention.Capability
 
   @next_reply "what's the message you want to send?"
-  @halt_reply "cannot find the message body in the provided reply!"
+  @halt_reason "cannot find the message body in the provided reply!"
 
   alias Dobar.Model.Intent
 
