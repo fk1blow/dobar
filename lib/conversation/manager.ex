@@ -1,8 +1,10 @@
 defmodule Dobar.Conversation.Manager do
   use GenServer
 
-  alias Dobar.Model.Conversation
+  alias Dobar.Conversation.Model.Conversation
   alias Dobar.Model.Intent
+  alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
+  alias Dobar.Conversation.Intention
 
   @name __MODULE__
 
@@ -11,23 +13,37 @@ defmodule Dobar.Conversation.Manager do
   end
 
   def init(_) do
-    # {:ok, %Conversation{......}} is the alternate state for
-    # when a conversation is taking place; also, can easily be checked for
-    # times when you need to know if a conversation is active or not.
-    {:ok, nil}
+    {:ok, %Conversation{}}
   end
 
   #
   # interface
 
-  def evaluate_intent(%Intent{} = intent) do
-    GenServer.call @name, {:eval_intent, intent}
+  def evaluate_intention(%Intent{} = intent) do
+    GenServer.call @name, {:evaluate, intent}
   end
 
   #
   # callbacks
 
-  def handle_call({:eval_intent, intent}, _from, state) do
-    {:noreply, state}
+  def handle_call({:evaluate, intent}, _from, %Conversation{expected: nil}) do
+    IO.puts "expected is nil - should start a new conversation"
+
+    intention = IntentionProvider.intention String.to_atom intent.name
+    next = apply intention, :process_next, [intent]
+
+    conversation = case next do
+      {:next, capability} ->
+        Map.put %Conversation{}, :expected, capability
+      _ ->
+        raise "cannot evaluate the intention"
+    end
+
+    {:reply, nil, conversation}
+  end
+
+  def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
+    IO.puts "expected exists - proceed with the current conversation"
+    {:reply, nil, conversation}
   end
 end
