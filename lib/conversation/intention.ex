@@ -23,9 +23,9 @@ defmodule Dobar.Conversation.Intention do
         next_capability(Enum.reverse(@capabilities), intent)
       end
 
-      def process_expected(expected, %Intent{} = intent) do
+      def process_expected(expected, %Intent{} = old_intent, %Intent{} = new_intent) do
         IO.puts "should process the expected capability"
-        expected_capability(expected, intent)
+        expected_capability(expected, old_intent, new_intent)
       end
     end
   end
@@ -49,12 +49,7 @@ defmodule Dobar.Conversation.Intention do
     end
   end
 
-  def expected_capability(%{module: module}, intent) do
-    apply(module, :handle_expected, [intent])
-    # if apply(head.module, :handle_expected, [intent]) do
-    #   {:expected, head.name}
-    # else
-    #   next_capability tail, intent
-    # end
+  def expected_capability(%{module: module}, old_intent, new_intent) do
+    apply(module, :handle_expected, [old_intent, new_intent])
   end
 end

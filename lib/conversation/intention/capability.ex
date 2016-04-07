@@ -1,4 +1,4 @@
-defmodule Dobar.Conversation.Capability do
+defmodule Dobar.Conversation.Intention.Capability do
   @moduledoc """
   this protocol defines the two functions that may be implemented by a capability,
   in order to fulfill its features - `become_starter` and `become_next`.
@@ -15,10 +15,11 @@ defmodule Dobar.Conversation.Capability do
   @callback become_next(%Intent{}) :: {atom, String.t}
 
   @doc """
-  Handles the intention by validating or updating it.
+  Handles the intention by validating it, then it completes the previous intention
+  in the conversation, by adding the required entities.
   It returns {:ok, new_intent} if it validates the intent(entities)
   or {:error, reason} if something is wrong with the intent
   or even the entities inside it!
   """
-  @callback handle_expected(%Intent{}) :: {atom, %Intent{} | String.t}
+  @callback handle_expected(%Intent{}, %Intent{}) :: {atom, %Intent{} | String.t}
 end
