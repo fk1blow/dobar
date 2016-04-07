@@ -28,6 +28,7 @@ defmodule Dobar.Conversation.Manager do
 
   def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
     conversation = process_expected(intent, conversation)
+    IO.puts "nnnn conversation: #{inspect conversation}"
     {:reply, nil, conversation}
   end
 
@@ -54,6 +55,9 @@ defmodule Dobar.Conversation.Manager do
       {:ok, intent} ->
         next = apply intention, :process_next, [intent]
         process_next(next, intent)
+      {:halt, reason} ->
+        IO.puts "### halting because: #{reason}"
+        conversation
       _ ->
         raise "cannot evaluated the expected intention"
     end
@@ -65,6 +69,8 @@ defmodule Dobar.Conversation.Manager do
         IO.puts "### reply from #{capability.name} is: #{reply}"
         %Conversation{expected: %{capability: capability, intention: intent.name},
                       intent: intent}
+      {:ended, reply} ->
+        IO.puts "fuuuuuuck, this is it: #{reply}"
       _ ->
         raise "cannot evaluate the next intention"
     end

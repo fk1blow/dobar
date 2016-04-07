@@ -15,6 +15,7 @@ defmodule Dobar.Conversation.Intention do
       import Dobar.Conversation.Intention
 
       @capabilities []
+      @enderbility nil
       @before_compile Dobar.Conversation.Intention
     end
   end
@@ -31,19 +32,34 @@ defmodule Dobar.Conversation.Intention do
         expected_capability(expected, old_intent, new_intent)
       end
 
-      defp next_capability([], _intent) do
-        {:error, "cannot find a capability willing to become the next dialog"}
+      defp next_capability([], intent) do
+        case ending_capability(intent) do
+          {:ok, reply} -> {:ended, reply}
+          _ ->
+            {:error, "cannot find a capability willing to become the next dialog"}
+        end
       end
       defp next_capability([capability | tail], intent) do
         become_next = apply(capability.module, :become_next, [intent])
         case become_next do
           {:become_next, reply} -> {:next, reply, capability}
-          _ -> next_capability tail, intent
+          _ -> next_capability(tail, intent)
         end
       end
 
+      defp ending_capability(intent) do
+        module = @enderbility.module
+        apply(module, :handle_ending, [intent])
+      end
+
       defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
-        apply(module, :handle_expected, [old_intent, new_intent])
+        # TODO actually, i do not need the `case` statement at all, i guess
+        expected = apply(module, :handle_expected, [old_intent, new_intent])
+        case expected do
+          {:ok, intent} -> {:ok, intent}
+          {:halt, reason} -> {:halt, reason}
+          other -> other
+        end
       end
     end
   end
@@ -54,6 +70,14 @@ defmodule Dobar.Conversation.Intention do
       capability = %Capability{name: unquote(name), module: module,
         entitiy: unquote(entity)}
       @capabilities [capability | @capabilities]
+    end
+  end
+
+  defmacro ending(name, module: module) do
+    quote do
+      {module, _} = Code.eval_quoted(unquote module)
+      capability = %Capability{name: unquote(name), module: module}
+      @enderbility capability
     end
   end
 end
