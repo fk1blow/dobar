@@ -69,6 +69,7 @@ defmodule Dobar.Conversation.Manager do
                       intent: intent}
       {:ended, reply} ->
         IO.puts "fuuuuuuck, this is it: #{reply}"
+        %Conversation{}
       {:error, reason} ->
         raise reason
     end
