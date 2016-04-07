@@ -48,11 +48,6 @@ defmodule Dobar.Conversation.Intention do
         end
       end
 
-      defp ending_capability(intent) do
-        module = @enderbility.module
-        apply(module, :handle_ending, [intent])
-      end
-
       defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
         expected = apply(module, :handle_expected, [old_intent, new_intent])
         case expected do
@@ -60,6 +55,11 @@ defmodule Dobar.Conversation.Intention do
           {:halt, reason} -> {:halt, reason}
           _ -> {:error, "cannot process the expected capability"}
         end
+      end
+
+      defp ending_capability(intent) do
+        module = @enderbility.module
+        apply(module, :handle_ending, [intent])
       end
     end
   end

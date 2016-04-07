@@ -26,33 +26,31 @@ defmodule Dobar.Conversation.Manager do
   # callbacks
 
   def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
-    conversation = process_expected(intent, conversation)
+    conversation = process_capability(intent, conversation)
     {:reply, nil, conversation}
   end
 
   # private
   #
 
-  defp process_expected(intent, %Conversation{expected: %{capability: nil}}) do
+  defp process_capability(intent, %Conversation{expected: %{capability: nil}}) do
     IO.puts "expected capability is nil - start a new conversation"
-
-    intention = IntentionProvider.intention String.to_atom intent.name
-    next = apply intention, :process_next, [intent]
-
-    process_next(next, intent)
+    String.to_atom(intent.name)
+    |> IntentionProvider.intention
+    |> apply(:process_next, [intent])
+    |> next_capability(intent)
   end
 
-  defp process_expected(intent, %Conversation{} = conversation) do
+  defp process_capability(intent, %Conversation{expected: expected} = conversation) do
     IO.puts "expected exists - continue dialog"
 
-    intention = IntentionProvider.intention String.to_atom conversation.expected.intention
+    intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     expected = apply intention, :process_expected,
-      [conversation.expected.capability, conversation.intent, intent]
+      [expected.capability, conversation.intent, intent]
 
     case expected do
       {:continue, intent} ->
-        next = apply intention, :process_next, [intent]
-        process_next(next, intent)
+        apply(intention, :process_next, [intent]) |> next_capability(intent)
       {:halt, reason} ->
         IO.puts "### halting because: #{reason}"
         conversation
@@ -61,7 +59,7 @@ defmodule Dobar.Conversation.Manager do
     end
   end
 
-  defp process_next(next, intent) do
+  defp next_capability(next, intent) do
     case next do
       {:next, reply, capability} ->
         IO.puts "### reply from #{capability.name} is: #{reply}"
