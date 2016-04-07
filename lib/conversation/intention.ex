@@ -43,7 +43,7 @@ defmodule Dobar.Conversation.Intention do
       defp next_capability([capability | tail], intent) do
         become_next = apply(capability.module, :become_next, [intent])
         case become_next do
-          {:become_next, reply} -> {:next, reply, capability}
+          {:ok, reply} -> {:next, reply, capability}
           _ -> next_capability(tail, intent)
         end
       end

@@ -9,7 +9,7 @@ defmodule Dobar.Conversation.Intention.MessageReceiver do
   # TODO: generic shit - implement it inside a protocol or something
   def become_next(%Intent{} = intent) do
     unless intent.entities[:contact] do
-      {:become_next, @next_reply}
+      {:ok, @next_reply}
     end
   end
 
