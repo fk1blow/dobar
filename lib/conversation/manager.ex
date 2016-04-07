@@ -40,14 +40,7 @@ defmodule Dobar.Conversation.Manager do
     intention = IntentionProvider.intention String.to_atom intent.name
     next = apply intention, :process_next, [intent]
 
-    conversation = case next do
-      {:next, reply, capability} ->
-        IO.puts "### reply from #{capability.name} is: #{reply}"
-        %Conversation{expected: %{capability: capability, intention: intent.name},
-                      intent: intent}
-      _ ->
-        raise "cannot evaluate the intention"
-    end
+    process_next(next, intent)
   end
 
   defp process_expected(intent, %Conversation{} = conversation) do
@@ -57,6 +50,23 @@ defmodule Dobar.Conversation.Manager do
     expected = apply intention, :process_expected,
       [conversation.expected.capability, conversation.intent, intent]
 
-    IO.puts "### evaluated expected is: #{inspect expected}"
+    case expected do
+      {:ok, intent} ->
+        next = apply intention, :process_next, [intent]
+        process_next(next, intent)
+      _ ->
+        raise "cannot evaluated the expected intention"
+    end
+  end
+
+  defp process_next(next, intent) do
+    case next do
+      {:next, reply, capability} ->
+        IO.puts "### reply from #{capability.name} is: #{reply}"
+        %Conversation{expected: %{capability: capability, intention: intent.name},
+                      intent: intent}
+      _ ->
+        raise "cannot evaluate the next intention"
+    end
   end
 end
