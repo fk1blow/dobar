@@ -9,7 +9,6 @@ defmodule Dobar.Conversation.Intention do
       import Dobar.Conversation.Intention
 
       @capabilities []
-
       @before_compile Dobar.Conversation.Intention
     end
   end

@@ -15,20 +15,19 @@ defmodule Dobar.Conversation.IntentionTest do
 
   test "responds to the expected dialog capability" do
     {:next, expected} = SendMessage.process_next %Intent{entities: %{contact: "Dragoshy"}}
-    answer = SendMessage.process_expected(expected,
+    answer = SendMessage.process_expected(
+      expected,
       %Intent{entities: %{contact: "Dragoshy"}},
       %Intent{entities: %{app_name: "whatsapp"}})
 
     assert answer == {:ok,
-      %Dobar.Model.Intent{confidence: 0,
-                          entities: %{app_name: "whatsapp", contact: "Dragoshy"},
-                          input: nil,
-                          name: nil}}
+      %Intent{entities: %{app_name: "whatsapp", contact: "Dragoshy"}}}
   end
 
   test "errors when expected dialog capability receives invalid intent" do
     {:next, expected} = SendMessage.process_next %Intent{entities: %{contact: "Dragoshy"}}
-    answer = SendMessage.process_expected(expected,
+    answer = SendMessage.process_expected(
+      expected,
       %Intent{entities: %{contact: "Dragoshy"}},
       %Intent{entities: %{whatever: "whatsapp"}})
 
