@@ -24,12 +24,10 @@ defmodule Dobar.Conversation.Intention do
 
     quote do
       def process_next(%Intent{} = intent) do
-        IO.puts "should test if can process next in a conversation or dialog"
         next_capability(Enum.reverse(@capabilities), intent)
       end
 
       def process_expected(expected, %Intent{} = old_intent, %Intent{} = new_intent) do
-        IO.puts "should process the expected capability"
         expected_capability(expected, old_intent, new_intent)
       end
 
