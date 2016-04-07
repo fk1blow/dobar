@@ -5,10 +5,11 @@ defmodule Dobar.Conversation.IntentionTest do
 
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.SendMessage
+  alias Dobar.Conversation.Capability
 
   test "becomes the next dialog capability in the conversation" do
     next = SendMessage.process_next %Intent{entities: %{contact: "Dragoshy"}}
-    assert next == {:next, %{entitiy: "app_name",
+    assert next == {:next, %Capability{entitiy: "app_name",
                              module: Dobar.Conversation.Intention.MessageApp,
                              name: :message_app}}
   end

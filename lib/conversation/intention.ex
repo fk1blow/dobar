@@ -4,6 +4,8 @@ defmodule Dobar.Conversation.Intention do
   represents a conversation tree.
   """
 
+  alias Dobar.Conversation.Capability
+
   defmacro __using__(_opts) do
     quote do
       import Dobar.Conversation.Intention
@@ -32,7 +34,8 @@ defmodule Dobar.Conversation.Intention do
   defmacro capability(name, entity: entity, module: module) do
     quote do
       {module, _} = Code.eval_quoted(unquote module)
-      capability = %{name: unquote(name), module: module, entitiy: unquote(entity)}
+      capability = %Capability{name: unquote(name), module: module,
+        entitiy: unquote(entity)}
       @capabilities [capability | @capabilities]
     end
   end
@@ -40,15 +43,15 @@ defmodule Dobar.Conversation.Intention do
   def next_capability([], _intent) do
     {:error, "cannot find a capability willing to become the next dialog"}
   end
-  def next_capability([head | tail], intent) do
-    become_next = apply(head.module, :become_next, [intent])
+  def next_capability([capability | tail], intent) do
+    become_next = apply(capability.module, :become_next, [intent])
     case become_next do
-      {:become_next, reply} -> {:next, head}
+      {:become_next, reply} -> {:next, capability}
       _ -> next_capability tail, intent
     end
   end
 
-  def expected_capability(%{module: module}, old_intent, new_intent) do
+  def expected_capability(%Capability{module: module}, old_intent, new_intent) do
     apply(module, :handle_expected, [old_intent, new_intent])
   end
 end
