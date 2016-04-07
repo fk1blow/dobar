@@ -2,6 +2,10 @@ defmodule Dobar.Conversation.Intention do
   @moduledoc """
   This is the protocol that basically defines an intention which, by itself,
   represents a conversation tree.
+
+  Its roles is to process the capabilities and respond accordingly when
+  theres a need for the next dialog capability or the expected capability
+  intent process.
   """
 
   alias Dobar.Conversation.Capability
