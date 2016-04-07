@@ -1,4 +1,4 @@
-defmodule Dobar.Conversation.Intention.Capability do
+defmodule Dobar.Conversation.CapabilityBehaviour do
   @moduledoc """
   this protocol defines the two functions that may be implemented by a capability,
   in order to fulfill its features - `become_starter` and `become_next`.

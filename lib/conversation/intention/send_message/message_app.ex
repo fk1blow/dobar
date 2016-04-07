@@ -1,5 +1,5 @@
 defmodule Dobar.Conversation.Intention.MessageApp do
-  @behaviour Dobar.Conversation.Intention.Capability
+  @behaviour Dobar.Conversation.CapabilityBehaviour
 
   @next_reply "what's the application you would like to use?"
   @halt_reason "cannot find the application name in the provided reply!"
