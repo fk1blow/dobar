@@ -18,7 +18,7 @@ defmodule Dobar.Conversation.Manager do
   #
   # interface
 
-  def evaluate_intention(%Intent{} = intent) do
+  def evaluate_intention(intent) do
     GenServer.call @name, {:evaluate, intent}
   end
 
@@ -45,10 +45,10 @@ defmodule Dobar.Conversation.Manager do
     IO.puts "expected exists - continue dialog"
 
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
-    expected = apply intention, :process_expected,
+    processed = intention |> apply(:process_expected,
       [expected.capability, conversation.intent, intent]
 
-    case expected do
+    case processed do
       {:continue, intent} ->
         apply(intention, :process_next, [intent]) |> next_capability(intent)
       {:halt, reason} ->

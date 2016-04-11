@@ -4,8 +4,7 @@ defmodule Dobar.Conversation.Intention do
   represents a conversation tree.
 
   Its roles is to process the capabilities and respond accordingly when
-  theres a need for the next dialog capability or the expected capability
-  intent process.
+  theres a need for the next dialog capability or the expected one.
   """
 
   alias Dobar.Conversation.Model.Capability
@@ -28,7 +27,7 @@ defmodule Dobar.Conversation.Intention do
         next_capability(Enum.reverse(@capabilities), intent)
       end
 
-      def process_expected(expected, %Intent{} = old_intent, %Intent{} = new_intent) do
+      def process_expected(expected, old_intent, new_intent) do
         expected_capability(expected, old_intent, new_intent)
       end
 
@@ -40,6 +39,7 @@ defmodule Dobar.Conversation.Intention do
             {:error, "cannot find a capability willing to become the next dialog"}
         end
       end
+
       defp next_capability([capability | tail], intent) do
         become_next = apply(capability.module, :become_next, [intent])
         case become_next do
