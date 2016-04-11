@@ -1,6 +1,3 @@
-#
-# DEPRECATED
-#
 defmodule Dobar.Intent.Resolver do
   @moduledoc """
   Has the responsability to evaluate an input to an intent using the capability module.
