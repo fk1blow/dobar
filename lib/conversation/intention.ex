@@ -1,5 +1,13 @@
 defmodule Dobar.Conversation.Intention do
   @moduledoc """
+  ## TODO
+  
+  1. 'draw' a more simpler description of the `Intention` protocol
+  2. add fucking typespecs to `process_next` and `process_expected`
+  3. define the api of the this protocol(`process_next` and `process_expected`
+  
+  ## Description
+  
   This is the protocol that basically defines an intention which, by itself,
   represents a conversation tree.
 
