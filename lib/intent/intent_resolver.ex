@@ -1,3 +1,6 @@
+#
+# DEPRECATED
+#
 defmodule Dobar.Intent.Resolver do
   @moduledoc """
   Has the responsability to evaluate an input to an intent using the capability module.
@@ -9,7 +12,8 @@ defmodule Dobar.Intent.Resolver do
   use GenServer
 
   alias Dobar.Intent.Evaluator, as: IntentEvaluator
-  alias Dobar.Kapyz.Dispatcher, as: KapyzDispatcher
+  # TODO: replace with Intention manager or something
+  # alias Dobar.Kapyz.Dispatcher, as: KapyzDispatcher
   alias Dobar.Model.Input.Text, as: TextInput
   alias Dobar.Model.Input.Text, as: AudioInput
   alias Dobar.Model.Capability
@@ -52,7 +56,8 @@ defmodule Dobar.Intent.Resolver do
   end
 
   def handle_cast({:evaluate_intent, intent}, state) do
-    KapyzDispatcher.evaluate_intent state.intent, intent
+    # TODO: replace with Intention manager or something
+    # KapyzDispatcher.evaluate_intent state.intent, intent
     {:noreply, state}
   end
 

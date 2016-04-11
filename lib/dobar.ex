@@ -13,8 +13,6 @@ defmodule Dobar do
       supervisor(Dobar.Repo, []),
       # start the interface supervisor
       supervisor(Dobar.Interface, []),
-      # start capability module
-      supervisor(Dobar.Kapyz, []),
       # start the intention supervisor
       supervisor(Dobar.Intent, []),
       # start the conversation supervisor
