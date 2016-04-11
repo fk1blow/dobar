@@ -46,7 +46,7 @@ defmodule Dobar.Conversation.Manager do
 
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     processed = intention |> apply(:process_expected,
-      [expected.capability, conversation.intent, intent]
+      [expected.capability, conversation.intent, intent])
 
     case processed do
       {:continue, intent} ->
