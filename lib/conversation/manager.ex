@@ -4,6 +4,7 @@ defmodule Dobar.Conversation.Manager do
   alias Dobar.Conversation.Model.Conversation
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
+  alias Dobar.Conversation.ConversationHandler
 
   @name __MODULE__
 
@@ -12,6 +13,7 @@ defmodule Dobar.Conversation.Manager do
   end
 
   def init(_) do
+    GenEvent.add_handler :intention_events, ConversationHandler, nil
     {:ok, %Conversation{}}
   end
 
@@ -19,22 +21,50 @@ defmodule Dobar.Conversation.Manager do
   # interface
 
   def evaluate_intention(intent) do
-    GenServer.call @name, {:evaluate, intent}
+    GenServer.cast @name, {:evaluate, intent}
   end
 
   #
   # callbacks
 
-  def handle_call({:evaluate, intent}, _from, %Conversation{} = conversation) do
-    conversation = process_capability(intent, conversation)
-    {:reply, nil, conversation}
+  def handle_cast({:evaluate, intent}, %Conversation{} = conversation) do
+    conversation = started(conversation)
+    |> confident(intent)
+    |> evaluate_intent(conversation)
+    {:noreply, conversation}
   end
 
   # private
   #
 
+  defp started(%Conversation{expected: %{capability: nil}} = conversation) do
+    {:not_started, conversation}
+  end
+  defp started(%Conversation{} = conversation) do
+    {:started, conversation}
+  end
+
+  defp confident({:started, _}, intent), do: {:confident, intent}
+  defp confident({:not_started, _}, intent) do
+    case intent do
+      %Intent{confidence: confidence} when confidence >= 0.5 ->
+        {:confident, intent}
+      _ ->
+        {:unconfident, intent}
+    end
+  end
+
+  defp evaluate_intent({:confident, intent}, conversation) do
+    process_capability intent, conversation
+  end
+  defp evaluate_intent({:unconfident, intent}, conversation) do
+    GenEvent.notify :intention_events, {:intention_unconfident, intent}
+    %Conversation{}
+  end
+
   defp process_capability(intent, %Conversation{expected: %{capability: nil}}) do
-    IO.puts "expected capability is nil - start a new conversation"
+    GenEvent.notify :intention_events, {:conversation_start, intent}
+
     String.to_atom(intent.name)
     |> IntentionProvider.intention
     |> apply(:process_next, [intent])
@@ -42,8 +72,6 @@ defmodule Dobar.Conversation.Manager do
   end
 
   defp process_capability(intent, %Conversation{expected: expected} = conversation) do
-    IO.puts "expected exists - continue dialog"
-
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     processed = intention |> apply(:process_expected,
       [expected.capability, conversation.intent, intent])
@@ -52,24 +80,23 @@ defmodule Dobar.Conversation.Manager do
       {:continue, intent} ->
         apply(intention, :process_next, [intent]) |> next_capability(intent)
       {:halt, reason} ->
-        IO.puts "### halting because: #{reason}"
+        GenEvent.notify :intention_events, {:conversation_halt, reason}
         conversation
-      {:error, reason} ->
-        raise reason
     end
   end
 
   defp next_capability(next, intent) do
     case next do
       {:next, reply, capability} ->
-        IO.puts "### reply from #{capability.name} is: #{reply}"
+        GenEvent.notify :intention_events, {:conversation_reply, reply}
         %Conversation{expected: %{capability: capability, intention: intent.name},
                       intent: intent}
-      {:ended, reply} ->
-        IO.puts "fuuuuuuck, this is it: #{reply}"
+      {:ended, reply, intent} ->
+        GenEvent.notify :intention_events, {:conversation_end, reply, intent}
         %Conversation{}
       {:error, reason} ->
-        raise reason
+        GenEvent.notify :intention_events, {:conversation_error, reason}
+        %Conversation{}
     end
   end
 end

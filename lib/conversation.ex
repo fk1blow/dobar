@@ -7,9 +7,10 @@ defmodule Dobar.Conversation do
 
   def init(_) do
     children = [
+      worker(GenEvent, [[name: :intention_events]]),
       worker(Dobar.Conversation.Manager, []),
     ]
 
-    supervise children, strategy: :one_for_one
+    supervise children, strategy: :one_for_all
   end
 end

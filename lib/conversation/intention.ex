@@ -44,7 +44,7 @@ defmodule Dobar.Conversation.Intention do
       defp next_capability([], intent) do
         case ending_capability(intent) do
           {:ok, reply} ->
-            {:ended, reply}
+            {:ended, reply, intent}
           _ ->
             {:error, "cannot find a capability willing to become the next dialog"}
         end
@@ -63,7 +63,6 @@ defmodule Dobar.Conversation.Intention do
         case expected do
           {:ok, intent} -> {:continue, intent}
           {:halt, reason} -> {:halt, reason}
-          _ -> {:error, "cannot process the expected capability"}
         end
       end
 
