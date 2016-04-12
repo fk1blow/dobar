@@ -1,6 +1,7 @@
 defmodule Dobar.Conversation.Intention.Provider do
   alias Dobar.Conversation.Intention
-
+  
+  # TODO: hardcoded and should be done dinamically
   @intentions send_message: Intention.SendMessage
 
   def intention(name) when is_atom(name), do: @intentions[name]
