@@ -23,7 +23,7 @@ defmodule Dobar.Conversation.Intention do
     quote do
       import Dobar.Conversation.Intention
 
-      @capabilities []
+      @topic_list []
       @ending_message "ok!"
       @before_compile Dobar.Conversation.Intention
     end
@@ -34,7 +34,7 @@ defmodule Dobar.Conversation.Intention do
 
     quote do
       def process_next(%Intent{} = intent) do
-        next_capability(Enum.reverse(@capabilities), intent)
+        next_capability(Enum.reverse(@topic_list), intent)
       end
 
       def process_expected(expected, old_intent, new_intent) do
@@ -65,12 +65,12 @@ defmodule Dobar.Conversation.Intention do
     end
   end
 
-  defmacro capability(name, entity: entity, module: module) do
+  defmacro topic(name, entity: entity, module: module) do
     quote do
       {module, _} = Code.eval_quoted(unquote module)
       capability = %Capability{name: unquote(name), module: module,
         entitiy: unquote(entity)}
-      @capabilities [capability | @capabilities]
+      @topic_list [capability | @topic_list]
     end
   end
 end
