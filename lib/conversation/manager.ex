@@ -37,7 +37,7 @@ defmodule Dobar.Conversation.Manager do
   # private
   #
 
-  defp started(%Conversation{expected: %{capability: nil}} = conversation) do
+  defp started(%Conversation{expected: %{topic: nil}} = conversation) do
     {:not_started, conversation}
   end
   defp started(%Conversation{} = conversation) do
@@ -55,41 +55,41 @@ defmodule Dobar.Conversation.Manager do
   end
 
   defp evaluate_intent({:confident, intent}, conversation) do
-    process_capability intent, conversation
+    process_topic intent, conversation
   end
   defp evaluate_intent({:unconfident, intent}, conversation) do
     GenEvent.notify :intention_events, {:intention_unconfident, intent}
     %Conversation{}
   end
 
-  defp process_capability(intent, %Conversation{expected: %{capability: nil}}) do
+  defp process_topic(intent, %Conversation{expected: %{topic: nil}}) do
     GenEvent.notify :intention_events, {:conversation_start, intent}
 
     String.to_atom(intent.name)
     |> IntentionProvider.intention
     |> apply(:process_next, [intent])
-    |> next_capability(intent)
+    |> next_topic(intent)
   end
 
-  defp process_capability(intent, %Conversation{expected: expected} = conversation) do
+  defp process_topic(intent, %Conversation{expected: expected} = conversation) do
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     processed = intention |> apply(:process_expected,
-      [expected.capability, conversation.intent, intent])
+      [expected.topic, conversation.intent, intent])
 
     case processed do
       {:continue, intent} ->
-        apply(intention, :process_next, [intent]) |> next_capability(intent)
+        apply(intention, :process_next, [intent]) |> next_topic(intent)
       {:halt, reason} ->
         GenEvent.notify :intention_events, {:conversation_halt, reason}
         conversation
     end
   end
 
-  defp next_capability(next, intent) do
+  defp next_topic(next, intent) do
     case next do
-      {:next, reply, capability} ->
+      {:next, reply, topic} ->
         GenEvent.notify :intention_events, {:conversation_reply, reply}
-        %Conversation{expected: %{capability: capability, intention: intent.name},
+        %Conversation{expected: %{topic: topic, intention: intent.name},
                       intent: intent}
       {:ended, reply, intent} ->
         GenEvent.notify :intention_events, {:conversation_end, reply, intent}
