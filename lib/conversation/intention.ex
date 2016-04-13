@@ -24,7 +24,7 @@ defmodule Dobar.Conversation.Intention do
       import Dobar.Conversation.Intention
 
       @capabilities []
-      @enderbility nil
+      @ending_message "ok!"
       @before_compile Dobar.Conversation.Intention
     end
   end
@@ -41,15 +41,7 @@ defmodule Dobar.Conversation.Intention do
         expected_capability(expected, old_intent, new_intent)
       end
 
-      defp next_capability([], intent) do
-        case ending_capability(intent) do
-          {:ok, reply} ->
-            {:ended, reply, intent}
-          _ ->
-            {:error, "cannot find a capability willing to become the next dialog"}
-        end
-      end
-
+      defp next_capability([], intent), do: {:ended, @ending_message, intent}
       defp next_capability([capability | tail], intent) do
         become_next = apply(capability.module, :become_next, [intent])
         case become_next do
@@ -79,14 +71,6 @@ defmodule Dobar.Conversation.Intention do
       capability = %Capability{name: unquote(name), module: module,
         entitiy: unquote(entity)}
       @capabilities [capability | @capabilities]
-    end
-  end
-
-  defmacro ending(name, module: module) do
-    quote do
-      {module, _} = Code.eval_quoted(unquote module)
-      capability = %Capability{name: unquote(name), module: module}
-      @enderbility capability
     end
   end
 end
