@@ -1,13 +1,5 @@
 defmodule Dobar.Conversation.Intention do
   @moduledoc """
-  ## TODO
-
-  1. 'draw' a more simpler description of the `Intention` protocol
-  2. add fucking typespecs to `process_next` and `process_expected`
-  3. define the api of the this protocol(`process_next` and `process_expected`
-
-  ## Description
-
   This is the protocol that basically defines an intention, which represents a
   preestablished command that dobar might understand.
   It usually consists of entities(frames, slots) that have to be completed
@@ -56,11 +48,6 @@ defmodule Dobar.Conversation.Intention do
           {:ok, intent} -> {:continue, intent}
           {:halt, reason} -> {:halt, reason}
         end
-      end
-
-      defp ending_capability(intent) do
-        module = @enderbility.module
-        apply(module, :handle_ending, [intent])
       end
     end
   end
