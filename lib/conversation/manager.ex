@@ -27,7 +27,7 @@ defmodule Dobar.Conversation.Manager do
   #
   # callbacks
 
-  def handle_cast({:evaluate, intent}, %Conversation{} = conversation) do
+  def handle_cast({:evaluate, intent}, conversation) do
     conversation = started(conversation)
     |> validate_confidence(intent)
     |> evaluate_intent(conversation)
@@ -40,9 +40,7 @@ defmodule Dobar.Conversation.Manager do
   defp started(%Conversation{expected: %{topic: nil}} = conversation) do
     {:not_started, conversation}
   end
-  defp started(%Conversation{} = conversation) do
-    {:started, conversation}
-  end
+  defp started(conversation), do: {:started, conversation}
 
   defp validate_confidence({:started, _}, intent), do: {:confident, intent}
   defp validate_confidence({:not_started, _}, intent) do
@@ -64,13 +62,11 @@ defmodule Dobar.Conversation.Manager do
 
   defp expected_topic(intent, %Conversation{expected: %{topic: nil}}) do
     GenEvent.notify :intention_events, {:conversation_start, intent}
-
     String.to_atom(intent.name)
     |> IntentionProvider.intention
     |> apply(:process_next, [intent])
     |> next_topic(intent)
   end
-
   defp expected_topic(intent, %Conversation{expected: expected} = conversation) do
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     processed = intention |> apply(:process_expected,
