@@ -26,23 +26,23 @@ defmodule Dobar.Conversation.Intention do
 
     quote do
       def process_next(%Intent{} = intent) do
-        next_capability(Enum.reverse(@topic_list), intent)
+        next_topic(Enum.reverse(@topic_list), intent)
       end
 
       def process_expected(expected, old_intent, new_intent) do
-        expected_capability(expected, old_intent, new_intent)
+        expected_topic(expected, old_intent, new_intent)
       end
 
-      defp next_capability([], intent), do: {:ended, @ending_message, intent}
-      defp next_capability([capability | tail], intent) do
+      defp next_topic([], intent), do: {:ended, @ending_message, intent}
+      defp next_topic([capability | tail], intent) do
         become_next = apply(capability.module, :become_next, [intent])
         case become_next do
           {:ok, reply} -> {:next, reply, capability}
-          _ -> next_capability(tail, intent)
+          _ -> next_topic(tail, intent)
         end
       end
 
-      defp expected_capability(%Capability{module: module}, old_intent, new_intent) do
+      defp expected_topic(%Capability{module: module}, old_intent, new_intent) do
         expected = apply(module, :handle_expected, [old_intent, new_intent])
         case expected do
           {:ok, intent} -> {:continue, intent}

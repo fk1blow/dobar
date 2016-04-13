@@ -29,7 +29,7 @@ defmodule Dobar.Conversation.Manager do
 
   def handle_cast({:evaluate, intent}, %Conversation{} = conversation) do
     conversation = started(conversation)
-    |> confident(intent)
+    |> validate_confidence(intent)
     |> evaluate_intent(conversation)
     {:noreply, conversation}
   end
@@ -44,8 +44,8 @@ defmodule Dobar.Conversation.Manager do
     {:started, conversation}
   end
 
-  defp confident({:started, _}, intent), do: {:confident, intent}
-  defp confident({:not_started, _}, intent) do
+  defp validate_confidence({:started, _}, intent), do: {:confident, intent}
+  defp validate_confidence({:not_started, _}, intent) do
     case intent do
       %Intent{confidence: confidence} when confidence >= 0.5 ->
         {:confident, intent}
@@ -55,14 +55,14 @@ defmodule Dobar.Conversation.Manager do
   end
 
   defp evaluate_intent({:confident, intent}, conversation) do
-    process_topic intent, conversation
+    expected_topic intent, conversation
   end
-  defp evaluate_intent({:unconfident, intent}, conversation) do
+  defp evaluate_intent({:unconfident, intent}, _conversation) do
     GenEvent.notify :intention_events, {:intention_unconfident, intent}
     %Conversation{}
   end
 
-  defp process_topic(intent, %Conversation{expected: %{topic: nil}}) do
+  defp expected_topic(intent, %Conversation{expected: %{topic: nil}}) do
     GenEvent.notify :intention_events, {:conversation_start, intent}
 
     String.to_atom(intent.name)
@@ -71,7 +71,7 @@ defmodule Dobar.Conversation.Manager do
     |> next_topic(intent)
   end
 
-  defp process_topic(intent, %Conversation{expected: expected} = conversation) do
+  defp expected_topic(intent, %Conversation{expected: expected} = conversation) do
     intention = String.to_atom(expected.intention) |> IntentionProvider.intention
     processed = intention |> apply(:process_expected,
       [expected.topic, conversation.intent, intent])
