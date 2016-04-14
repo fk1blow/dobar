@@ -15,6 +15,8 @@ defmodule Dobar.Conversation.Intention do
     quote do
       import Dobar.Conversation.Intention
 
+      @intentions Map.new
+
       @topic_list []
       @ending_message "ok!"
       @before_compile Dobar.Conversation.Intention
@@ -52,12 +54,20 @@ defmodule Dobar.Conversation.Intention do
     end
   end
 
-  defmacro topic(name, entity: entity, module: module) do
+  defmacro intention(name, do: block) do
+    extract_topic = fn(topic) ->
+      {hd(topic), Enum.flat_map(tl(topic), fn(x) -> x end)}
+    end
+
+    topics = case block do
+      {:__block__, _, topics} ->
+        Enum.map(topics, fn(topic) -> extract_topic.(elem topic, 2) end)
+      {:topic, _, topic} ->
+        [extract_topic.(topic)]
+    end
+
     quote do
-      {module, _} = Code.eval_quoted(unquote module)
-      capability = %Capability{name: unquote(name), module: module,
-        entitiy: unquote(entity)}
-      @topic_list [capability | @topic_list]
+      @intentions Map.put @intentions, unquote(name), unquote(topics)
     end
   end
 end
