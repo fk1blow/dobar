@@ -9,6 +9,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def text_query(message, context) do
     case generate_request(message, context) do
       {:ok, request} ->
+        IO.puts "request: #{inspect request}"
         HTTPoison.get(request[:url], request[:headers])
         |> handle_response
         |> parse_response
@@ -35,20 +36,12 @@ defmodule Dobar.Intent.Evaluator.Wit do
   end
 
   def generate_request(message, context) when is_bitstring message do
-    if is_map(context) do
-      context = Poison.encode(context)
-      |> (fn({:ok, r}) -> URI.encode(r) end).()
-      |> (fn(t) -> String.replace(t, ":", "%3A") end).()
-      |> (fn(t) -> "&context=#{t}" end).()
-    else
-      context = ""
-    end
-    URI.encode(message) |> fn msg -> msg <> context end.() |> build_request
+    URI.encode(message) |> build_request
   end
   def generate_request(_, _), do: {:error, "the message must be a string"}
 
   defp build_request(message) do
-    url = "https://api.wit.ai/message?v=20141022&q=#{message}"
+    url = "https://api.wit.ai/message?v=20160516&q=#{message}"
     IO.puts "wit q: #{message}"
     config = Application.get_env(:dobar, Intent.Evaluator)
     headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
