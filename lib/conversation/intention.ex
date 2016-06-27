@@ -19,6 +19,7 @@ defmodule Dobar.Conversation.Intention do
 
       @topic_list []
       @ending_message "ok!"
+
       @before_compile Dobar.Conversation.Intention
     end
   end
@@ -60,14 +61,14 @@ defmodule Dobar.Conversation.Intention do
     end
 
     topics = case block do
-      {:__block__, _, topics} ->
-        Enum.map(topics, fn(topic) -> extract_topic.(elem topic, 2) end)
+      {:__block__, _, elements} ->
+        Enum.map(elements, fn(topic) -> extract_topic.(elem topic, 2) end)
       {:topic, _, topic} ->
         [extract_topic.(topic)]
     end
 
     quote do
-      @intentions Map.put @intentions, unquote(name), unquote(topics)
+      @intentions Map.put(@intentions, unquote(name), unquote(topics))
     end
   end
 end

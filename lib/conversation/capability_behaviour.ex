@@ -1,4 +1,6 @@
-defmodule Dobar.Conversation.CapabilityBehaviour do
+defmodule Dobar.Conversation.TopicBehaviour do
+  # TODO: this should become deprecated - the function will be directly implmented
+  # by a single module, the `Conversation.Topic` module
   @moduledoc """
   this protocol defines the two functions that may be implemented by a capability,
   in order to fulfill its features - `become_starter` and `become_next`.

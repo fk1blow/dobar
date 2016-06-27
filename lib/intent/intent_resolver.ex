@@ -1,5 +1,10 @@
 defmodule Dobar.Intent.Resolver do
   @moduledoc """
+
+  ## TODO
+  Massive refactoring should be adde to this module
+
+  ## About
   Has the responsability to evaluate an input to an intent using the capability module.
   It provides 3 api functions for each step - user input, intent evaluation and
   capability evaluation.
@@ -9,10 +14,8 @@ defmodule Dobar.Intent.Resolver do
   use GenServer
 
   alias Dobar.Intent.Evaluator, as: IntentEvaluator
-  # TODO: replace with Intention manager or something
-  # alias Dobar.Kapyz.Dispatcher, as: KapyzDispatcher
   alias Dobar.Model.Input.Text, as: TextInput
-  alias Dobar.Model.Input.Text, as: AudioInput
+  alias Dobar.Model.Input.Audio, as: AudioInput
   alias Dobar.Model.Capability
   alias Dobar.Spub.IntentHandler
 
