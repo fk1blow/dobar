@@ -1,20 +1,7 @@
 defmodule Dobar.Conversation.Intention do
-  @moduledoc """
-  This is the protocol that basically defines an intention, which represents a
-  preestablished command that dobar might understand.
-  It usually consists of entities(frames, slots) that have to be completed
-  in order to consider the intention resolved - user gets the command's answer.
-
-  Its roles is to process the capabilities and respond accordingly when
-  theres a need for the next dialog capability or the expected one.
-  """
-
-  alias Dobar.Conversation.Model.Capability
-
   defmacro __using__(_opts) do
     quote do
       import Dobar.Conversation.Intention
-
       @intentions Map.new
       @topic_list []
     end
