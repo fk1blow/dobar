@@ -1,6 +1,7 @@
 defmodule Dobar.Conversation.Slot do
   alias Dobar.Model.Intent
   alias Dobar.Model.Dialog
+  alias Dobar.Conversation.Intention.Provider
 
   @doc """
   It filters out the slots that don't have the `:entity` key
@@ -38,7 +39,17 @@ defmodule Dobar.Conversation.Slot do
     end)
   end
 
+  @doc """
+  It sorts the slots by priority then selects the first item in the list
+  """
   def first_by_priority(entity_slots) do
     slots_by_priority(entity_slots) |> List.first
+  end
+
+  def next_from_dialog(%Intent{} = intent, %Dialog{} = dialog) do
+    intent_name = String.to_atom(intent.name)
+    intent_def = Provider.intention(intent_name)
+    entity_slots = only_entities(intent_def[intent_name]) |> slots_by_priority
+    slots_not_filled(dialog, entity_slots) |> first_by_priority
   end
 end

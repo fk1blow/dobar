@@ -23,17 +23,7 @@ defmodule Dobar.Conversation.Root do
   def handle_cast({:evaluate_intent, intent}, nil) do
     IO.puts "start of the dialog"
 
-    dialog = %Dialog{slots: from_intent(intent)}
-
-    intent_name = String.to_atom(intent.name)
-    intent_def = Provider.intention(intent_name)
-
-    entity_slots = only_entities(intent_def[intent_name]) |> slots_by_priority
-    next_slot = slots_not_filled(dialog, entity_slots) |> first_by_priority
-
-    Topic.start_topic(next_slot) |> start_dialog
-
-    IO.puts "dialog: #{inspect dialog}"
+    {:ok, dialog} = begin_dialog(intent)
 
     {:noreply, dialog}
   end
@@ -41,38 +31,34 @@ defmodule Dobar.Conversation.Root do
   def handle_cast({:evaluate_intent, intent}, %Dialog{slots: slots} = dialog) do
     IO.puts "in the middle of the dialog"
 
-    continue = Topic.end_topic(intent.entities) |> continue_dialog(intent, dialog)
-    case continue do
+    topic_answer = Topic.end_topic(intent.entities)
+
+    case continue_dialog(topic_answer, intent, dialog) do
       {:ok, dialog} ->
         {:noreply, dialog}
       {:error, reason} ->
         {:noreply, dialog}
     end
-
-    # dialog = %Dialog{slots: Map.merge(dialog.slots, from_intent(intent))}
-    # {:noreply, dialog}
   end
 
-  defp start_dialog({:ok, entity}) do
+  defp output_dialog({:ok, entity}, %Dialog{} = dialog) do
     IO.puts "should output question for: #{inspect entity}"
   end
-  defp start_dialog({:error, reason}) do
-    IO.puts "error outputting question: #{inspect reason}"
+  defp output_dialog({:ended, reason}, %Dialog{} = dialog) do
+    IO.puts "dialog ended: #{inspect dialog}"
   end
 
-  defp continue_dialog({:ok, x}, intent, dialog) do
-    intent_name = String.to_atom(intent.name)
-    intent_def = Provider.intention(intent_name)
+  defp begin_dialog(intent) do
+    dialog = %Dialog{slots: from_intent(intent)}
+    next_slot = next_from_dialog intent, dialog
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
+    {:ok, dialog}
+  end
 
-    entity_slots = only_entities(intent_def[intent_name]) |> slots_by_priority
+  defp continue_dialog({:ok, _}, intent, dialog) do
     dialog = %Dialog{slots: Map.merge(dialog.slots, from_intent(intent))}
-    next_slot = slots_not_filled(dialog, entity_slots) |> first_by_priority
-
-    Topic.start_topic(next_slot) |> start_dialog
-
-    IO.puts "next dialog: #{inspect dialog}"
-    IO.puts "next_slot: #{inspect next_slot}"
-
+    next_slot = next_from_dialog intent, dialog
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
     {:ok, dialog}
   end
   defp continue_dialog({:error, reason}, intent, dialog) do

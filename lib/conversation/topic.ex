@@ -18,7 +18,7 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call({:start_topic, nil}, _from, nil) do
-    {:reply, {:error, "slots already filled"}, nil}
+    {:reply, {:ended, "slots already filled"}, nil}
   end
   def handle_call({:start_topic, slot}, _from, nil) do
     {:reply, {:ok, slot}, slot}
