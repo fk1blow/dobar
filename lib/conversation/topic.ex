@@ -25,11 +25,7 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call({:end_topic, answer}, _from, state) do
-    IO.puts "topic answer: #{inspect answer}"
-    IO.puts "topic state: #{inspect state}"
-
     slot_key = String.to_atom(elem(state, 1).entity)
-
     cond do
       Map.has_key?(answer, slot_key) == true ->
         {:reply, {:ok, answer}, nil}

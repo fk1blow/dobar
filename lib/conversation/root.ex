@@ -41,10 +41,16 @@ defmodule Dobar.Conversation.Root do
   def handle_cast({:evaluate_intent, intent}, %Dialog{slots: slots} = dialog) do
     IO.puts "in the middle of the dialog"
 
-    Topic.end_topic(intent.entities) |> continue_dialog(intent, dialog)
-    dialog = %Dialog{slots: Map.merge(dialog.slots, from_intent(intent))}
+    continue = Topic.end_topic(intent.entities) |> continue_dialog(intent, dialog)
+    case continue do
+      {:ok, dialog} ->
+        {:noreply, dialog}
+      {:error, reason} ->
+        {:noreply, dialog}
+    end
 
-    {:noreply, dialog}
+    # dialog = %Dialog{slots: Map.merge(dialog.slots, from_intent(intent))}
+    # {:noreply, dialog}
   end
 
   defp start_dialog({:ok, entity}) do
@@ -66,8 +72,11 @@ defmodule Dobar.Conversation.Root do
 
     IO.puts "next dialog: #{inspect dialog}"
     IO.puts "next_slot: #{inspect next_slot}"
+
+    {:ok, dialog}
   end
   defp continue_dialog({:error, reason}, intent, dialog) do
-
+    IO.puts "heeeeeeerrrrrrreeeeeeeeeee"
+    {:error, "herpdepr"}
   end
 end
