@@ -21,30 +21,24 @@ defmodule Dobar.Conversation.Root do
   end
 
   def handle_cast({:evaluate_intent, intent}, nil) do
-    IO.puts "start of the dialog"
-
     {:ok, dialog} = begin_dialog(intent)
-
     {:noreply, dialog}
   end
 
-  def handle_cast({:evaluate_intent, intent}, %Dialog{slots: slots} = dialog) do
-    IO.puts "in the middle of the dialog"
-
+  def handle_cast({:evaluate_intent, intent}, %Dialog{} = dialog) do
     topic_answer = Topic.end_topic(intent.entities)
-
     case continue_dialog(topic_answer, intent, dialog) do
       {:ok, dialog} ->
         {:noreply, dialog}
-      {:error, reason} ->
+      {:error, _reason} ->
         {:noreply, dialog}
     end
   end
 
-  defp output_dialog({:ok, entity}, %Dialog{} = dialog) do
+  defp output_dialog({:ok, entity}, _dialog) do
     IO.puts "should output question for: #{inspect entity}"
   end
-  defp output_dialog({:ended, reason}, %Dialog{} = dialog) do
+  defp output_dialog({:ended, _reason}, %Dialog{} = dialog) do
     IO.puts "dialog ended: #{inspect dialog}"
   end
 
