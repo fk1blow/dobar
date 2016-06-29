@@ -9,8 +9,8 @@ defmodule Dobar.Intent.Evaluator do
 
   alias Dobar.Model.Intent
 
-  def evaluate_input({:text, input, context}) do
-    intent = apply(intention_api, :text_query, [input, context])
+  def evaluate_input({:text, input}) do
+    call_intention_api(input)
     |> parse_intention
     |> notify_handlers
   end
@@ -29,8 +29,10 @@ defmodule Dobar.Intent.Evaluator do
     GenEvent.notify(:intent_events, {:intention_evaluated, intent})
   end
 
-  defp intention_api do
+  defp call_intention_api(input) do
     evaluator = Application.get_env(:dobar, Intent.Evaluator)
-    evaluator[:use_wrapper] || Dobar.Intent.Evaluator.Wit
+    api = evaluator[:use_wrapper] || Dobar.Intent.Evaluator.Wit
+    # "nil" represents the context wich is deprecated
+    apply(api, :text_query, [input, nil])
   end
 end

@@ -32,12 +32,5 @@ defmodule Dobar.Spub.IntentHandler do
     Dobar.Intent.Resolver.evaluate_intent intent
     {:ok, nil}
   end
-
-  # triggered from `Kapyz.Capability.SendMessage`
-  def handle_event({:capability_evaluated, %Capability{} = capability}, _state) do
-    Logger.info "capability was evaluated to: #{inspect capability}"
-    Dobar.Intent.Resolver.evaluate_capability capability
-    {:ok, nil}
-  end
 end
 

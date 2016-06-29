@@ -7,8 +7,8 @@ defmodule Dobar.Conversation do
 
   def init(_) do
     children = [
-      worker(GenEvent, [[name: :intention_events]]),
-      worker(Dobar.Conversation.Manager, []),
+      worker(Dobar.Conversation.Root, []),
+      worker(Dobar.Conversation.Topic, []),
     ]
 
     supervise children, strategy: :one_for_all

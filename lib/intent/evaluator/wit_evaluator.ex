@@ -9,11 +9,9 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def text_query(message, context) do
     case generate_request(message, context) do
       {:ok, request} ->
-        IO.puts "request: #{inspect request}"
         HTTPoison.get(request[:url], request[:headers])
         |> handle_response
         |> parse_response
-
       {:error, message} -> {:error, message}
     end
   end
@@ -42,7 +40,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   defp build_request(message) do
     url = "https://api.wit.ai/message?v=20160516&q=#{message}"
-    IO.puts "wit q: #{message}"
     config = Application.get_env(:dobar, Intent.Evaluator)
     headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
     {:ok, %{url: url, headers: headers}}

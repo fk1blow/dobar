@@ -1,9 +1,17 @@
-defmodule Dobar.Conversation.Intention do
+defmodule Dobar.Conversation.IntentionBehaviour do
   defmacro __using__(_opts) do
     quote do
-      import Dobar.Conversation.Intention
+      import Dobar.Conversation.IntentionBehaviour
       @intentions Map.new
       @topic_list []
+
+      @before_compile Dobar.Conversation.IntentionBehaviour
+    end
+  end
+
+  defmacro __before_compile__(_env) do
+    quote do
+      def intentions, do: @intentions
     end
   end
 

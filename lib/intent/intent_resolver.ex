@@ -1,16 +1,4 @@
 defmodule Dobar.Intent.Resolver do
-  @moduledoc """
-
-  ## TODO
-  Massive refactoring should be adde to this module
-
-  ## About
-  Has the responsability to evaluate an input to an intent using the capability module.
-  It provides 3 api functions for each step - user input, intent evaluation and
-  capability evaluation.
-  This module (Intent) isn't responsible for the output that must reach the user!
-  """
-
   use GenServer
 
   alias Dobar.Intent.Evaluator, as: IntentEvaluator
@@ -27,7 +15,7 @@ defmodule Dobar.Intent.Resolver do
 
   def init(_) do
     GenEvent.add_handler(:intent_events, IntentHandler, nil)
-    {:ok, %Capability{}}
+    {:ok, nil}
   end
 
   def evaluate_input(%TextInput{data: input}) do
@@ -37,31 +25,17 @@ defmodule Dobar.Intent.Resolver do
     raise "cannot evaluate audio input, just yet!"
   end
 
-  # called from `Spub.IntentHandler`
   def evaluate_intent(intent) do
     GenServer.cast @name, {:evaluate_intent, intent}
   end
 
-  # called from `Spub.IntentHandler`
-  def evaluate_capability(capability) do
-    GenServer.cast @name, {:evaluate_capability, capability}
+  def handle_cast({:evaluate_input, input}, _) do
+    IntentEvaluator.evaluate_input {:text, input}
+    {:noreply, nil}
   end
 
-  # callback functions
-  #
-
-  def handle_cast({:evaluate_input, input}, state) do
-    IntentEvaluator.evaluate_input {:text, input, state.context}
-    {:noreply, state}
-  end
-
-  def handle_cast({:evaluate_intent, intent}, state) do
-    # TODO: replace with Intention manager or something
-    # KapyzDispatcher.evaluate_intent state.intent, intent
-    {:noreply, state}
-  end
-
-  def handle_cast({:evaluate_capability, %Capability{} = capability}, _) do
-    {:noreply, capability}
+  def handle_cast({:evaluate_intent, intent}, _) do
+    Dobar.Conversation.Root.evaluate_intent intent
+    {:noreply, nil}
   end
 end
