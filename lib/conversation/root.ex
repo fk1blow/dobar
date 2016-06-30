@@ -25,7 +25,6 @@ defmodule Dobar.Conversation.Root do
   def handle_cast({:evaluate_intent, intent}, nil) do
     IO.puts "begin dialog for intent: #{inspect intent}"
     {:ok, dialog, next_slot} = begin_dialog(intent)
-    # IO.puts "next_slot: #{inspect next_slot}"
     {:noreply, {dialog, next_slot}}
   end
   def handle_cast({:evaluate_intent, intent}, {%Dialog{meta: nil} = dialog, slot}) do
