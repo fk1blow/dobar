@@ -20,7 +20,7 @@ defmodule Dobar.Conversation.Topic do
   def handle_call({:start_topic, nil}, _from, nil) do
     {:reply, {:ended, "slots already filled"}, nil}
   end
-  def handle_call({:start_topic, slot}, _from, nil) do
+  def handle_call({:start_topic, slot}, _from, _) do
     {:reply, {:ok, slot}, slot}
   end
 
@@ -28,9 +28,9 @@ defmodule Dobar.Conversation.Topic do
     slot_key = String.to_atom(elem(state, 1).entity)
     cond do
       Map.has_key?(answer, slot_key) == true ->
-        {:reply, {:ok, answer}, nil}
+        {:reply, {:ok, answer, slot_key}, nil}
       true ->
-        {:reply, {:error, "answer doesn't match"}, state}
+        {:reply, {:error, "no match for key #{inspect slot_key}", slot_key}, state}
     end
   end
 end

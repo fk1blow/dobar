@@ -1,3 +1,3 @@
 defmodule Dobar.Model.Dialog do
-  defstruct slots: nil
+  defstruct intent_name: nil, slots: nil, meta: nil
 end

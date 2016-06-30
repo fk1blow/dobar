@@ -46,8 +46,12 @@ defmodule Dobar.Conversation.Slot do
     slots_by_priority(entity_slots) |> List.first
   end
 
+  @doc """
+  Based on the intent and the dialog, it returns the slot that isn't filled and
+  which has the highest prio
+  """
   def next_from_dialog(%Intent{} = intent, %Dialog{} = dialog) do
-    intent_name = String.to_atom(intent.name)
+    intent_name = String.to_atom(dialog.intent_name)
     intent_def = Provider.intention(intent_name)
     entity_slots = only_entities(intent_def[intent_name]) |> slots_by_priority
     slots_not_filled(dialog, entity_slots) |> first_by_priority
