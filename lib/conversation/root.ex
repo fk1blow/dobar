@@ -76,10 +76,7 @@ defmodule Dobar.Conversation.Root do
   defp continue_dialog({:error, reason, data}, intent, dialog) do
     IO.puts "cannot continue because #{inspect reason}"
     IO.puts "herpderp data: #{data}"
-
     cancel_dialog?(intent) |> meta_dialog(intent)
-
-
     # {:error, "herpdepr"}
   end
 
@@ -94,7 +91,6 @@ defmodule Dobar.Conversation.Root do
     IO.puts "should start new meta"
     {:meta, intent}
   end
-
   defp meta_dialog(false, _) do
     IO.puts "fuuuuuck you, do not want"
     {:error, "herpderrp"}
