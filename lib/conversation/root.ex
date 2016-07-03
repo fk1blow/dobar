@@ -1,7 +1,7 @@
 defmodule Dobar.Conversation.Root do
   use GenServer
 
-  import Dobar.Conversation.Slot
+  alias Dobar.Conversation.Slot
 
   alias Dobar.Model.Intent
   alias Dobar.Model.Dialog
@@ -24,7 +24,9 @@ defmodule Dobar.Conversation.Root do
 
   def handle_cast({:evaluate_intent, intent}, nil) do
     IO.puts "begin dialog for intent: #{inspect intent}"
-    {:ok, dialog, next_slot} = begin_dialog(intent)
+    dialog = %Dialog{slots: Slot.from_intent(intent), intent_name: intent.name}
+    next_slot = Slot.next_from_dialog intent, dialog
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
     {:noreply, {dialog, next_slot}}
   end
   def handle_cast({:evaluate_intent, intent}, {%Dialog{meta: nil} = dialog, slot}) do
@@ -59,18 +61,10 @@ defmodule Dobar.Conversation.Root do
     IO.puts "dialog ended: #{inspect dialog}"
   end
 
-  defp begin_dialog(intent) do
-    IO.puts "begin_dialog; intent_name: #{inspect intent.name}"
-    dialog = %Dialog{slots: from_intent(intent), intent_name: intent.name}
-    next_slot = next_from_dialog intent, dialog
-    start_topic(next_slot) |> output_dialog(dialog)
-    {:ok, dialog, next_slot}
-  end
-
   defp continue_dialog({:ok, _, _}, intent, dialog) do
-    dialog = %{dialog | slots: Map.merge(dialog.slots, from_intent(intent))}
-    next_slot = next_from_dialog intent, dialog
-    start_topic(next_slot) |> output_dialog(dialog)
+    dialog = %{dialog | slots: Map.merge(dialog.slots, Slot.from_intent(intent))}
+    next_slot = Slot.next_from_dialog intent, dialog
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
     {:ok, dialog, next_slot}
   end
   defp continue_dialog({:error, reason, data}, intent, dialog) do
@@ -94,13 +88,6 @@ defmodule Dobar.Conversation.Root do
   defp meta_dialog(false, _) do
     IO.puts "fuuuuuck you, do not want"
     {:error, "herpderrp"}
-  end
-
-  defp start_topic(nil) do
-    {:ended, "slots already filled"}
-  end
-  defp start_topic(next_slot) do
-    {:ok, next_slot}
   end
 
   defp end_topic(answer, slot) do
