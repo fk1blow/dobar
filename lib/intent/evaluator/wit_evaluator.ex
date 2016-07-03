@@ -9,7 +9,7 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def text_query(message, context) do
     case generate_request(message, context) do
       {:ok, request} ->
-        HTTPoison.get(request[:url], request[:headers])
+        HTTPoison.get(request[:url], request[:headers], [timeout: 10000])
         |> handle_response
         |> parse_response
       {:error, message} -> {:error, message}
