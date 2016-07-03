@@ -32,7 +32,7 @@ defmodule Dobar.Conversation.Root do
   def handle_cast({:evaluate_intent, intent}, {%Dialog{meta: nil} = dialog, slot}) do
     IO.puts "continue dialog: #{inspect dialog}, intent: #{inspect intent}"
 
-    topic_answer = end_topic(intent.entities, slot)
+    topic_answer = Topic.end_topic(intent, slot)
 
     case continue_dialog(topic_answer, intent, dialog) do
       {:ok, dialog, next_slot} ->
@@ -88,15 +88,5 @@ defmodule Dobar.Conversation.Root do
   defp meta_dialog(false, _) do
     IO.puts "fuuuuuck you, do not want"
     {:error, "herpderrp"}
-  end
-
-  defp end_topic(answer, slot) do
-    slot_key = String.to_atom(elem(slot, 1).entity)
-    cond do
-      Map.has_key?(answer, slot_key) == true ->
-        {:ok, answer, slot_key}
-      true ->
-        {:error, "no match for key #{inspect slot_key}", slot_key}
-    end
   end
 end
