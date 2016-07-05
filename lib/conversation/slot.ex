@@ -31,7 +31,7 @@ defmodule Dobar.Conversation.Slot do
 
   @doc """
   It transforms the entities coming from the %Intent, to a map having the structure:
-  `%{contact: %{name: :contact, value: "Mona"}}`
+  `%{contact: %{name: :contact, value: "c1p0"}}`
   """
   def from_intent(%Intent{entities: entities} = intent) do
     Map.keys(entities) |> List.foldl(%{}, fn(x, acc) ->
@@ -49,11 +49,19 @@ defmodule Dobar.Conversation.Slot do
   @doc """
   Based on the intent and the dialog, it returns the slot that isn't filled and
   which has the highest prio
+
+  TODO: the intent_name and intent_def assignments don't have to rely on the `Provider`
+  in order to fetch the intent name and stuff
   """
   def next_from_dialog(%Intent{} = intent, %Dialog{} = dialog) do
     intent_name = String.to_atom(dialog.intent_name)
     intent_def = Provider.intention(intent_name)
+    IO.puts "intent_def: #{inspect intent_def}"
+    IO.puts "intent_def[intent_name]: #{inspect intent_def[intent_name]}"
     entity_slots = only_entities(intent_def[intent_name]) |> slots_by_priority
-    slots_not_filled(dialog, entity_slots) |> first_by_priority
+    case slots_not_filled(dialog, entity_slots) |> first_by_priority do
+      nil -> {:error, nil}
+      slot -> {:ok, slot}
+    end
   end
 end

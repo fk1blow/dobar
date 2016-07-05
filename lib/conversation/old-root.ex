@@ -1,4 +1,4 @@
-defmodule Dobar.Conversation.Root do
+defmodule Dobar.Conversation.OldRoot do
   use GenServer
 
   alias Dobar.Conversation.Slot
@@ -11,8 +11,8 @@ defmodule Dobar.Conversation.Root do
     GenServer.start_link __MODULE__, nil, name: name
   end
 
-  def init(initial_state) do
-    {:ok, initial_state}
+  def init(initial) do
+    {:ok, initial}
   end
 
   def evaluate_intent(pid, %Intent{} = intent) do
@@ -24,38 +24,26 @@ defmodule Dobar.Conversation.Root do
 
   def handle_cast({:evaluate_intent, intent}, nil) do
     IO.puts "begin dialog for intent: #{inspect intent}"
-
-    {:ok, dialog} = Dobar.Conversation.Dialog.start_link(:main_dialog, intent)
-    xreact = Dobar.Conversation.Dialog.react(dialog, intent)
-    IO.puts "xreact: #{inspect xreact}"
-
-
-    # dialog = %Dialog{slots: Slot.from_intent(intent), intent_name: intent.name}
-    # next_slot = Slot.next_from_dialog intent, dialog
-
-    # Topic.start_topic(next_slot) |> output_dialog(dialog)
-
-    # with {:ok, slot} <- Slot.next_from_dialog(intent, dialog),
-    #      {:ok, topic} <- Topic.start_topic(slot) do
-    #   IO.puts "should start the topic: #{inspect topic}"
-    # else
-    #   {:error, reason} ->
-    #     IO.puts "error: cannot start because: #{inspect reason}"
-    # end
-
-    # {:noreply, {dialog, next_slot}}
-    {:noreply, dialog}
+    dialog = %Dialog{slots: Slot.from_intent(intent), intent_name: intent.name}
+    next_slot = Slot.next_from_dialog intent, dialog
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
+    {:noreply, {dialog, next_slot}}
   end
-  def handle_cast({:evaluate_intent, intent}, dialog) do
+  def handle_cast({:evaluate_intent, intent}, {%Dialog{meta: nil} = dialog, slot}) do
     IO.puts "continue dialog: #{inspect dialog}, intent: #{inspect intent}"
 
-    # dialog = %{dialog | slots: Map.merge(dialog.slots, Slot.from_intent(intent))}
-    # next_slot = Slot.next_from_dialog intent, dialog
+    topic_answer = Topic.end_topic(intent, slot)
 
-    # with {:ok, entities, slot_key} <- Topic.end_topic(intent, slot),
-
-
-    {:noreply, dialog}
+    case continue_dialog(topic_answer, intent, dialog) do
+      {:ok, dialog, next_slot} ->
+        {:noreply, {dialog, next_slot}}
+      {:meta, intent} ->
+        {:ok, pid} = Dobar.Conversation.Root.start_link :root_meta_cancel
+        Dobar.Conversation.Root.evaluate_intent pid, intent
+        {:noreply, {%{dialog | meta: pid}, slot}}
+      {:error, _reason} ->
+        {:noreply, {dialog, slot}}
+    end
   end
   def handle_cast({:evaluate_intent, intent}, {%Dialog{meta: pid} = dialog, slot}) do
     IO.puts "ohooooooooooooo xoxoxoxoxoxoxo"
@@ -76,7 +64,7 @@ defmodule Dobar.Conversation.Root do
   defp continue_dialog({:ok, _entities, _last_slot}, intent, dialog) do
     dialog = %{dialog | slots: Map.merge(dialog.slots, Slot.from_intent(intent))}
     next_slot = Slot.next_from_dialog intent, dialog
-    # Topic.start_topic(next_slot) |> output_dialog(dialog)
+    Topic.start_topic(next_slot) |> output_dialog(dialog)
     {:ok, dialog, next_slot}
   end
   defp continue_dialog({:error, _entities, last_slot}, intent, dialog) do
