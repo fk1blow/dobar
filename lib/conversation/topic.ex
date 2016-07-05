@@ -50,8 +50,8 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call(:get_question, _from, state) do
-    # TODO: change hardcoded question, when ready
-    question = "question is: #{state.capability.entity}"
+    # TODO: in the (not so) near future, change this hardcoded question
+    question = "please provide a value for: #{state.capability.entity}"
     {:reply, question, state}
   end
 
