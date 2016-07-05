@@ -2,7 +2,6 @@ defmodule Dobar.Conversation.Dialog do
   use GenServer
 
   alias Dobar.Model.Intent
-  alias Dobar.Conversation.Slot
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
   alias Dobar.Conversation.Topic
 
@@ -81,7 +80,7 @@ defmodule Dobar.Conversation.Dialog do
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
     intent_def = IntentionProvider.intention(intent_name)
-    entity_slots = Slot.only_entities(intent_def[intent_name])
+    entity_slots = only_entities(intent_def[intent_name])
   end
 
   defp create_topic(capability, intent_entities) do
@@ -109,5 +108,13 @@ defmodule Dobar.Conversation.Dialog do
     |> Enum.map(&(Topic.structure &1.pid))
     |> Enum.map(&(elem(&1, 1)))
     |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), &1.value)))
+  end
+
+  @doc """
+  It filters out the slots that don't have the `:entity` key
+  """
+  defp only_entities(slots) do
+    Enum.filter(slots, fn(x) -> is_nil(elem(x, 1)[:entity]) == false end)
+    |> Enum.map(fn(x) -> {elem(x, 0), Enum.into(elem(x, 1), %{})} end)
   end
 end

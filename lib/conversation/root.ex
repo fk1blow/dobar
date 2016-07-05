@@ -1,8 +1,6 @@
 defmodule Dobar.Conversation.Root do
   use GenServer
 
-  alias Dobar.Conversation.Slot
-
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Topic
 
