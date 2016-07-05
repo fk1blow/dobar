@@ -63,9 +63,9 @@ defmodule Dobar.Conversation.Dialog do
     end
 
     answer = case next_expected do
+      {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
       {:completed, reason} -> {:completed, reason}
       {:nomatch, reason}   -> {:nomatch, reason}
-      {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
     end
 
     {:reply, answer, state}
