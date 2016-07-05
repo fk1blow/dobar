@@ -9,8 +9,7 @@ defmodule Dobar.Conversation.Dialog do
   #
 
   def start_link(name, intent) do
-    GenServer.start_link(
-      __MODULE__, [intent: intent], name: name)
+    GenServer.start_link(__MODULE__, [intent: intent], name: name)
   end
 
   @doc """
@@ -113,8 +112,9 @@ defmodule Dobar.Conversation.Dialog do
   @doc """
   It filters out the slots that don't have the `:entity` key
   """
-  defp only_entities(slots) do
-    Enum.filter(slots, fn(x) -> is_nil(elem(x, 1)[:entity]) == false end)
+  defp only_entities(capabilities) do
+    capabilities
+    |> Enum.filter(fn(x) -> is_nil(elem(x, 1)[:entity]) == false end)
     |> Enum.map(fn(x) -> {elem(x, 0), Enum.into(elem(x, 1), %{})} end)
   end
 end

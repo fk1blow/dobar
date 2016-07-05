@@ -2,7 +2,6 @@ defmodule Dobar.Conversation.Root do
   use GenServer
 
   alias Dobar.Model.Intent
-  alias Dobar.Conversation.Topic
 
   def start_link(name) do
     GenServer.start_link __MODULE__, nil, name: name
@@ -25,10 +24,10 @@ defmodule Dobar.Conversation.Root do
     {:ok, dialog} = Dobar.Conversation.Dialog.start_link(:main_dialog, intent)
 
     case Dobar.Conversation.Dialog.next_topic(dialog) do
+      {:topic, question}   ->
+        IO.puts "Topic: question #{inspect question}"
       {:completed, topics} ->
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
-      {:topic, question}         ->
-        IO.puts "Topic: question #{inspect question}"
     end
 
     {:noreply, dialog}
@@ -50,15 +49,5 @@ defmodule Dobar.Conversation.Root do
     end
 
     {:noreply, dialog}
-  end
-
-  #
-  # Private functions
-
-  defp cancel_dialog?(%Intent{name: name}) do
-    case name do
-      "cancel_command" -> true
-      _ -> false
-    end
   end
 end
