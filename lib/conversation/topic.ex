@@ -1,7 +1,3 @@
-# There should be another abstract over the topic, which is the Dialog
-# The Dialog should represent the session in which a conversation or more,
-# will take place. The Dialog has some topics to fill and the Conversation
-# will contain one or many Dialogs!
 defmodule Dobar.Conversation.Topic do
   use GenServer
 
