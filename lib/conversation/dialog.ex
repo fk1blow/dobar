@@ -25,6 +25,9 @@ defmodule Dobar.Conversation.Dialog do
     GenServer.call pid, :next_topic
   end
 
+  @doc """
+  Will complete the next possible topic and return the next topic if any left.
+  """
   def react(pid, %Intent{} = intent) do
     GenServer.call pid, {:react, intent}
   end
@@ -42,8 +45,8 @@ defmodule Dobar.Conversation.Dialog do
 
   def handle_call(:next_topic, _from, state) do
     answer = case next_expected_topic(state.topics) do
-      {:error, reason} -> {:completed, reason}
-      {:ok, topic} -> {:topic, Topic.question(topic.pid)}
+      {:completed, reason} -> {:completed, reason}
+      {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
     end
     {:reply, answer, state}
   end
@@ -52,18 +55,17 @@ defmodule Dobar.Conversation.Dialog do
     completed = with {:ok, expected} <- next_expected_topic(state.topics),
                      {:ok, topic} <- complete_topic(expected, intent),
                      {:ok, value} <- Topic.complete(topic.pid, intent),
-                do: {:ok, value}
+                do:  {:ok, value}
 
     next_expected = case completed do
-      {:ok, value}         -> next_expected_topic(state.topics)
-      {:nomatch, reason}   -> {:nomatch, reason}
-      {:completed, reason} -> {:completed, reason}
+      {:ok, value} -> next_expected_topic(state.topics)
+      other        -> other
     end
 
     answer = case next_expected do
       {:completed, reason} -> {:completed, reason}
       {:nomatch, reason}   -> {:nomatch, reason}
-      topic                -> {:topic, Topic.question(topic.pid)}
+      {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
     end
 
     {:reply, answer, state}
