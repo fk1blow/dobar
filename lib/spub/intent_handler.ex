@@ -22,13 +22,15 @@ defmodule Dobar.Spub.IntentHandler do
   def handle_event({:intention_evaluation_error, error}, _state) do
     # TODO: what should i do with this?!?! can i signal the interface user?
     # What message should i send him, the plain error, something else?!
+    # Update: yes, you can send a message(output) to the user, possibly mentioning
+    # the reason for this
     Logger.info "error while trying to evaluate the input intent: #{inspect error}"
     {:ok, nil}
   end
 
   # triggered from `Intent.Evaluator`
   def handle_event({:intention_evaluated, %Intent{} = intent}, _state) do
-    Logger.info "intention was evaluated to: #{inspect intent.name}"
+    Logger.info "intention evaluated to: #{inspect intent.name}"
     Dobar.Intent.Resolver.evaluate_intent intent
     {:ok, nil}
   end

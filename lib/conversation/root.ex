@@ -22,20 +22,34 @@ defmodule Dobar.Conversation.Root do
   # genserver Callbacks
 
   def handle_cast({:evaluate_intent, intent}, nil) do
-    IO.puts "begin dialog for intent: #{inspect intent}"
+    IO.puts "begin dialog"
 
     {:ok, dialog} = Dobar.Conversation.Dialog.start_link(:main_dialog, intent)
-    xreact = Dobar.Conversation.Dialog.next_topic(dialog)
-    IO.puts "xreact: #{inspect xreact}"
+
+    case Dobar.Conversation.Dialog.next_topic(dialog) do
+      {:completed, topics} ->
+        IO.puts "The dialog has been completed; topics: #{inspect topics}"
+      {:topic, question}         ->
+        IO.puts "Topic: question #{inspect question}"
+    end
 
     {:noreply, dialog}
   end
 
   def handle_cast({:evaluate_intent, intent}, dialog) do
-    IO.puts "continue dialog: #{inspect dialog}, intent: #{inspect intent}"
+    IO.puts "continue dialog"
 
-    xreact = Dobar.Conversation.Dialog.react(dialog, intent)
-    IO.puts "xreact b: #{inspect xreact}"
+    dialog = case Dobar.Conversation.Dialog.react(dialog, intent) do
+      {:ok, question} ->
+        IO.puts "Topic: question #{inspect question}"
+        dialog
+      {:completed, topics} ->
+        IO.puts "The dialog has been completed; topics: #{inspect topics}"
+        nil
+      {:nomatch, reason} ->
+        IO.puts "cannot match: #{inspect reason}"
+        dialog
+    end
 
     {:noreply, dialog}
   end

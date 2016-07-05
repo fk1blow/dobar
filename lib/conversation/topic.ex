@@ -27,6 +27,10 @@ defmodule Dobar.Conversation.Topic do
     GenServer.call(pid, {:complete, value})
   end
 
+  def structure(pid) do
+    GenServer.call(pid, :structure)
+  end
+
   # callbacks
   #
 
@@ -65,6 +69,10 @@ defmodule Dobar.Conversation.Topic do
     key = String.to_atom state.capability.entity
     match = intent.entities[key] |> List.first
     {:reply, {:ok, match.value}, Map.merge(state, %{value: match.value})}
+  end
+
+  def handle_call(:structure, _from, state) do
+    {:reply, {:ok, %{name: state.capability.entity, value: state.value}}, state}
   end
 
   # private

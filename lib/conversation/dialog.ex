@@ -1,5 +1,3 @@
-# The Dialog should contain a reference for each slot - so a Topic for each
-# slot that has to be filled
 defmodule Dobar.Conversation.Dialog do
   use GenServer
 
@@ -17,9 +15,8 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   @doc """
-  Will return the next possible topic by filtering the completed ones and
-  then sorting them by priority. Finally, it takes the first element from the list
-  which has to be the next topic.
+  Used only after the initialization of the Dialog(which prefills the topics, with
+  the given intent), this function will return the next possible topic.
   """
   def next_topic(pid) do
     GenServer.call pid, :next_topic
@@ -51,20 +48,20 @@ defmodule Dobar.Conversation.Dialog do
     {:reply, answer, state}
   end
 
-  def handle_call({:react, intent}, _from, state) do
-    completed = with {:ok, expected} <- next_expected_topic(state.topics),
-                     {:ok, topic} <- complete_topic(expected, intent),
-                     {:ok, value} <- Topic.complete(topic.pid, intent),
+  def handle_call({:react, intent}, _from, %{topics: dialog_topics} = state) do
+    completed = with {:ok, expected} <- next_expected_topic(dialog_topics),
+                     {:ok, topic}    <- complete_topic(expected, intent),
+                     {:ok, value}    <- Topic.complete(topic.pid, intent),
                 do:  {:ok, value}
 
     next_expected = case completed do
-      {:ok, value} -> next_expected_topic(state.topics)
+      {:ok, value} -> next_expected_topic(dialog_topics)
       other        -> other
     end
 
     answer = case next_expected do
       {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
-      {:completed, reason} -> {:completed, reason}
+      {:completed, topics} -> {:completed, topics_list(dialog_topics)}
       {:nomatch, reason}   -> {:nomatch, reason}
     end
 
@@ -94,7 +91,7 @@ defmodule Dobar.Conversation.Dialog do
 
   defp next_expected_topic(topics) do
     case incompleted_topics(topics) |> List.first do
-      nil -> {:completed, "all topics filled"}
+      nil -> {:completed, topics_list(topics)}
       topic -> {:ok, topic}
     end
   end
@@ -104,5 +101,13 @@ defmodule Dobar.Conversation.Dialog do
       {:match, _entities}       -> {:ok, topic}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{key}"}
     end
+  end
+
+  # TODO: must return a %Topic{} struct, to better understand the entities involved
+  defp topics_list(topics) do
+    topics
+    |> Enum.map(&(Topic.structure &1.pid))
+    |> Enum.map(&(elem(&1, 1)))
+    |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), &1.value)))
   end
 end
