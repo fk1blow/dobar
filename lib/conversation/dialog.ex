@@ -42,8 +42,8 @@ defmodule Dobar.Conversation.Dialog do
 
   def handle_call(:next_topic, _from, state) do
     answer = case next_expected_topic(state.topics) do
-      {:completed, reason} -> {:completed, reason}
       {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
+      {:completed, reason} -> {:completed, reason}
     end
     {:reply, answer, state}
   end

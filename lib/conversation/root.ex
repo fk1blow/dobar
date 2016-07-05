@@ -40,7 +40,7 @@ defmodule Dobar.Conversation.Root do
     IO.puts "continue dialog"
 
     dialog = case Dobar.Conversation.Dialog.react(dialog, intent) do
-      {:ok, question} ->
+      {:topic, question} ->
         IO.puts "Topic: question #{inspect question}"
         dialog
       {:completed, topics} ->
