@@ -72,6 +72,7 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call(:structure, _from, state) do
+    # TODO: refactor to return a more appropriate structure of the topic
     {:reply, {:ok, %{name: state.capability.entity, value: state.value}}, state}
   end
 
