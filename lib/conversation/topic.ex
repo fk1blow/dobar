@@ -50,19 +50,25 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call(:get_question, _from, state) do
+    # TODO: change hardcoded question, when ready
     question = "question is: #{state.capability.entity}"
     {:reply, question, state}
   end
 
   def handle_call({:can_complete, intent}, _from, state) do
-    IO.puts "fuuuuck: #{inspect intent}"
-    IO.puts "inside: #{inspect state}"
-    {:noreply, nil, state}
+    key = String.to_atom state.capability.entity
+    match = intent.entities[key]
+    reply = case match do
+      nil -> {:nomatch, key, intent.entities}
+      [h|t] -> {:match, h}
+    end
+    {:reply, reply, state}
   end
 
-  def handle_call({:complete, value}, _from, state) do
-    IO.puts "should complete the topic's value"
-    {:noreply, nil, state}
+  def handle_call({:complete, intent}, _from, state) do
+    key = String.to_atom state.capability.entity
+    match = intent.entities[key] |> List.first
+    {:reply, {:ok, match.value}, Map.merge(state, %{value: match.value})}
   end
 
   # private

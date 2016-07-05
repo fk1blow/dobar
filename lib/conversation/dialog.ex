@@ -42,37 +42,31 @@ defmodule Dobar.Conversation.Dialog do
 
   def handle_call(:next_topic, _from, state) do
     answer = case next_expected_topic(state.topics) do
-      nil -> {:completed, "all topics completed"}
-      topic -> {:topic, Topic.question(topic.pid)}
+      {:error, reason} -> {:completed, reason}
+      {:ok, topic} -> {:topic, Topic.question(topic.pid)}
     end
     {:reply, answer, state}
   end
 
   def handle_call({:react, intent}, _from, state) do
-    # get the next expected topic
+    completed = with {:ok, expected} <- next_expected_topic(state.topics),
+                     {:ok, topic} <- complete_topic(expected, intent),
+                     {:ok, value} <- Topic.complete(topic.pid, intent),
+                do: {:ok, value}
 
-    # next_topic = case next_expected_topic(state.topics) do
-    #   nil -> {:completed, "all topics completed"}
-    #   topic -> {:topic, Topic.question(topic.pid)}
-    # end
+    next_expected = case completed do
+      {:ok, value}         -> next_expected_topic(state.topics)
+      {:nomatch, reason}   -> {:nomatch, reason}
+      {:completed, reason} -> {:completed, reason}
+    end
 
-    next_expected = next_expected_topic(state.topics)
+    answer = case next_expected do
+      {:completed, reason} -> {:completed, reason}
+      {:nomatch, reason}   -> {:nomatch, reason}
+      topic                -> {:topic, Topic.question(topic.pid)}
+    end
 
-    # has_completed = case complete_topic?(next_expected, intent) do
-    #   nil -> IO.puts "cannot "
-    # end
-
-    # ask if the topic can be completed
-    # and if it can, complete it
-    with {:ok, topic} <- complete_topic?(next_expected, intent),
-         {:ok, value} <- Topic.complete(topic.pid)
-
-
-    # IO.puts "next_topic: #{inspect next_topic}"
-
-    # Topic.complete(next_topic)
-
-    {:noreply, nil, state}
+    {:reply, answer, state}
   end
 
   # private
@@ -97,12 +91,16 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   defp next_expected_topic(topics) do
-    incompleted_topics(topics) |> List.first
+    case incompleted_topics(topics) |> List.first do
+      nil -> {:completed, "all topics filled"}
+      topic -> {:ok, topic}
+    end
   end
 
-  # this function should return a {:ok, topic}
-  defp complete_topic?(nil, _intent), do: false
-  defp complete_topic?(topic, intent) do
-    Topic.complete? topic.pid, intent
+  defp complete_topic(topic, intent) do
+    case Topic.complete?(topic.pid, intent) do
+      {:match, _entities}       -> {:ok, topic}
+      {:nomatch, key, entities} -> {:nomatch, "no match for key #{key}"}
+    end
   end
 end
