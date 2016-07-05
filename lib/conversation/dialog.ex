@@ -16,12 +16,17 @@ defmodule Dobar.Conversation.Dialog do
       __MODULE__, [intent: intent], name: name)
   end
 
+  @doc """
+  Will return the next possible topic by filtering the completed ones and
+  then sorting them by priority. Finally, it takes the first element from the list
+  which has to be the next topic.
+  """
   def next_topic(pid) do
     GenServer.call pid, :next_topic
   end
 
   def react(pid, %Intent{} = intent) do
-    GenServer.call pid, {:intent_reaction, intent}
+    GenServer.call pid, {:react, intent}
   end
 
   # callbacks
@@ -36,15 +41,37 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   def handle_call(:next_topic, _from, state) do
-    topic = incompleted_topics(state.topics) |> List.first
-    answer = case topic do
+    answer = case next_expected_topic(state.topics) do
       nil -> {:completed, "all topics completed"}
       topic -> {:topic, Topic.question(topic.pid)}
     end
     {:reply, answer, state}
   end
 
-  def handle_call({:intent_reaction, intent}, _from, state) do
+  def handle_call({:react, intent}, _from, state) do
+    # get the next expected topic
+
+    # next_topic = case next_expected_topic(state.topics) do
+    #   nil -> {:completed, "all topics completed"}
+    #   topic -> {:topic, Topic.question(topic.pid)}
+    # end
+
+    next_expected = next_expected_topic(state.topics)
+
+    # has_completed = case complete_topic?(next_expected, intent) do
+    #   nil -> IO.puts "cannot "
+    # end
+
+    # ask if the topic can be completed
+    # and if it can, complete it
+    with {:ok, topic} <- complete_topic?(next_expected, intent),
+         {:ok, value} <- Topic.complete(topic.pid)
+
+
+    # IO.puts "next_topic: #{inspect next_topic}"
+
+    # Topic.complete(next_topic)
+
     {:noreply, nil, state}
   end
 
@@ -67,5 +94,15 @@ defmodule Dobar.Conversation.Dialog do
   defp create_topic(capability, intent_entities) do
     {:ok, pid} = Topic.start_link(elem(capability, 1), intent_entities)
     %{name: elem(capability, 0), pid: pid}
+  end
+
+  defp next_expected_topic(topics) do
+    incompleted_topics(topics) |> List.first
+  end
+
+  # this function should return a {:ok, topic}
+  defp complete_topic?(nil, _intent), do: false
+  defp complete_topic?(topic, intent) do
+    Topic.complete? topic.pid, intent
   end
 end

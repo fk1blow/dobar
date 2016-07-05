@@ -11,11 +11,6 @@ defmodule Dobar.Conversation.Topic do
     GenServer.start_link __MODULE__, [capability: capability, prefill: entities]
   end
 
-  # must use a struct like `%Capability{}`
-  def answer_topic(capability) do
-    GenServer.cast __MODULE__
-  end
-
   def completed?(pid) do
     GenServer.call(pid, :is_completed)
   end
@@ -26,6 +21,14 @@ defmodule Dobar.Conversation.Topic do
 
   def question(pid) do
     GenServer.call(pid, :get_question)
+  end
+
+  def complete?(pid, intent) do
+    GenServer.call(pid, {:can_complete, intent})
+  end
+
+  def complete(pid, value) do
+    GenServer.call(pid, {:complete, value})
   end
 
   # callbacks
@@ -49,6 +52,17 @@ defmodule Dobar.Conversation.Topic do
   def handle_call(:get_question, _from, state) do
     question = "question is: #{state.capability.entity}"
     {:reply, question, state}
+  end
+
+  def handle_call({:can_complete, intent}, _from, state) do
+    IO.puts "fuuuuck: #{inspect intent}"
+    IO.puts "inside: #{inspect state}"
+    {:noreply, nil, state}
+  end
+
+  def handle_call({:complete, value}, _from, state) do
+    IO.puts "should complete the topic's value"
+    {:noreply, nil, state}
   end
 
   # private
