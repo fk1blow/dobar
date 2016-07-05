@@ -26,7 +26,7 @@ defmodule Dobar.Conversation.Root do
     IO.puts "begin dialog for intent: #{inspect intent}"
 
     {:ok, dialog} = Dobar.Conversation.Dialog.start_link(:main_dialog, intent)
-    xreact = Dobar.Conversation.Dialog.react(dialog, intent)
+    xreact = Dobar.Conversation.Dialog.next_topic(dialog)
     IO.puts "xreact: #{inspect xreact}"
 
 
@@ -48,6 +48,9 @@ defmodule Dobar.Conversation.Root do
   end
   def handle_cast({:evaluate_intent, intent}, dialog) do
     IO.puts "continue dialog: #{inspect dialog}, intent: #{inspect intent}"
+
+    xreact = Dobar.Conversation.Dialog.intent_reaction(dialog, intent)
+    IO.puts "xreact: #{inspect xreact}"
 
     # dialog = %{dialog | slots: Map.merge(dialog.slots, Slot.from_intent(intent))}
     # next_slot = Slot.next_from_dialog intent, dialog

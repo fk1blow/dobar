@@ -16,8 +16,12 @@ defmodule Dobar.Conversation.Dialog do
       __MODULE__, [intent: intent], name: name)
   end
 
+  def next_topic(pid) do
+    GenServer.call pid, :next_topic
+  end
+
   def react(pid, %Intent{} = intent) do
-    GenServer.call pid, {:react, intent}
+    GenServer.call pid, {:intent_reaction, intent}
   end
 
   # callbacks
@@ -31,23 +35,17 @@ defmodule Dobar.Conversation.Dialog do
     {:ok, %{intent: intent, topics: topics}}
   end
 
-  @doc """
-  It reacts to the intent by:
-  - sorts out the topics which have a non-nil `value`
-  - gets each topic popularity
-  - by popularity, ask each topic for their values
-  If a topic has been found, then that topic shurely needs the incoming
-  intent values/entities
-
-  After it does it stuff, it communicates back to the conversation
-  """
-  def handle_call({:react, intent}, _from, state) do
+  def handle_call(:next_topic, _from, state) do
     topic = incompleted_topics(state.topics) |> List.first
     answer = case topic do
-      nil -> {:end, "all topics completed"}
+      nil -> {:completed, "all topics completed"}
       topic -> {:topic, Topic.question(topic.pid)}
     end
     {:reply, answer, state}
+  end
+
+  def handle_call({:intent_reaction, intent}, _from, state) do
+    {:noreply, nil, state}
   end
 
   # private
