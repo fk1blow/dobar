@@ -20,7 +20,7 @@ defmodule Dobar.Conversation.Root do
   # genserver Callbacks
 
   def handle_cast({:evaluate_intent, intent}, %{dialog: nil, meta: nil} = state) do
-    IO.puts "begin dialog, intent: #{inspect intent}"
+    IO.puts "begin dialog, intent: #{inspect intent.name}"
 
     {:ok, dialog} = Dobar.Conversation.Dialog.start_link(intent)
 
@@ -46,6 +46,7 @@ defmodule Dobar.Conversation.Root do
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
 
         if not_root? do
+          IO.puts "ending dialog, intent: #{inspect intent.name}"
           send parent, {:answer, topics}
           Process.exit(self, :normal)
         end
@@ -65,6 +66,7 @@ defmodule Dobar.Conversation.Root do
             Dobar.Conversation.Root.evaluate_intent pid, intent
 
             {:noreply, %{dialog: dialog, meta: pid, parent: parent}}
+
           {:error, reason} ->
             IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
             {:noreply, %{dialog: dialog, meta: nil, parent: parent}}
@@ -78,11 +80,21 @@ defmodule Dobar.Conversation.Root do
     {:noreply, state}
   end
 
-  def handle_info(message, state) do
-    IO.puts "handle_info"
-    IO.inspect message
+  def handle_info({:answer, %{intent: %Intent{name: "cancel_command"}}} = answer, state) do
+    IO.puts "handle_info, intent: #{inspect state.intent}"
+    IO.puts ":answer: #{inspect answer}"
     {:noreply, state}
   end
+
+  # def handle_info({:nothing, reason}, state) do
+  #   IO.puts "nothing....."
+  #   {:noreply, state}
+  # end
+
+  # def handle_info({:cancel, reason}, state) do
+  #   IO.puts "canceling fucking...."
+  #   {:stop, :normal, nil}
+  # end
 
   # private
   #
@@ -97,7 +109,7 @@ defmodule Dobar.Conversation.Root do
     end
   end
 
-  defp not_root? do
-    self != Process.whereis :root_conversation
-  end
+  defp not_root?, do: root_conversation? == false
+
+  defp root_conversation?, do: self == Process.whereis :root_conversation
 end
