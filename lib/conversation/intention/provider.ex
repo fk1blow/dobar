@@ -9,11 +9,7 @@ defmodule Dobar.Conversation.Intention.Provider do
     cancel_command: Intention.CancelCommand
   ]
 
-  def intention(name) when is_atom(name), do: @intentions[name].intentions
-  def intention(_) do
-    raise "cannot provide an intention with an invalid name"
-  end
-  def intention do
-    raise "cannot provide an intention with no name"
-  end
+  def intention(name) when is_atom(name), do: {:ok, @intentions[name].intentions}
+  def intention(_), do: {:error, "invalid intention name"}
+  def intention, do: {:error, "cannot provide intention with no name"}
 end

@@ -2,8 +2,9 @@
 defmodule Dobar.Conversation.Intention.SendMessage do
   use Dobar.Conversation.IntentionBehaviour
 
-  intention :edit_message do
-    topic :message_recipient, entity: "contact"
+  intention :change_recipient do
+    topic :confirmation, prio: 1, entity: "yes"
+    topic :message_recipient, prio: 2, entity: "contact"
   end
 
   intention :send_message do

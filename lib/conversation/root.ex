@@ -2,13 +2,14 @@ defmodule Dobar.Conversation.Root do
   use GenServer
 
   alias Dobar.Model.Intent
+  alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
   def start_link(name) do
     GenServer.start_link __MODULE__, nil, name: name
   end
 
-  def init(initial_state) do
-    {:ok, initial_state}
+  def init(_) do
+    {:ok, %{dialog: nil, meta: nil}}
   end
 
   def evaluate_intent(pid, %Intent{} = intent) do
@@ -18,10 +19,12 @@ defmodule Dobar.Conversation.Root do
   #
   # genserver Callbacks
 
-  def handle_cast({:evaluate_intent, intent}, nil) do
-    IO.puts "begin dialog"
+  def handle_cast({:evaluate_intent, intent}, %{dialog: nil, meta: nil} = state) do
+    IO.puts "begin dialog, intent: #{inspect intent}"
 
-    {:ok, dialog} = Dobar.Conversation.Dialog.start_link(:main_dialog, intent)
+    {:ok, dialog} = Dobar.Conversation.Dialog.start_link(intent)
+    IO.puts "is alive"
+    IO.inspect Process.alive?(dialog)
 
     case Dobar.Conversation.Dialog.next_topic(dialog) do
       {:topic, question}   ->
@@ -30,24 +33,69 @@ defmodule Dobar.Conversation.Root do
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
     end
 
-    {:noreply, dialog}
+    {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
-  def handle_cast({:evaluate_intent, intent}, dialog) do
+  def handle_cast({:evaluate_intent, intent}, %{dialog: dialog, meta: nil} = state) do
     IO.puts "continue dialog"
 
     dialog = case Dobar.Conversation.Dialog.react(dialog, intent) do
       {:topic, question} ->
         IO.puts "Topic: question #{inspect question}"
-        dialog
+        {:noreply, state}
+
       {:completed, topics} ->
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
-        nil
+
+        IO.puts "should tell the difference between meta or root"
+
+        # TODO: should tell the difference between meta or root
+        {:noreply, %{dialog: nil, meta: nil}}
+
       {:nomatch, reason} ->
         IO.puts "cannot match: #{inspect reason}"
-        dialog
-    end
 
-    {:noreply, dialog}
+        case find_alternate(intent) do
+          {:ok, intent_def} ->
+            intent_name = String.to_atom "#{intent.name}_conversation"
+            IO.puts "creating meta: #{intent_name}"
+
+            {:ok, pid} = Dobar.Conversation.Root.start_link intent_name
+            Dobar.Conversation.Root.evaluate_intent pid, intent
+
+            {:noreply, %{dialog: dialog, meta: pid}}
+          {:error, reason} ->
+            IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
+            {:noreply, %{dialog: dialog, meta: nil}}
+        end
+    end
+  end
+
+  def handle_cast({:evaluate_intent, intent}, %{meta: meta} = state) do
+    IO.puts "continue dialog, with meta"
+    Dobar.Conversation.Root.evaluate_intent meta, intent
+    {:noreply, state}
+  end
+
+  # def handle_info({})
+
+  # private
+  #
+
+  defp find_alternate(%Intent{confidence: confidence, name: name} = intent) do
+    cond do
+      confidence > 0.8 ->
+        intent_name = String.to_atom(name)
+        IntentionProvider.intention intent_name
+      true ->
+        {:error, "intent confidence to low"}
+    end
+  end
+
+  defp create_alternate({:ok, capability}) do
+    #
+  end
+  defp create_alternate({:error, reason}) do
+    #
   end
 end

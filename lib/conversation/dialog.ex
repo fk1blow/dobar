@@ -8,8 +8,8 @@ defmodule Dobar.Conversation.Dialog do
   # interface
   #
 
-  def start_link(name, intent) do
-    GenServer.start_link(__MODULE__, [intent: intent], name: name)
+  def start_link(intent) do
+    GenServer.start_link(__MODULE__, [intent: intent])
   end
 
   @doc """
@@ -78,13 +78,13 @@ defmodule Dobar.Conversation.Dialog do
 
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
-    intent_def = IntentionProvider.intention(intent_name)
+    {:ok, intent_def} = IntentionProvider.intention(intent_name)
     entity_slots = only_entities(intent_def[intent_name])
   end
 
   defp create_topic(capability, intent_entities) do
-    {:ok, pid} = Topic.start_link(elem(capability, 1), intent_entities)
-    %{name: elem(capability, 0), pid: pid}
+    {:ok, topic} = Topic.start_link(elem(capability, 1), intent_entities)
+    %{name: elem(capability, 0), pid: topic}
   end
 
   defp next_expected_topic(topics) do
@@ -109,9 +109,6 @@ defmodule Dobar.Conversation.Dialog do
     |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), &1.value)))
   end
 
-  @doc """
-  It filters out the slots that don't have the `:entity` key
-  """
   defp only_entities(capabilities) do
     capabilities
     |> Enum.filter(fn(x) -> is_nil(elem(x, 1)[:entity]) == false end)
