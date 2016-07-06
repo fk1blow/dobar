@@ -4,7 +4,11 @@ defmodule Dobar.Conversation.Root do
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
-  def start_link(name, parent \\ nil) do
+  def start_link(parent) do
+    GenServer.start_link __MODULE__, [parent: parent]
+  end
+
+  def start_link(name, parent) do
     GenServer.start_link __MODULE__, [parent: parent], name: name
   end
 
@@ -62,7 +66,7 @@ defmodule Dobar.Conversation.Root do
             intent_name = String.to_atom "#{intent.name}_conversation"
             IO.puts "creating meta: #{intent_name}"
 
-            {:ok, pid} = Dobar.Conversation.Root.start_link(intent_name, self)
+            {:ok, pid} = Dobar.Conversation.Root.start_link self
             Dobar.Conversation.Root.evaluate_intent pid, intent
 
             {:noreply, %{dialog: dialog, meta: pid, parent: parent}}
@@ -94,18 +98,8 @@ defmodule Dobar.Conversation.Root do
 
   def handle_info({:nothing, nothing}, state) do
     IO.puts "handle_info :nothing"
-    {:noreply, state}
+    {:noreply, Map.merge(state, %{meta: nil})}
   end
-
-  # def handle_info({:nothing, reason}, state) do
-  #   IO.puts "nothing....."
-  #   {:noreply, state}
-  # end
-
-  # def handle_info({:cancel, reason}, state) do
-  #   IO.puts "canceling fucking...."
-  #   {:stop, :normal, nil}
-  # end
 
   # private
   #
