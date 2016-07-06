@@ -4,12 +4,12 @@ defmodule Dobar.Conversation.Root do
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
-  def start_link(name) do
-    GenServer.start_link __MODULE__, nil, name: name
+  def start_link(name, parent \\ nil) do
+    GenServer.start_link __MODULE__, [parent: parent], name: name
   end
 
-  def init(_) do
-    {:ok, %{dialog: nil, meta: nil}}
+  def init(args) do
+    {:ok, %{dialog: nil, meta: nil, parent: args[:parent]}}
   end
 
   def evaluate_intent(pid, %Intent{} = intent) do
@@ -23,8 +23,6 @@ defmodule Dobar.Conversation.Root do
     IO.puts "begin dialog, intent: #{inspect intent}"
 
     {:ok, dialog} = Dobar.Conversation.Dialog.start_link(intent)
-    IO.puts "is alive"
-    IO.inspect Process.alive?(dialog)
 
     case Dobar.Conversation.Dialog.next_topic(dialog) do
       {:topic, question}   ->
@@ -36,21 +34,24 @@ defmodule Dobar.Conversation.Root do
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
-  def handle_cast({:evaluate_intent, intent}, %{dialog: dialog, meta: nil} = state) do
+  def handle_cast({:evaluate_intent, intent}, %{dialog: dialog, meta: nil, parent: parent}) do
     IO.puts "continue dialog"
 
     dialog = case Dobar.Conversation.Dialog.react(dialog, intent) do
       {:topic, question} ->
         IO.puts "Topic: question #{inspect question}"
-        {:noreply, state}
+        {:noreply, %{dialog: dialog, meta: nil, parent: parent}}
 
       {:completed, topics} ->
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
 
-        IO.puts "should tell the difference between meta or root"
+        if not_root? do
+          send parent, {:answer, topics}
+          Process.exit(self, :normal)
+        end
 
         # TODO: should tell the difference between meta or root
-        {:noreply, %{dialog: nil, meta: nil}}
+        {:noreply, %{dialog: nil, meta: nil, parent: parent}}
 
       {:nomatch, reason} ->
         IO.puts "cannot match: #{inspect reason}"
@@ -60,13 +61,13 @@ defmodule Dobar.Conversation.Root do
             intent_name = String.to_atom "#{intent.name}_conversation"
             IO.puts "creating meta: #{intent_name}"
 
-            {:ok, pid} = Dobar.Conversation.Root.start_link intent_name
+            {:ok, pid} = Dobar.Conversation.Root.start_link(intent_name, self)
             Dobar.Conversation.Root.evaluate_intent pid, intent
 
-            {:noreply, %{dialog: dialog, meta: pid}}
+            {:noreply, %{dialog: dialog, meta: pid, parent: parent}}
           {:error, reason} ->
             IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
-            {:noreply, %{dialog: dialog, meta: nil}}
+            {:noreply, %{dialog: dialog, meta: nil, parent: parent}}
         end
     end
   end
@@ -77,7 +78,11 @@ defmodule Dobar.Conversation.Root do
     {:noreply, state}
   end
 
-  # def handle_info({})
+  def handle_info(message, state) do
+    IO.puts "handle_info"
+    IO.inspect message
+    {:noreply, state}
+  end
 
   # private
   #
@@ -92,10 +97,7 @@ defmodule Dobar.Conversation.Root do
     end
   end
 
-  defp create_alternate({:ok, capability}) do
-    #
-  end
-  defp create_alternate({:error, reason}) do
-    #
+  defp not_root? do
+    self != Process.whereis :root_conversation
   end
 end
