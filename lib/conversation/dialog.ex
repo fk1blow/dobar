@@ -41,7 +41,7 @@ defmodule Dobar.Conversation.Dialog do
   def handle_call(:next_topic, _from, state) do
     answer = case next_expected_topic(state.topics) do
       {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
-      {:completed, reason} -> {:completed, reason}
+      {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
     end
     {:reply, answer, state}
   end
@@ -59,7 +59,7 @@ defmodule Dobar.Conversation.Dialog do
 
     answer = case next_expected do
       {:ok, topic}         -> {:topic, Topic.question(topic.pid)}
-      {:completed, topics} -> {:completed, topics_list(dialog_topics)}
+      {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
       {:nomatch, reason}   -> {:nomatch, reason}
     end
 
