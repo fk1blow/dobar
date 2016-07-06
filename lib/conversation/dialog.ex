@@ -27,6 +27,10 @@ defmodule Dobar.Conversation.Dialog do
     GenServer.call pid, {:react, intent}
   end
 
+  def fill_topics(topics) do
+    #
+  end
+
   # callbacks
   #
 

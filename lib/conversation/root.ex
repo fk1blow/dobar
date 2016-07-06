@@ -80,9 +80,20 @@ defmodule Dobar.Conversation.Root do
     {:noreply, state}
   end
 
-  def handle_info({:answer, %{intent: %Intent{name: "cancel_command"}}} = answer, state) do
-    IO.puts "handle_info, intent: #{inspect state.intent}"
+  def handle_info({:answer, %{intent: %Intent{name: "cancel_command"}} = answer}, state) do
+    IO.puts "handle_info cancel_command"
     IO.puts ":answer: #{inspect answer}"
+    send state.parent, {:nothing, "asdkhad"}
+    {:stop, :normal, %{dialog: nil, meta: nil, parent: nil}}
+  end
+
+  def handle_info({:answer, %{intent: %Intent{}} = answer}, state) do
+    IO.puts "handle_info normal_command"
+    {:noreply, state}
+  end
+
+  def handle_info({:nothing, nothing}, state) do
+    IO.puts "handle_info :nothing"
     {:noreply, state}
   end
 
