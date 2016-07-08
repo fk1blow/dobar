@@ -49,7 +49,7 @@ defmodule Dobar.Conversation.Root do
       {:completed, topics} ->
         IO.puts "The dialog has been completed; topics: #{inspect topics}"
 
-        if not_root? do
+        if not_root?(self) do
           IO.puts "ending dialog, intent: #{inspect intent.name}"
           send parent, {:answer, topics}
           Process.exit(self, :normal)
@@ -114,7 +114,7 @@ defmodule Dobar.Conversation.Root do
     end
   end
 
-  defp not_root?, do: root_conversation? == false
+  defp not_root?(pid), do: root_conversation?(pid) == false
 
-  defp root_conversation?, do: self == Process.whereis :root_conversation
+  defp root_conversation?(pid), do: pid == Process.whereis :root_conversation
 end
