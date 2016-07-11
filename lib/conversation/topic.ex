@@ -19,12 +19,12 @@ defmodule Dobar.Conversation.Topic do
     GenServer.call(pid, :get_question)
   end
 
-  def complete?(pid, intent) do
-    GenServer.call(pid, {:can_complete, intent})
+  def complete?(pid, %Intent{entities: entities}) do
+    GenServer.call(pid, {:can_complete, entities})
   end
 
-  def complete(pid, value) do
-    GenServer.call(pid, {:complete, value})
+  def complete(pid, %Intent{entities: entities}) do
+    GenServer.call(pid, {:complete, entities})
   end
 
   def structure(pid) do
@@ -55,20 +55,23 @@ defmodule Dobar.Conversation.Topic do
     {:reply, question, state}
   end
 
-  def handle_call({:can_complete, intent}, _from, state) do
+  def handle_call({:can_complete, intent_entities}, _from, state) do
     key = String.to_atom state.capability.entity
-    match = intent.entities[key]
+    match = intent_entities[key]
     reply = case match do
-      nil -> {:nomatch, key, intent.entities}
-      [h|t] -> {:match, h}
+      nil -> {:nomatch, key, intent_entities}
+      [h|t] -> {:match, key, h}
     end
     {:reply, reply, state}
   end
 
-  def handle_call({:complete, intent}, _from, state) do
+  def handle_call({:complete, intent_entities}, _from, state) do
     key = String.to_atom state.capability.entity
-    match = intent.entities[key] |> List.first
-    {:reply, {:ok, match.value}, Map.merge(state, %{value: match.value})}
+    reply = case intent_entities[key] do
+      nil -> nil
+      [h|t] -> h.value
+    end
+    {:reply, {:ok, reply}, Map.merge(state, %{value: reply})}
   end
 
   def handle_call(:structure, _from, state) do

@@ -27,8 +27,11 @@ defmodule Dobar.Conversation.Dialog do
     GenServer.call pid, {:react, intent}
   end
 
-  def fill_topics(topics) do
-    #
+  @doc """
+  Fills the topics entities by the provided `entities` parameter
+  """
+  def fill_topics(pid, entities) do
+    GenServer.cast pid, {:fill_topics, entities}
   end
 
   # callbacks
@@ -70,11 +73,18 @@ defmodule Dobar.Conversation.Dialog do
     {:reply, answer, state}
   end
 
+  def handle_cast({:fill_topics, entities}, %{topics: topics} = state) do
+    topics |> Enum.map(fn(topic) -> Topic.complete(topic.pid, entities) end)
+    # IO.puts "sxxxxx: #{inspect topics_list(topics)}"
+    {:noreply, state}
+  end
+
   # private
   #
 
   defp incompleted_topics(topics) do
-    Enum.map(topics, &(%{topic: &1, completed: Topic.completed?(&1.pid)}))
+    topics
+    |> Enum.map(&(%{topic: &1, completed: Topic.completed?(&1.pid)}))
     |> Enum.filter(fn(topic) -> topic.completed == false end)
     |> Enum.sort(&(Topic.priority(&1.topic.pid) < Topic.priority(&2.topic.pid)))
     |> Enum.map(&(&1.topic))
@@ -100,7 +110,7 @@ defmodule Dobar.Conversation.Dialog do
 
   defp complete_topic(topic, intent) do
     case Topic.complete?(topic.pid, intent) do
-      {:match, _entities}       -> {:ok, topic}
+      {:match, _key, _entities} -> {:ok, topic}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{key}"}
     end
   end
@@ -110,7 +120,7 @@ defmodule Dobar.Conversation.Dialog do
     topics
     |> Enum.map(&(Topic.structure &1.pid))
     |> Enum.map(&(elem(&1, 1)))
-    |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), &1.value)))
+    |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), [%{value: &1.value}])))
   end
 
   defp only_entities(capabilities) do
