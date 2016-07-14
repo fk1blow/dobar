@@ -35,7 +35,7 @@ defmodule Dobar.Intent.Resolver do
   end
 
   def handle_cast({:evaluate_intent, intent}, _) do
-    Dobar.Conversation.Root.evaluate_intent :root_conversation, intent
+    Dobar.Conversation.Dialog.evaluate_intent :root_dialog, intent
     {:noreply, nil}
   end
 end

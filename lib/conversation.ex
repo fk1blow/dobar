@@ -7,7 +7,7 @@ defmodule Dobar.Conversation do
 
   def init(_) do
     children = [
-      worker(Dobar.Conversation.Root, [:root_conversation, nil]),
+      worker(Dobar.Conversation.Dialog, [:root_dialog, nil]),
     ]
 
     supervise children, strategy: :one_for_all
