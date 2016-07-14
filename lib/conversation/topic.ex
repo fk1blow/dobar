@@ -14,14 +14,15 @@ defmodule Dobar.Conversation.Topic do
 
   @doc """
   Used only after the initialization of the Dialog(which prefills the topics, with
-  the given intent), this function will return the next possible topic.
+  the given intent), this function will return the next possible subject capability.
   """
-  def next_topic(pid) do
+  def continue(pid) do
     GenServer.call pid, :next_topic
   end
 
   @doc """
-  Will complete the next possible topic and return the next topic if any left.
+  Will complete the next possible topic and return the next subject capability
+  if any left.
   """
   def react(pid, %Intent{} = intent) do
     GenServer.call pid, {:react, intent}
@@ -47,16 +48,18 @@ defmodule Dobar.Conversation.Topic do
 
   def handle_call(:next_topic, _from, state) do
     answer = case next_expected_topic(state.capabilities) do
-      {:ok, topic}         -> {:topic, Capability.question(topic.pid)}
-      {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
+      {:ok, capability} ->
+        {:topic, Capability.question(capability.pid)}
+      {:completed, capabilities} ->
+        {:completed, %{intent: state.intent, capabilities: capabilities}}
     end
     {:reply, answer, state}
   end
 
   def handle_call({:react, intent}, _from, %{capabilities: capabilities} = state) do
-    completed = with {:ok, expected} <- next_expected_topic(capabilities),
-                     {:ok, topic}    <- complete_topic(expected, intent),
-                     {:ok, value}    <- Capability.complete(topic.pid, intent),
+    completed = with {:ok, expected}   <- next_expected_topic(capabilities),
+                     {:ok, capability} <- complete_topic(expected, intent),
+                     {:ok, value}      <- Capability.complete(capability.pid, intent),
                 do:  {:ok, value}
 
     next_expected = case completed do
@@ -65,7 +68,7 @@ defmodule Dobar.Conversation.Topic do
     end
 
     answer = case next_expected do
-      {:ok, topic}         -> {:topic, Capability.question(topic.pid)}
+      {:ok, capability}    -> {:topic, Capability.question(capability.pid)}
       {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
       {:nomatch, reason}   -> {:nomatch, reason}
     end
@@ -74,7 +77,9 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_cast({:fill_topics, entities}, %{capabilities: capabilities} = state) do
-    capabilities |> Enum.map(fn(topic) -> Capability.complete(topic.pid, entities) end)
+    Enum.map(capabilities, fn(capability) ->
+      Capability.complete(capability.pid, entities)
+    end)
     {:noreply, state}
   end
 
@@ -83,10 +88,11 @@ defmodule Dobar.Conversation.Topic do
 
   defp incompleted_topics(capabilities) do
     capabilities
-    |> Enum.map(&(%{topic: &1, completed: Capability.completed?(&1.pid)}))
+    |> Enum.map(&(%{capability: &1, completed: Capability.completed?(&1.pid)}))
     |> Enum.filter(fn(topic) -> topic.completed == false end)
-    |> Enum.sort(&(Capability.priority(&1.topic.pid) < Capability.priority(&2.topic.pid)))
-    |> Enum.map(&(&1.topic))
+    |> Enum.sort(&(
+      Capability.priority(&1.capability.pid) < Capability.priority(&2.capability.pid)))
+    |> Enum.map(&(&1.capability))
   end
 
   defp available_capabilities(%Intent{} = intent) do
@@ -96,20 +102,20 @@ defmodule Dobar.Conversation.Topic do
   end
 
   defp create_topic(capability, intent_entities) do
-    {:ok, topic} = Capability.start_link(elem(capability, 1), intent_entities)
-    %{name: elem(capability, 0), pid: topic}
+    {:ok, new_capability} = Capability.start_link(elem(capability, 1), intent_entities)
+    %{name: elem(capability, 0), pid: new_capability}
   end
 
   defp next_expected_topic(capabilities) do
     case capabilities |> incompleted_topics |> List.first do
       nil -> {:completed, topics_list(capabilities)}
-      topic -> {:ok, topic}
+      capability -> {:ok, capability}
     end
   end
 
-  defp complete_topic(topic, intent) do
-    case Capability.complete?(topic.pid, intent) do
-      {:match, _key, _entities} -> {:ok, topic}
+  defp complete_topic(capability, intent) do
+    case Capability.complete?(capability.pid, intent) do
+      {:match, _key, _entities} -> {:ok, capability}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{key}"}
     end
   end

@@ -34,7 +34,7 @@ defmodule Dobar.Conversation.Dialog do
 
     {:ok, topic} = Dobar.Conversation.Topic.start_link(intent)
 
-    case Dobar.Conversation.Topic.next_topic(topic) do
+    case Dobar.Conversation.Topic.continue(topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
@@ -133,7 +133,7 @@ defmodule Dobar.Conversation.Dialog do
   def handle_info({:answer, %{intent: intent, topics: topics}}, %{topic: topic} = state) do
     Dobar.Conversation.Topic.fill_topics topic, %Intent{entities: topics}
 
-    case Dobar.Conversation.Topic.next_topic(topic) do
+    case Dobar.Conversation.Topic.continue(topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
@@ -149,7 +149,7 @@ defmodule Dobar.Conversation.Dialog do
 
   # handles a response coming from a canceled meta-conversation
   def handle_info(:continue, %{topic: topic} = state) do
-    case Dobar.Conversation.Topic.next_topic(topic) do
+    case Dobar.Conversation.Topic.continue(topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
