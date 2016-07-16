@@ -59,7 +59,8 @@ defmodule Dobar.Conversation.Capability do
   ## Alert
 
   Alert is a capability that will want to communication with the outside
-  (or its features data bank) in order to provide an outcome
+  (or its features data bank) in order to provide an outcome. eg: tries to match
+  a contact for the current acount, therefore talking to an external api service.
   """
 
   use GenServer
