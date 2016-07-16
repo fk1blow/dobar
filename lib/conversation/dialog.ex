@@ -8,16 +8,17 @@ defmodule Dobar.Conversation.Dialog do
     GenServer.start_link __MODULE__, [parent: parent]
   end
 
-  def start_link(name, parent) do
+  def start_link(name, parent \\ nil) do
     GenServer.start_link __MODULE__, [parent: parent], name: name
   end
 
   def evaluate(pid, %Intent{} = intent) do
+    IO.puts "evaluate intent: #{inspect intent}"
     GenServer.cast pid, {:evaluate, intent}
   end
 
-  def react(pid, topic) do
-    GenServer.cast pid, {:outcome, topic}
+  def complete(pid, topic) do
+    GenServer.cast pid, {:complete, topic}
   end
 
   def continue(pid) do
@@ -32,15 +33,15 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   @doc """
-  Handles the intent evaluation if there is no active dialog yet; it creates
-  a new dialog and starts it.
+  Handles the intent evaluation when there is no active dialog yet
+  It also creates a new dialog and starts it - by invoking `continue`.
   """
   def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
-    IO.puts "begin topic"
+    IO.puts "begin topic, intent: #{inspect intent}"
 
     {:ok, topic} = Dobar.Conversation.Topic.start_link(intent)
 
-    case Dobar.Conversation.Topic.continue(topic) do
+    case Dobar.Conversation.Topic.react(topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
@@ -58,17 +59,19 @@ defmodule Dobar.Conversation.Dialog do
     IO.puts "continue topic"
 
     case Dobar.Conversation.Topic.react(topic, intent) do
-      {:topic, question} ->
-        IO.puts "Topic: question #{inspect question}"
+      {:next, outcome} ->
+        IO.puts "Topic: question #{inspect outcome.question}"
         IO.puts "________________________________________________"
         {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
 
+      # TODO: the completed should also be an outcome of the topic, regardless
+      # of its lifecycle/internals
       {:completed, topic} ->
         IO.puts "The topic has been completed with: #{inspect topic}"
 
         if not_root?(self) do
           IO.puts "ending topic, intent: #{inspect intent.name}"
-          Dobar.Conversation.Dialog.react(state.parent, topic)
+          Dobar.Conversation.Dialog.complete(state.parent, topic)
         end
 
         {:stop, :normal, nil}
@@ -76,20 +79,35 @@ defmodule Dobar.Conversation.Dialog do
       {:nomatch, reason} ->
         IO.puts "cannot match: #{inspect reason}"
 
-        case IntentionProvider.alternate(intent) do
-          {:ok, intent_def} ->
-            intent_name = String.to_atom "#{intent.name}_conversation"
-            IO.puts "creating meta: #{intent_name}"
-
+        case Dobar.Conversation.Topic.alternative(topic, intent) do
+          {:internal, _capability} ->
             {:ok, pid} = Dobar.Conversation.Dialog.start_link self
             Dobar.Conversation.Dialog.evaluate pid, intent
-
             {:noreply, %{topic: topic, meta: pid, parent: state.parent}}
-
+          {:external, capability} ->
+            IO.puts "external found: kill the chain and start a new dialog"
+            {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
           {:error, reason} ->
             IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
             {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
         end
+
+
+
+        # case IntentionProvider.alternate(intent) do
+        #   {:ok, intent_def} ->
+        #     intent_name = String.to_atom "#{intent.name}_conversation"
+        #     IO.puts "creating meta: #{intent_name}"
+
+        #     {:ok, pid} = Dobar.Conversation.Dialog.start_link self
+        #     Dobar.Conversation.Dialog.evaluate pid, intent
+
+        #     {:noreply, %{topic: topic, meta: pid, parent: state.parent}}
+
+        #   {:error, reason} ->
+        #     IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
+        #     {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
+        # end
     end
   end
 
@@ -105,15 +123,18 @@ defmodule Dobar.Conversation.Dialog do
   @doc """
   Handles messages coming from a meta-dialog for a "cancel command".
   The receiver(parent) dialog will always stop when receiving this outcome intent.
+
+  TODO: find if theres a way to change the `:complete` message to an `:end` message;
+  this way will look more clearly what messages the Dialog is receiving.
   """
-  def handle_cast({:outcome, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
+  def handle_cast({:complete, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
     if not_root?(self), do: Dobar.Conversation.Dialog.continue(state.parent)
     {:stop, :normal, %{topic: nil, meta: nil, parent: nil}}
   end
 
   # TBD
   # handles "switch_conversation" type of messages coming from a meta-conversation
-  # def handle_info({:answer, %{intent: %Intent{name: "switch_conversation"}} = answer}, state) do
+  # def handle_cast({:complete, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
   #   if root_conversation?(self) do
   #     Process.exit(self, :normal)
   #     {:noreply, %{topic: nil, meta: nil, parent: nil}}
@@ -129,17 +150,17 @@ defmodule Dobar.Conversation.Dialog do
   the dialog will continue.
   Note that the meta is considered to be dead so `nil` it out!
 
-  Beware that it might fall into a case where Topic.continue/1 might return
-  a tuple of: `{:completed, topics}` that atm is not handled
+  Note that that the `case` statement might fall into a case where
+  Topic.react/1 might return a tuple of: `{:completed, topics}` that atm is not handled
   """
-  def handle_cast({:outcome, %{intent: intent, topics: topics}}, %{topic: topic} = state) do
-    Dobar.Conversation.Topic.fill_topics topic, %Intent{entities: topics}
-    case Dobar.Conversation.Topic.continue(topic) do
+  def handle_cast({:complete, %{intent: intent, topics: topics}}, state) do
+    Dobar.Conversation.Topic.fill_topics(state.topic, %Intent{entities: topics})
+    case Dobar.Conversation.Topic.react(state.topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
       true ->
-        raise "this Dialog shouldn't have been completed!"
+        raise "this Dialog shouldn't have been completed! see '@docs' note"
     end
     {:noreply, Map.merge(state, %{meta: nil})}
   end
@@ -149,7 +170,7 @@ defmodule Dobar.Conversation.Dialog do
   simply tries to continue its flow by asking for the next topic capability subject.
   """
   def handle_cast(:continue, %{topic: topic} = state) do
-    case Dobar.Conversation.Topic.continue(topic) do
+    case Dobar.Conversation.Topic.react(topic) do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
