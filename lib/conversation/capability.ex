@@ -60,7 +60,8 @@ defmodule Dobar.Conversation.Capability do
 
   Alert is a capability that will want to communication with the outside
   (or its features data bank) in order to provide an outcome. eg: tries to match
-  a contact for the current acount, therefore talking to an external api service.
+  a contact for the current acount but needs to search it inside some `contacts`
+  external service/api.
   """
 
   use GenServer
@@ -84,12 +85,12 @@ defmodule Dobar.Conversation.Capability do
     GenServer.call(pid, :get_outcome)
   end
 
-  def complete?(pid, %Intent{entities: entities}) do
-    GenServer.call(pid, {:can_complete, entities})
+  def complete?(pid, %Intent{} = intent) do
+    GenServer.call(pid, {:can_complete, intent})
   end
 
-  def complete(pid, %Intent{entities: entities}) do
-    GenServer.call(pid, {:complete, entities})
+  def complete(pid, %Intent{} = intent) do
+    GenServer.call(pid, {:complete, intent})
   end
 
   def structure(pid) do
@@ -116,23 +117,56 @@ defmodule Dobar.Conversation.Capability do
 
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
-    question = "please provide a value for: #{state.capability.entity}"
+    question = "please provide a value for: #{inspect state.capability.entity}"
     {:reply, %Outcome{question: question}, state}
   end
 
-  def handle_call({:can_complete, intent_entities}, _from, state) do
-    key = String.to_atom state.capability.entity
-    match = intent_entities[key]
-    reply = case match do
-      nil -> {:nomatch, key, intent_entities}
-      [h|t] -> {:match, key, h}
+  def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do
+    capability_entities = state.capability.entity
+
+    match = case one_of_entity_match(entities, capability_entities) do
+      nil -> {:nomatch, capability_entities, intent}
+      [h|t] -> {:match, capability_entities, h}
     end
-    {:reply, reply, state}
+
+
+
+
+    # match = if is_list(state.capability.entity) do
+    #   case Enum.find(state.capability.entity, &(entities[&1])) do
+    #     nil -> nil
+    #     key ->
+    #       case entities[key] do
+    #         nil -> {:nomatch, key, intent}
+    #         [h|t] -> {:match, key, h}
+    #       end
+    #   end
+    # else
+    #   key = String.to_atom state.capability.entity
+    #   match = entities[key]
+    #   case match do
+    #     nil -> {:nomatch, key, intent}
+    #     [h|t] -> {:match, key, h}
+    #   end
+    # end
+
+
+
+
+
+
+    # key = String.to_atom state.capability.entity
+    # match = intent.entities[key]
+    # reply = case match do
+    #   nil -> {:nomatch, key, intent}
+    #   [h|t] -> {:match, key, h}
+    # end
+    {:reply, match, state}
   end
 
-  def handle_call({:complete, intent_entities}, _from, state) do
+  def handle_call({:complete, %Intent{} = intent}, _from, state) do
     key = String.to_atom state.capability.entity
-    reply = case intent_entities[key] do
+    reply = case intent.entities[key] do
       nil -> nil
       [h|t] -> h.value
     end
@@ -147,11 +181,39 @@ defmodule Dobar.Conversation.Capability do
   # private
   #
 
-  defp prefill_value(prefill, capability) do
-    entity = String.to_atom capability.entity
+  defp prefill_value(prefill, %{entity: entities}) when is_list entities do
+    # get the first entity in the list that can match a key in the prefill map
+    # case Enum.find(entities, &(prefill[&1])) do
+    #   nil -> nil
+    #   entity ->
+    #     case prefill[entity] do
+    #       nil -> nil
+    #       entity -> List.first(entity).value
+    #     end
+    # end
+    case one_of_entity_match(prefill, entities) do
+      nil -> nil
+      entity -> List.first(entity).value
+    end
+  end
+  defp prefill_value(prefill, %{entity: entity}) do
+    IO.puts "prefill: #{inspect prefill}"
+    IO.puts "capability: #{inspect entity}"
+
+    entity = String.to_atom entity
     case prefill[entity] do
       nil -> nil
       entity -> List.first(entity).value
+    end
+  end
+
+  defp one_of_entity_match(target, entity) when is_bitstring entity do
+    target[String.to_atom entity]
+  end
+  defp one_of_entity_match(target, entities) when is_list entities do
+    case Enum.find(entities, &(target[&1])) do
+      nil -> nil
+      entity -> target[entity]
     end
   end
 end

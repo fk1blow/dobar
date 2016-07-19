@@ -22,7 +22,20 @@ defmodule Dobar.Conversation.IntentionBehaviour do
 
     topics = case block do
       {:__block__, _, elements} ->
-        Enum.map(elements, fn(topic) -> extract_topic.(elem topic, 2) end)
+        definition = elements
+        |> Enum.filter(&(elem(&1, 0) != :relationship))
+        |> Enum.map(fn(topic) -> extract_topic.(elem topic, 2) end)
+
+        # find a :relationship key and extract it
+        relationship = elements
+        |> Enum.filter(&(elem(&1, 0) == :relationship))
+        |> Enum.flat_map(&(elem &1, 2))
+
+        # if the relationship exists, inject it inside the definition
+        case relationship do
+          [h|_] -> Keyword.put definition, :relationship, h
+          _     -> definition
+        end
       {:topic, _, topic} ->
         [extract_topic.(topic)]
     end

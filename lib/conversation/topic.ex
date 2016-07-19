@@ -1,4 +1,60 @@
 defmodule Dobar.Conversation.Topic do
+  @moduledoc """
+
+  Conversation Topic
+  ==================
+
+  It represents the (main)Topic of a dialog/conversation. It has a dynamic state
+  that is modeled through time, defined by the Capabilities it ownes and their need
+  for input(usually represented by an %Intent).
+
+  ## lifecycle
+
+  Its lifecycle is modeled just by reacting to the Dialog
+  (calling `Topic.react/1` or `Topic.react/2`).
+  Reacting to no Intent(`Topic.react/1`), the Topic doesn't change its state.
+  Calling with an Intent using `Topic.react/2` function, it feeds the intent to
+  all its capabilities, make them react in turn.
+
+  Note that it should be protected of infinite topics that never end; it needs
+  a clear start and end, possibly adding a timeout...
+
+  ## Public Interface
+
+  `start_link/1`
+
+  `react/1`
+
+  `react/2`
+
+  ## Separation refactor
+
+  By removing the `alternate/2` and `fill_topics` and replacing them with the generic
+  `react/1` or `react/2`, you get the benefit of better separation and encapsulation.
+
+  #### better separation
+
+  Removing the `alternative/2` you separate the part where a Dialog decides which
+  action to take based on the reaction of a Topic.
+
+  #### encapsulation
+
+  You don;t really (need to)know how the Topic does its job, other than a standard
+  generic contract - it reacts(using `react/1`, `react/2`) to the Dialog and to
+  intentions, advancing in its state as it uses differrent capabilities and filling
+  their needs for input(slots).
+
+  ## topic reaction
+
+  The reaction of a topic(calling `Topic.react/1` or `Topic.react/2`) is the
+  side-effect that the topic is expressing. It modified its internal state and
+  always gives a reaction when invoked.
+
+  The reaction makes the case of a simpler Dialog, where you have multiple
+  paths/routes where a Dialog might chose. The chosing strategy is by pattern
+  matching and then delegating to every reaction used by the Dialog.
+  """
+
   use GenServer
 
   alias Dobar.Model.Intent
@@ -17,7 +73,7 @@ defmodule Dobar.Conversation.Topic do
   the given intent), this function will return the next possible subject capability.
   """
   # def continue(pid), do: GenServer.call pid, :next_topic
-  def react(pid), do: GenServer.call pid, :next_topic
+  def react(pid), do: GenServer.call pid, :react
 
   @doc """
   Will complete the next possible topic and return the next subject capability
@@ -26,42 +82,39 @@ defmodule Dobar.Conversation.Topic do
   def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
 
   @doc """
-  TODO: this function does not have a clear meaning; it doesn;t really give away
-  the effect that it has on the Topic itself nor the expression it computes/returns.
-
-  TODO: rename this function or remove it completely from the `Topic` module
-
-  Finds an alternate topic within this intent's capabilities
+  Will complete for each and every entity inside the entities list and return the
+  next subject capability if any left.
   """
-  def alternative(pid, intent), do: GenServer.call pid, {:alternative_topic, intent}
+  def react(pid, [h|t] = entities), do: GenServer.call pid, {:react, entities}
 
   @doc """
-  Fills the topics entities by the provided `entities` parameter
+  Will return the Topic's current intent
   """
-  def fill_topics(pid, entities), do: GenServer.cast pid, {:fill_topics, entities}
+  def intent(pid), do: GenServer.call pid, :get_intent
 
   # callbacks
   #
 
+  # stop the dialog if there are no capabilities for the intent that was passed
   def init(args) do
     intent = args[:intent]
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
     |> Enum.map(&(create_topic(&1, intent.entities)))
-    {:ok, %{intent: intent, capabilities: capabilities}}
+    |> validate_capabilities(intent)
   end
 
-  def handle_call(:next_topic, _from, state) do
+  def handle_call(:react, _from, state) do
     answer = case next_expected_topic(state.capabilities) do
       {:ok, capability} ->
-        {:topic, Capability.question(capability.pid)}
+        {:topic, Capability.outcome(capability.pid)}
       {:completed, capabilities} ->
         {:completed, %{intent: state.intent, capabilities: capabilities}}
     end
     {:reply, answer, state}
   end
 
-  def handle_call({:react, intent}, _from, state) do
+  def handle_call({:react, %Intent{} = intent}, _from, state) do
     topic_status =
       with {:ok, expected}   <- next_expected_topic(state.capabilities),
            {:ok, capability} <- complete_topic(expected, intent),
@@ -77,36 +130,17 @@ defmodule Dobar.Conversation.Topic do
     {:reply, answer, state}
   end
 
-  def handle_call({:alternative_topic, alt_intent}, _from, %{intent: intent} = state) do
-    # search for a reference inside the current intent
-    reference = with {:ok, list}        <- reference_capabilities(intent),
-                     {:ok, capability}  <- intent_has_capability(alt_intent, list),
-                 do: {:ok, capability}
-    # if internal reference was found, return it, else, search for a
-    # reference in the global context of the intention provider
-    answer = case reference do
-      {:ok, capability} ->
-        {:internal, capability}
-      {:error, _reason} ->
-        case IntentionProvider.normal_intention(String.to_atom alt_intent.name) do
-          {:ok, capability} -> {:external, capability}
-          {:error, reason} -> {:error, reason}
-        end
-    end
-    {:reply, answer, state}
+  def handle_call({:react, [h|t]}, _from, state) do
+    IO.puts "should fill the capabilities features with the provided list"
+    {:reply, nil, state}
   end
 
-  def handle_cast({:fill_topics, entities}, %{capabilities: capabilities} = state) do
-    Enum.map(capabilities, fn(capability) ->
-      Capability.complete(capability.pid, entities)
-    end)
-    {:noreply, state}
+  def handle_call(:get_intent, _from, state) do
+    {:reply, state.intent, state}
   end
 
   # private
   #
-
-  # TODO: try to remove this utility functions; can it be moved to a Capability utils?!
 
   # TODO: rename to `incompleted_capabilities`
   defp incompleted_topics(capabilities) do
@@ -121,16 +155,9 @@ defmodule Dobar.Conversation.Topic do
   # TODO: watch out for when there is no intention defined for the input intent
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
-    {:ok, intent_def} = IntentionProvider.normal_intention(intent_name)
-    filter_capabilities(intent_def[intent_name], :entity)
-  end
-
-  defp reference_capabilities(%Intent{} = intent) do
-    intent_name = String.to_atom(intent.name)
-    {:ok, intent_def} = IntentionProvider.meta_intention(intent_name)
-    case filter_capabilities(intent_def[intent_name], :reference) do
-      [h|t] -> {:ok, [h|t]}
-      _     -> {:error, "no reference capabilities found"}
+    case IntentionProvider.intention(intent_name) do
+      {:ok, intent_def} -> filter_capabilities(intent_def[intent_name])
+      {:error, reason} -> []
     end
   end
 
@@ -163,16 +190,17 @@ defmodule Dobar.Conversation.Topic do
     |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), [%{value: &1.value}])))
   end
 
-  defp filter_capabilities(capabilities, by_field) do
+  defp filter_capabilities(capabilities) do
     capabilities
-    |> Enum.filter(fn(x) -> is_nil(elem(x, 1)[by_field]) == false end)
+    |> Enum.filter(&(elem(&1, 0) != :relationship))
+    |> Enum.filter(&(is_nil(elem(&1, 1)[:entity]) == false))
     |> Enum.map(fn(x) -> {elem(x, 0), Enum.into(elem(x, 1), %{})} end)
   end
 
-  defp intent_has_capability(%Intent{name: name}, capabilities) do
-    case Enum.find(capabilities, &(elem(&1, 0) == String.to_atom(name))) do
-      nil        -> {:error, "no capability found"}
-      capability -> {:ok, capability}
-    end
+  defp validate_capabilities([], intent) do
+    {:stop, {"cannot start topic without capabilities", intent}}
+  end
+  defp validate_capabilities([h|t] = capabilities, intent) do
+    {:ok, %{intent: intent, capabilities: capabilities}}
   end
 end

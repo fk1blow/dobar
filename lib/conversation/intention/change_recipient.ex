@@ -2,7 +2,11 @@
 defmodule Dobar.Conversation.Intention.ChangeRecipient do
   use Dobar.Conversation.IntentionBehaviour
 
-  intention :cancel_command do
-    topic :confirmation, entity: "yes"
+  intention :change_recipient do
+    relationship :meta
+    topic :message_recipient, prio: 2, entity: "contact"
   end
+
+
+  IO.inspect @intentions
 end
