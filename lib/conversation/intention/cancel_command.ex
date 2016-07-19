@@ -9,6 +9,6 @@ defmodule Dobar.Conversation.Intention.CancelCommand do
   intention :cancel_command do
     relationship :meta
     # topic :confirmation, entity: "yes"
-    topic :approve, entity: {:confirm, :infirm}
+    topic :approve, entity: [:confirm, :infirm]
   end
 end

@@ -5,6 +5,5 @@ defmodule Dobar.Conversation.Intention.Confirmation do
   intention :confirmation do
     relationship :meta
     topic :approve, entity: [:confirm, :infirm]
-    # topic :approve, prio: 1, entity: "confirm"
   end
 end

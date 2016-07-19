@@ -123,64 +123,26 @@ defmodule Dobar.Conversation.Capability do
 
   def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
-
     match = case match_entity(capability_entities, entities) do
       nil -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
     end
-
-
-
-
-    # match = if is_list(state.capability.entity) do
-    #   case Enum.find(state.capability.entity, &(entities[&1])) do
-    #     nil -> nil
-    #     key ->
-    #       case entities[key] do
-    #         nil -> {:nomatch, key, intent}
-    #         [h|t] -> {:match, key, h}
-    #       end
-    #   end
-    # else
-    #   key = String.to_atom state.capability.entity
-    #   match = entities[key]
-    #   case match do
-    #     nil -> {:nomatch, key, intent}
-    #     [h|t] -> {:match, key, h}
-    #   end
-    # end
-
-
-
-
-
-
-    # key = String.to_atom state.capability.entity
-    # match = intent.entities[key]
-    # reply = case match do
-    #   nil -> {:nomatch, key, intent}
-    #   [h|t] -> {:match, key, h}
-    # end
     {:reply, match, state}
   end
 
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
-
     reply = case match_entity(capability_entities, entities) do
       nil -> nil
       [h|t] -> h.value
     end
 
-    # key = String.to_atom state.capability.entity
-    # reply = case intent.entities[key] do
-    #   nil -> nil
-    #   [h|t] -> h.value
-    # end
+    IO.puts "reply: #{inspect reply}"
     {:reply, {:ok, reply}, Map.merge(state, %{value: reply})}
   end
 
   def handle_call(:structure, _from, state) do
+    IO.puts "xxxxx: #{inspect state}"
     # TODO: refactor to return a more appropriate structure of the topic
     {:reply, {:ok, %{name: state.capability.entity, value: state.value}}, state}
   end
@@ -189,24 +151,12 @@ defmodule Dobar.Conversation.Capability do
   #
 
   defp prefill_value(prefill, %{entity: entities}) when is_list entities do
-    # get the first entity in the list that can match a key in the prefill map
-    # case Enum.find(entities, &(prefill[&1])) do
-    #   nil -> nil
-    #   entity ->
-    #     case prefill[entity] do
-    #       nil -> nil
-    #       entity -> List.first(entity).value
-    #     end
-    # end
     case match_entity(entities, prefill) do
       nil -> nil
       entity -> List.first(entity).value
     end
   end
   defp prefill_value(prefill, %{entity: entity}) do
-    IO.puts "prefill: #{inspect prefill}"
-    IO.puts "capability: #{inspect entity}"
-
     entity = String.to_atom entity
     case prefill[entity] do
       nil -> nil

@@ -82,9 +82,10 @@ defmodule Dobar.Conversation.Dialog do
         IO.puts "The topic has been completed with: #{inspect topic}"
 
         if not_root?(self) do
-          IO.puts "ending topic, intent: #{inspect intent.name}"
+          IO.puts "ending topic, intent: #{inspect intent}"
+          IO.puts "end state: #{inspect state}"
           # use direct calls to the referer(parent) instead
-          Dobar.Conversation.Dialog.complete(state.parent, topic)
+          # Dobar.Conversation.Dialog.complete(state.parent, topic)
         end
 
         {:stop, :normal, nil}
