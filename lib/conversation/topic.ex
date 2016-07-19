@@ -187,7 +187,7 @@ defmodule Dobar.Conversation.Topic do
     capabilities
     |> Enum.map(&(Capability.structure &1.pid))
     |> Enum.map(&(elem(&1, 1)))
-    |> List.foldl(%{}, &(Map.put(&2, String.to_atom(&1.name), [%{value: &1.value}])))
+    |> List.foldl(%{}, &(Map.put(&2, &1.name, [%{value: &1.value}])))
   end
 
   defp filter_capabilities(capabilities) do

@@ -124,7 +124,7 @@ defmodule Dobar.Conversation.Capability do
   def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
 
-    match = case one_of_entity_match(entities, capability_entities) do
+    match = case match_entity(capability_entities, entities) do
       nil -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
     end
@@ -164,12 +164,19 @@ defmodule Dobar.Conversation.Capability do
     {:reply, match, state}
   end
 
-  def handle_call({:complete, %Intent{} = intent}, _from, state) do
-    key = String.to_atom state.capability.entity
-    reply = case intent.entities[key] do
+  def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
+    capability_entities = state.capability.entity
+
+    reply = case match_entity(capability_entities, entities) do
       nil -> nil
       [h|t] -> h.value
     end
+
+    # key = String.to_atom state.capability.entity
+    # reply = case intent.entities[key] do
+    #   nil -> nil
+    #   [h|t] -> h.value
+    # end
     {:reply, {:ok, reply}, Map.merge(state, %{value: reply})}
   end
 
@@ -191,7 +198,7 @@ defmodule Dobar.Conversation.Capability do
     #       entity -> List.first(entity).value
     #     end
     # end
-    case one_of_entity_match(prefill, entities) do
+    case match_entity(entities, prefill) do
       nil -> nil
       entity -> List.first(entity).value
     end
@@ -207,10 +214,10 @@ defmodule Dobar.Conversation.Capability do
     end
   end
 
-  defp one_of_entity_match(target, entity) when is_bitstring entity do
-    target[String.to_atom entity]
+  defp match_entity(entities, target) when is_bitstring entities do
+    target[String.to_atom entities]
   end
-  defp one_of_entity_match(target, entities) when is_list entities do
+  defp match_entity(entities, target) when is_list entities do
     case Enum.find(entities, &(target[&1])) do
       nil -> nil
       entity -> target[entity]
