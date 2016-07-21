@@ -132,19 +132,25 @@ defmodule Dobar.Conversation.Capability do
 
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
-    reply = case match_entity(capability_entities, entities) do
+    capability_value = case match_entity(capability_entities, entities) do
       nil -> nil
       [h|t] -> h.value
     end
 
-    IO.puts "reply: #{inspect reply}"
-    {:reply, {:ok, reply}, Map.merge(state, %{value: reply})}
+    new_capability = Map.merge(state.capability,
+      %{entity: capability_entity_key(state.capability, intent)})
+
+    new_state = Map.merge(state,
+      %{value: capability_value, capability: new_capability})
+    {:reply, {:ok, capability_value}, new_state}
   end
 
   def handle_call(:structure, _from, state) do
-    IO.puts "xxxxx: #{inspect state}"
-    # TODO: refactor to return a more appropriate structure of the topic
-    {:reply, {:ok, %{name: state.capability.entity, value: state.value}}, state}
+    slot_key = case state.capability.entity do
+      name when is_bitstring(name) -> String.to_atom(name)
+      name -> name
+    end
+    {:reply, {:ok, %{name: slot_key, value: state.value}}, state}
   end
 
   # private
@@ -172,5 +178,13 @@ defmodule Dobar.Conversation.Capability do
       nil -> nil
       entity -> target[entity]
     end
+  end
+
+  defp capability_entity_key(capability, %Intent{entities: entities}) do
+    case capability.entity do
+      [h|t] -> capability.entity |> Enum.find(&(entities[&1]))
+      _ -> capability.entity
+    end
+
   end
 end
