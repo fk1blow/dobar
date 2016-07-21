@@ -57,11 +57,11 @@ defmodule Dobar.Conversation.Dialog do
       {:topic, question}   ->
         IO.puts "Topic: question #{inspect question}"
         IO.puts "________________________________________________"
+        {:noreply, Map.merge(state, %{topic: topic})}
       {:completed, topics} ->
         IO.puts "The topic has been completed; topics: #{inspect topics}"
+        {:stop, :normal, nil}
     end
-
-    {:noreply, Map.merge(state, %{topic: topic})}
   end
 
   @doc """
