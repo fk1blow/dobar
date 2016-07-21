@@ -133,12 +133,12 @@ defmodule Dobar.Conversation.Capability do
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
     capability_value = case match_entity(capability_entities, entities) do
-      nil -> nil
+      nil   -> nil
       [h|t] -> h.value
     end
 
     new_capability = Map.merge(state.capability,
-      %{entity: capability_entity_key(state.capability, intent)})
+      %{entity: capability_slot_key(state.capability, intent)})
 
     new_state = Map.merge(state,
       %{value: capability_value, capability: new_capability})
@@ -148,7 +148,7 @@ defmodule Dobar.Conversation.Capability do
   def handle_call(:structure, _from, state) do
     slot_key = case state.capability.entity do
       name when is_bitstring(name) -> String.to_atom(name)
-      name -> name
+      name                         -> name
     end
     {:reply, {:ok, %{name: slot_key, value: state.value}}, state}
   end
@@ -158,14 +158,14 @@ defmodule Dobar.Conversation.Capability do
 
   defp prefill_value(prefill, %{entity: entities}) when is_list entities do
     case match_entity(entities, prefill) do
-      nil -> nil
+      nil    -> nil
       entity -> List.first(entity).value
     end
   end
   defp prefill_value(prefill, %{entity: entity}) do
     entity = String.to_atom entity
     case prefill[entity] do
-      nil -> nil
+      nil    -> nil
       entity -> List.first(entity).value
     end
   end
@@ -180,10 +180,11 @@ defmodule Dobar.Conversation.Capability do
     end
   end
 
-  defp capability_entity_key(capability, %Intent{entities: entities}) do
+
+  defp capability_slot_key(capability, %Intent{entities: entities}) do
     case capability.entity do
       [h|t] -> capability.entity |> Enum.find(&(entities[&1]))
-      _ -> capability.entity
+      _     -> capability.entity
     end
 
   end
