@@ -67,7 +67,7 @@ defmodule Dobar.Conversation.Capability do
   use GenServer
 
   alias Dobar.Model.Intent
-  alias Dobar.Model.Outcome
+  alias Dobar.Model.Reaction
 
   def start_link(capability, entities) do
     GenServer.start_link __MODULE__, [capability: capability, prefill: entities]
@@ -118,13 +118,13 @@ defmodule Dobar.Conversation.Capability do
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
     question = "please provide a value for: #{inspect state.capability.entity}"
-    {:reply, %Outcome{question: question}, state}
+    {:reply, %Reaction{value: question}, state}
   end
 
   def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
     match = case match_entity(capability_entities, entities) do
-      nil -> {:nomatch, capability_entities, intent}
+      nil   -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
     end
     {:reply, match, state}
@@ -186,6 +186,5 @@ defmodule Dobar.Conversation.Capability do
       [h|t] -> capability.entity |> Enum.find(&(entities[&1]))
       _     -> capability.entity
     end
-
   end
 end

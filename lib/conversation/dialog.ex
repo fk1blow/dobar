@@ -71,8 +71,8 @@ defmodule Dobar.Conversation.Dialog do
     IO.puts "continue topic: #{inspect intent}"
 
     case Dobar.Conversation.Topic.react(topic, intent) do
-      {:next, outcome} ->
-        IO.puts "Topic: question #{inspect outcome.question}"
+      {:next, reaction} ->
+        IO.puts "Topic reaction #{inspect reaction.value}"
         IO.puts "________________________________________________"
         {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
 
