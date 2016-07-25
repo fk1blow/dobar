@@ -5,6 +5,8 @@ defmodule Dobar.Conversation.Dialog do
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
+  @confidence_treshold 0.75
+
   def start_link(:root_dialog) do
     GenServer.start_link __MODULE__, [parent: nil], name: :root_dialog
   end
@@ -96,7 +98,7 @@ defmodule Dobar.Conversation.Dialog do
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
 
-        case alternative(intent, topic) do
+        case find_alternative(intent, topic) |> validate_alternative(intent) do
           {:reference, intention} ->
             IO.puts "reference found: #{inspect intention}"
 
@@ -108,8 +110,7 @@ defmodule Dobar.Conversation.Dialog do
             {:noreply, Map.merge(state, %{meta: pid})}
 
           {:alternative, intention} ->
-            IO.puts "alternative found: #{inspect intention}"
-            IO.puts "alternative for intent: #{inspect intent}"
+            IO.puts "alternative dialog: #{inspect intention}"
 
             Process.flag(:trap_exit, true)
 
@@ -123,7 +124,7 @@ defmodule Dobar.Conversation.Dialog do
 
           {:noalternative, intention} ->
             IO.puts "no alternative found: #{inspect intention}"
-            {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
+            {:noreply, state}
         end
     end
   end
@@ -138,66 +139,10 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   @doc """
-  Handles messages coming from a meta-dialog for a "cancel command".
-  The receiver(parent) dialog will always stop when receiving this outcome intent.
-
-  TODO: find if theres a way to change the `:complete` message to an `:end` message;
-  this way will look more clearly what messages the Dialog is receiving.
+  If the reaction is %{confirm: "yes"}, then it sends a message to the parent,
+  telling him to continue its Dialog, or if %{infirm: "no"} just continue
+  with the Dialog it has active
   """
-  # def handle_cast({:complete, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
-  #   if not_root?(self), do: Dobar.Conversation.Dialog.continue(state.parent)
-  #   {:stop, :normal, %{topic: nil, meta: nil, parent: nil}}
-  # end
-
-  # TBD
-  # handles "switch_conversation" type of messages coming from a meta-conversation
-  # def handle_cast({:complete, %{intent: %Intent{name: "switch_conversation"} = intent}}, state) do
-  #   if root_conversation?(self) do
-  #     Process.exit(self, :normal)
-  #     {:noreply, %{topic: nil, meta: nil, parent: nil}}
-  #   else
-  #     # TBD
-  #     send(state.parent, :switch)
-  #     {:stop, :normal, nil}
-  #   end
-  # end
-
-  @doc """
-  Handles messages coming from a meta-dialog with a happy path; after this,
-  the dialog will continue.
-  Note that the meta is considered to be dead so `nil` it out!
-
-  Note that that the `case` statement might fall into a case where
-  Topic.react/1 might return a tuple of: `{:completed, topics}` that atm is not handled
-
-  TODO: `def handle_cast({:complete, %{intent: intent, topics: topics}}, state) do`
-  doesnt make any sense because you don't really use the intent there, just the topics!
-  """
-  # def handle_cast({:complete, %{topics: topics}}, state) do
-  #   Dobar.Conversation.Topic.fill_topics(state.topic, %Intent{entities: topics})
-  #   case Dobar.Conversation.Topic.react(state.topic) do
-  #     {:topic, question}   ->
-  #       IO.puts "Topic: question #{inspect question}"
-  #       IO.puts "________________________________________________"
-  #     true ->
-  #       raise "this Dialog shouldn't have been completed! see '@docs' note"
-  #   end
-  #   {:noreply, Map.merge(state, %{meta: nil})}
-  # end
-
-  @doc """
-  Handles messages coming from a meta that was canceled. In this case, the dialog
-  simply tries to continue its flow by asking for the next topic capability subject.
-  """
-  # def handle_cast(:continue, %{topic: topic} = state) do
-  #   case Dobar.Conversation.Topic.react(topic) do
-  #     {:topic, question}   ->
-  #       IO.puts "Topic: question #{inspect question}"
-  #       IO.puts "________________________________________________"
-  #   end
-  #   {:noreply, Map.merge(state, %{meta: nil})}
-  # end
-
   def handle_info({:meta, %{intent: %{name: "cancel_command"}} = reaction}, state) do
     IO.puts "meta ended"
     IO.puts "reaction from meta: #{inspect reaction}"
@@ -206,8 +151,8 @@ defmodule Dobar.Conversation.Dialog do
       %{features: %{confirm: "yes"}} ->
         IO.puts "ok, kill this dialog"
 
-        if not_root? self do
-          send state.parent, {:meta, :continue}
+        if not_root?(self) do
+          send(state.parent, {:meta, :continue})
         end
         {:stop, :normal, nil}
 
@@ -236,10 +181,13 @@ defmodule Dobar.Conversation.Dialog do
 
     case reaction do
       %{features: %{confirm: "yes"}} ->
-        IO.puts "ok, kill this dialog"
-
-        if not_root? self do
-          send state.parent, {:meta, :continue}
+        IO.puts "ok, kill this (alternative)dialog"
+        # If it's the root dialog, just send this away(to an event handler,
+        # at some point), else send the meta to the parent(chain)
+        if root_dialog?(self) do
+          IO.puts "ROOT: should do something with this alternative-reaction dialog"
+        else
+          send(state.parent, {:meta, reaction})
         end
         {:stop, :normal, nil}
 
@@ -286,7 +234,9 @@ defmodule Dobar.Conversation.Dialog do
   # private utils
   #
 
-  defp alternative(intent, topic) do
+  # TODO: fuuuck, this thing doesn't rly have a coherence of any kind - why if
+  # it fins
+  defp find_alternative(intent, topic) do
     capability_name = String.to_atom intent.name
     topic_intent = Dobar.Conversation.Topic.intent(topic)
     topic_intent_name = String.to_atom topic_intent.name
@@ -297,6 +247,9 @@ defmodule Dobar.Conversation.Dialog do
     # extract the capabilities of the current topic
     topic_capabilities = intention[topic_intent_name][capability_name]
 
+    # tl;dr it searches first inside the current topic's capabilities and if
+    # nothing found, search for an alternative in the global registery.
+    #
     # if there's a list expressed in the `topic_capabilities`, it means the topic's
     # current intention has a reference to the input intent - the case will
     # return a {:refernce, intention}. If no list present, it searches for
@@ -309,6 +262,7 @@ defmodule Dobar.Conversation.Dialog do
       nil ->
         {:ok, intention} = IntentionProvider.intention(capability_name)
         topic_capabilities = intention[capability_name]
+        IO.puts "topic_capabilities: #{inspect topic_capabilities}"
 
         # if the capability is contextual and applies only for meta, stop
         # searching the global registry - no intention capability found!
@@ -318,6 +272,26 @@ defmodule Dobar.Conversation.Dialog do
           {:alternative, intention}
         end
     end
+  end
+
+  defp validate_alternative({:reference, intention}, %Intent{} = input_intent) do
+    case input_intent do
+      %{confidence: conf} when conf > @confidence_treshold ->
+        {:reference, intention}
+      _ ->
+        {:noalternative, intention}
+    end
+  end
+  defp validate_alternative({:alternative, intention}, %Intent{} = input_intent) do
+    case input_intent do
+      %{confidence: conf} when conf > @confidence_treshold
+      -> {:alternative, intention}
+      _ ->
+        {:noalternative, intention}
+    end
+  end
+  defp validate_alternative({:noalternative, intention}, _) do
+    {:noalternative, intention}
   end
 
   # defp alternative_meta?
