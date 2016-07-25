@@ -193,7 +193,7 @@ defmodule Dobar.Conversation.Topic do
   defp complete_topic(capability, intent) do
     case Capability.complete?(capability.pid, intent) do
       {:match, _key, _entities} -> {:ok, capability}
-      {:nomatch, key, entities} -> {:nomatch, "no match for key #{key}"}
+      {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
     end
   end
 

@@ -8,6 +8,7 @@ defmodule Dobar.Conversation.Intention.Provider do
     cancel_command: Intention.CancelCommand,
     change_recipient: Intention.ChangeRecipient,
     create_alarm: Intention.CreateAlarm,
+    switch_conversation: Intention.SwitchConversation,
     confirmation: Intention.Confirmation
   ]
 

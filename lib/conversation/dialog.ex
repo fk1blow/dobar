@@ -86,8 +86,7 @@ defmodule Dobar.Conversation.Dialog do
         if not_root?(self) do
           IO.puts "ending topic, intent: #{inspect intent}"
           IO.puts "end state: #{inspect state}"
-          # use direct calls to the referer(parent) instead
-          # Dobar.Conversation.Dialog.complete(state.parent, topic)
+          send state.parent, {:meta, reaction}
         end
 
         {:stop, :normal, nil}
@@ -115,7 +114,9 @@ defmodule Dobar.Conversation.Dialog do
             Process.flag(:trap_exit, true)
 
             {:ok, pid} = Dobar.Conversation.Dialog.start_link self, intention
-            switch_intent = %Intent{name: "confirmation", confidence: 1, input: "confirm your shit"}
+            switch_intent = %Intent{name: "switch_conversation",
+                                    confidence: 1,
+                                    input: "confirm your shit"}
             Dobar.Conversation.Dialog.evaluate pid, switch_intent
 
             {:noreply, Map.merge(state, %{meta: pid})}
@@ -143,10 +144,10 @@ defmodule Dobar.Conversation.Dialog do
   TODO: find if theres a way to change the `:complete` message to an `:end` message;
   this way will look more clearly what messages the Dialog is receiving.
   """
-  def handle_cast({:complete, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
-    if not_root?(self), do: Dobar.Conversation.Dialog.continue(state.parent)
-    {:stop, :normal, %{topic: nil, meta: nil, parent: nil}}
-  end
+  # def handle_cast({:complete, %{intent: %Intent{name: "cancel_command"} = intent}}, state) do
+  #   if not_root?(self), do: Dobar.Conversation.Dialog.continue(state.parent)
+  #   {:stop, :normal, %{topic: nil, meta: nil, parent: nil}}
+  # end
 
   # TBD
   # handles "switch_conversation" type of messages coming from a meta-conversation
@@ -172,29 +173,108 @@ defmodule Dobar.Conversation.Dialog do
   TODO: `def handle_cast({:complete, %{intent: intent, topics: topics}}, state) do`
   doesnt make any sense because you don't really use the intent there, just the topics!
   """
-  def handle_cast({:complete, %{topics: topics}}, state) do
-    Dobar.Conversation.Topic.fill_topics(state.topic, %Intent{entities: topics})
-    case Dobar.Conversation.Topic.react(state.topic) do
-      {:topic, question}   ->
-        IO.puts "Topic: question #{inspect question}"
-        IO.puts "________________________________________________"
-      true ->
-        raise "this Dialog shouldn't have been completed! see '@docs' note"
-    end
-    {:noreply, Map.merge(state, %{meta: nil})}
-  end
+  # def handle_cast({:complete, %{topics: topics}}, state) do
+  #   Dobar.Conversation.Topic.fill_topics(state.topic, %Intent{entities: topics})
+  #   case Dobar.Conversation.Topic.react(state.topic) do
+  #     {:topic, question}   ->
+  #       IO.puts "Topic: question #{inspect question}"
+  #       IO.puts "________________________________________________"
+  #     true ->
+  #       raise "this Dialog shouldn't have been completed! see '@docs' note"
+  #   end
+  #   {:noreply, Map.merge(state, %{meta: nil})}
+  # end
 
   @doc """
   Handles messages coming from a meta that was canceled. In this case, the dialog
   simply tries to continue its flow by asking for the next topic capability subject.
   """
-  def handle_cast(:continue, %{topic: topic} = state) do
-    case Dobar.Conversation.Topic.react(topic) do
-      {:topic, question}   ->
-        IO.puts "Topic: question #{inspect question}"
-        IO.puts "________________________________________________"
+  # def handle_cast(:continue, %{topic: topic} = state) do
+  #   case Dobar.Conversation.Topic.react(topic) do
+  #     {:topic, question}   ->
+  #       IO.puts "Topic: question #{inspect question}"
+  #       IO.puts "________________________________________________"
+  #   end
+  #   {:noreply, Map.merge(state, %{meta: nil})}
+  # end
+
+  def handle_info({:meta, %{intent: %{name: "cancel_command"}} = reaction}, state) do
+    IO.puts "meta ended"
+    IO.puts "reaction from meta: #{inspect reaction}"
+
+    case reaction do
+      %{features: %{confirm: "yes"}} ->
+        IO.puts "ok, kill this dialog"
+
+        if not_root? self do
+          send state.parent, {:meta, :continue}
+        end
+        {:stop, :normal, nil}
+
+      %{features: %{infirm: "no"}} ->
+        IO.puts "no, continue with the dialog"
+
+        case Dobar.Conversation.Topic.react(state.topic) do
+          %Reaction{type: :question} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            IO.puts "________________________________________________"
+            {:noreply, Map.merge(state, %{meta: nil})}
+          %Reaction{type: :completed} = reaction ->
+            IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            {:stop, :normal, nil}
+        end
     end
-    {:noreply, Map.merge(state, %{meta: nil})}
+  end
+
+  # TODO: not finished; should complete the confirmation callback for infirm or confirm
+  def handle_info({:meta, %{intent: %{name: "switch_conversation"}} = reaction}, state) do
+    IO.puts "meta ended"
+    IO.puts "reaction from meta: #{inspect reaction}"
+
+    case reaction do
+      %{features: %{confirm: "yes"}} ->
+        IO.puts "ok, kill this dialog"
+
+        if not_root? self do
+          send state.parent, {:meta, :continue}
+        end
+        {:stop, :normal, nil}
+
+      %{features: %{infirm: "no"}} ->
+        IO.puts "no, continue with the dialog"
+
+        case Dobar.Conversation.Topic.react(state.topic) do
+          %Reaction{type: :question} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            IO.puts "________________________________________________"
+            {:noreply, Map.merge(state, %{meta: nil})}
+          %Reaction{type: :completed} = reaction ->
+            IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            {:stop, :normal, nil}
+        end
+    end
+  end
+
+  def handle_info({:meta, :continue}, state) do
+    IO.puts "meta died! should continue with the dialog"
+
+    case Dobar.Conversation.Topic.react(state.topic) do
+      %Reaction{type: :question} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
+        IO.puts "________________________________________________"
+        {:noreply, Map.merge(state, %{meta: nil})}
+      %Reaction{type: :completed} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
+        {:stop, :normal, nil}
+    end
   end
 
   # TODO: to be defined and expressed inside the main flow concept
