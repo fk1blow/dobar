@@ -7,7 +7,7 @@ defmodule Dobar.Conversation.Capability do
 
   It is the caracteristics of a specific Topic inside a conversation. Each Dialog
   has a Topic of discussion; the whole Topic is centered around Dobar reacting to
-  input so to 3do it, it uses capabilities.
+  input so to do it, it uses capabilities.
 
   ### pros
 

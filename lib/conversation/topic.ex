@@ -105,8 +105,6 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call(:react, _from, state) do
-    # TODO: maybe return a %Reaction for each of the cases(ok, completed
-    # and nomatch) therefore making it more clear
     answer = case next_expected_topic(state.capabilities) do
       {:ok, capability} ->
         %Reaction{type: :question,
@@ -116,13 +114,8 @@ defmodule Dobar.Conversation.Topic do
         %Reaction{type: :completed,
                   intent: state.intent,
                   features: capabilities}
-
-
-      # {:ok, capability} ->
-      #   {:topic, Capability.outcome(capability.pid)}
-      # {:completed, capabilities} ->
-      #   {:completed, %{intent: state.intent, capabilities: capabilities}}
     end
+
     {:reply, answer, state}
   end
 
@@ -133,12 +126,7 @@ defmodule Dobar.Conversation.Topic do
            {:ok, value}      <- Capability.complete(capability.pid, intent),
       do:  next_expected_topic(state.capabilities)
 
-    # TODO: maybe return a %Reaction for each of the cases(ok, completed
-    # and nomatch) therefore making it more clear
     answer = case topic_status do
-      # {:ok, capability}    -> {:next, Capability.outcome(capability.pid)}
-      # {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
-      # {:nomatch, reason}   -> {:nomatch, reason}
       {:ok, capability} ->
         %Reaction{type: :question,
                   intent: state.intent,
@@ -150,8 +138,7 @@ defmodule Dobar.Conversation.Topic do
       {:nomatch, reason} ->
         %Reaction{type: :nomatch,
                   intent: state.intent,
-                  # TODO: maybe add the reason inside a clear structure?!?!
-                  features: reason}
+                  features: %{reason: reason}}
     end
 
     {:reply, answer, state}

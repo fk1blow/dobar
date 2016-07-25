@@ -73,14 +73,12 @@ defmodule Dobar.Conversation.Dialog do
     IO.puts "continue topic: #{inspect intent}"
 
     case Dobar.Conversation.Topic.react(topic, intent) do
-      # {:next, reaction} ->
       %Reaction{type: :question} = reaction ->
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
         IO.puts "________________________________________________"
         {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
 
-      # {:completed, topic} ->
       %Reaction{type: :completed} = reaction ->
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
@@ -94,13 +92,21 @@ defmodule Dobar.Conversation.Dialog do
 
         {:stop, :normal, nil}
 
-      # {:nomatch, reason} ->
       %Reaction{type: :nomatch} = reaction ->
-        IO.puts "cannot match: #{inspect reaction.features}"
+        IO.puts "cannot match"
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
 
         case alternative(intent, topic) do
           {:reference, intention} ->
             IO.puts "reference found: #{inspect intention}"
+
+            Process.flag(:trap_exit, true)
+
+            {:ok, pid} = Dobar.Conversation.Dialog.start_link self, intention
+            Dobar.Conversation.Dialog.evaluate pid, intent
+
+            {:noreply, Map.merge(state, %{meta: pid})}
 
           {:alternative, intention} ->
             IO.puts "alternative found: #{inspect intention}"
@@ -193,7 +199,7 @@ defmodule Dobar.Conversation.Dialog do
 
   # TODO: to be defined and expressed inside the main flow concept
   def handle_info({:EXIT, from ,reason}, state) do
-    IO.puts "exit: #{inspect reason}"
+    IO.puts "EXIIIIIIIIIIIIIIIIT: #{inspect reason}"
     {:noreply, state}
   end
 
