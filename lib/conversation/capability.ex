@@ -67,30 +67,29 @@ defmodule Dobar.Conversation.Capability do
   use GenServer
 
   alias Dobar.Model.Intent
-  alias Dobar.Model.Reaction
 
   def start_link(capability, entities) do
     GenServer.start_link __MODULE__, [capability: capability, prefill: entities]
   end
 
-  def completed?(pid) do
-    GenServer.call(pid, :is_completed)
-  end
-
-  def priority(pid) do
-    GenServer.call(pid, :get_priority)
-  end
-
-  def outcome(pid) do
-    GenServer.call(pid, :get_outcome)
+  def complete(pid, %Intent{} = intent) do
+    GenServer.call(pid, {:complete, intent})
   end
 
   def complete?(pid, %Intent{} = intent) do
     GenServer.call(pid, {:can_complete, intent})
   end
 
-  def complete(pid, %Intent{} = intent) do
-    GenServer.call(pid, {:complete, intent})
+  def completed?(pid) do
+    GenServer.call(pid, :is_completed)
+  end
+
+  def outcome(pid) do
+    GenServer.call(pid, :get_outcome)
+  end
+
+  def priority(pid) do
+    GenServer.call(pid, :get_priority)
   end
 
   def structure(pid) do
@@ -118,7 +117,7 @@ defmodule Dobar.Conversation.Capability do
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
     question = "please provide a value for: #{inspect state.capability.entity}"
-    {:reply, %Reaction{value: question}, state}
+    {:reply, %{question: question}, state}
   end
 
   def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do

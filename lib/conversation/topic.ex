@@ -57,22 +57,22 @@ defmodule Dobar.Conversation.Topic do
 
   use GenServer
 
+  alias Dobar.Model.Reaction
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
   alias Dobar.Conversation.Capability
 
   @doc """
-  Starts a new Topic that represents the given `Dobar.Modal.Intent`
+  Starts a new Topic that represents the given `Dobar.Modal.Intent` while
+  prefilling the capabilities with the %Intent
   """
   def start_link(%Intent{} = intent) do
     GenServer.start_link(__MODULE__, [intent: intent])
   end
 
   @doc """
-  Used only after the initialization of the Dialog(which prefills the topics, with
-  the given intent), this function will return the next possible subject capability.
+  Reacts with the current state of the Topic
   """
-  # def continue(pid), do: GenServer.call pid, :next_topic
   def react(pid), do: GenServer.call pid, :react
 
   @doc """
@@ -105,11 +105,23 @@ defmodule Dobar.Conversation.Topic do
   end
 
   def handle_call(:react, _from, state) do
+    # TODO: maybe return a %Reaction for each of the cases(ok, completed
+    # and nomatch) therefore making it more clear
     answer = case next_expected_topic(state.capabilities) do
       {:ok, capability} ->
-        {:topic, Capability.outcome(capability.pid)}
+        %Reaction{type: :question,
+                  intent: state.intent,
+                  features: Capability.outcome(capability.pid)}
       {:completed, capabilities} ->
-        {:completed, %{intent: state.intent, capabilities: capabilities}}
+        %Reaction{type: :completed,
+                  intent: state.intent,
+                  features: capabilities}
+
+
+      # {:ok, capability} ->
+      #   {:topic, Capability.outcome(capability.pid)}
+      # {:completed, capabilities} ->
+      #   {:completed, %{intent: state.intent, capabilities: capabilities}}
     end
     {:reply, answer, state}
   end
@@ -121,10 +133,25 @@ defmodule Dobar.Conversation.Topic do
            {:ok, value}      <- Capability.complete(capability.pid, intent),
       do:  next_expected_topic(state.capabilities)
 
+    # TODO: maybe return a %Reaction for each of the cases(ok, completed
+    # and nomatch) therefore making it more clear
     answer = case topic_status do
-      {:ok, capability}    -> {:next, Capability.outcome(capability.pid)}
-      {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
-      {:nomatch, reason}   -> {:nomatch, reason}
+      # {:ok, capability}    -> {:next, Capability.outcome(capability.pid)}
+      # {:completed, topics} -> {:completed, %{intent: state.intent, topics: topics}}
+      # {:nomatch, reason}   -> {:nomatch, reason}
+      {:ok, capability} ->
+        %Reaction{type: :question,
+                  intent: state.intent,
+                  features: Capability.outcome(capability.pid)}
+      {:completed, topics} ->
+        %Reaction{type: :completed,
+                  intent: state.intent,
+                  features: topics}
+      {:nomatch, reason} ->
+        %Reaction{type: :nomatch,
+                  intent: state.intent,
+                  # TODO: maybe add the reason inside a clear structure?!?!
+                  features: reason}
     end
 
     {:reply, answer, state}
@@ -132,6 +159,7 @@ defmodule Dobar.Conversation.Topic do
 
   def handle_call({:react, [h|t]}, _from, state) do
     IO.puts "should fill the capabilities features with the provided list"
+    raise "reaction not implemented; tbd"
     {:reply, nil, state}
   end
 

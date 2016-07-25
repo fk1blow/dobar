@@ -1,6 +1,7 @@
 defmodule Dobar.Conversation.Dialog do
   use GenServer
 
+  alias Dobar.Model.Reaction
   alias Dobar.Model.Intent
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
@@ -48,18 +49,19 @@ defmodule Dobar.Conversation.Dialog do
   It also creates a new dialog and starts it - by invoking `continue`.
   """
   def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
-    IO.puts "begin topic, intent"
+    IO.puts "begin topic"
 
     {:ok, topic} = Dobar.Conversation.Topic.start_link(intent)
-    IO.puts "topic: #{inspect topic}"
 
     case Dobar.Conversation.Topic.react(topic) do
-      {:topic, question}   ->
-        IO.puts "Topic: question #{inspect question}"
+      %Reaction{type: :question} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
         IO.puts "________________________________________________"
         {:noreply, Map.merge(state, %{topic: topic})}
-      {:completed, topics} ->
-        IO.puts "The topic has been completed; topics: #{inspect topics}"
+      %Reaction{type: :completed} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
         {:stop, :normal, nil}
     end
   end
@@ -71,15 +73,17 @@ defmodule Dobar.Conversation.Dialog do
     IO.puts "continue topic: #{inspect intent}"
 
     case Dobar.Conversation.Topic.react(topic, intent) do
-      {:next, reaction} ->
-        IO.puts "Topic reaction #{inspect reaction.value}"
+      # {:next, reaction} ->
+      %Reaction{type: :question} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
         IO.puts "________________________________________________"
         {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
 
-      # TODO: the completed should also be an outcome of the topic, regardless
-      # of its lifecycle/internals
-      {:completed, topic} ->
-        IO.puts "The topic has been completed with: #{inspect topic}"
+      # {:completed, topic} ->
+      %Reaction{type: :completed} = reaction ->
+        IO.puts "reaction type: #{inspect reaction.type}"
+        IO.puts "reaction features: #{inspect reaction.features}"
 
         if not_root?(self) do
           IO.puts "ending topic, intent: #{inspect intent}"
@@ -90,8 +94,9 @@ defmodule Dobar.Conversation.Dialog do
 
         {:stop, :normal, nil}
 
-      {:nomatch, reason} ->
-        IO.puts "cannot match: #{inspect reason}"
+      # {:nomatch, reason} ->
+      %Reaction{type: :nomatch} = reaction ->
+        IO.puts "cannot match: #{inspect reaction.features}"
 
         case alternative(intent, topic) do
           {:reference, intention} ->
@@ -113,42 +118,6 @@ defmodule Dobar.Conversation.Dialog do
             IO.puts "no alternative found: #{inspect intention}"
             {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
         end
-
-
-        # TRY: 2
-
-        # TODO: the alternative should be handled solely from/by inside the Dialog,
-        # using some Intention/Capability utils, etc.
-        # case Dobar.Conversation.Topic.alternative(topic, intent) do
-        #   {:internal, _capability} ->
-        #     {:ok, pid} = Dobar.Conversation.Dialog.start_link self
-        #     Dobar.Conversation.Dialog.evaluate pid, intent
-        #     {:noreply, %{topic: topic, meta: pid, parent: state.parent}}
-        #   {:external, capability} ->
-        #     IO.puts "external found: kill the chain and start a new dialog"
-        #     {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
-        #   {:error, reason} ->
-        #     IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
-        #     {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
-        # end
-
-
-        # TRY: 1
-
-        # case IntentionProvider.alternate(intent) do
-        #   {:ok, intent_def} ->
-        #     intent_name = String.to_atom "#{intent.name}_conversation"
-        #     IO.puts "creating meta: #{intent_name}"
-
-        #     {:ok, pid} = Dobar.Conversation.Dialog.start_link self
-        #     Dobar.Conversation.Dialog.evaluate pid, intent
-
-        #     {:noreply, %{topic: topic, meta: pid, parent: state.parent}}
-
-        #   {:error, reason} ->
-        #     IO.puts "fuuuuuck, no alternative found, reason: #{inspect reason}"
-        #     {:noreply, %{topic: topic, meta: nil, parent: state.parent}}
-        # end
     end
   end
 
