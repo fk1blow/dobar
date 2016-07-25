@@ -234,8 +234,6 @@ defmodule Dobar.Conversation.Dialog do
   # private utils
   #
 
-  # TODO: fuuuck, this thing doesn't rly have a coherence of any kind - why if
-  # it fins
   defp find_alternative(intent, topic) do
     capability_name = String.to_atom intent.name
     topic_intent = Dobar.Conversation.Topic.intent(topic)
