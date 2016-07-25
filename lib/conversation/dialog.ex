@@ -23,14 +23,6 @@ defmodule Dobar.Conversation.Dialog do
     GenServer.cast pid, {:evaluate, intent}
   end
 
-  # def complete(pid, topic) do
-  #   GenServer.cast pid, {:complete, topic}
-  # end
-
-  # def continue(pid) do
-  #   GenServer.cast pid, :continue
-  # end
-
   # callbacks
   #
 
@@ -226,7 +218,7 @@ defmodule Dobar.Conversation.Dialog do
   end
 
   # TODO: to be defined and expressed inside the main flow concept
-  def handle_info({:EXIT, from ,reason}, state) do
+  def handle_info({:EXIT, _from ,reason}, state) do
     IO.puts "EXIIIIIIIIIIIIIIIIT: #{inspect reason}"
     {:noreply, state}
   end
@@ -255,12 +247,13 @@ defmodule Dobar.Conversation.Dialog do
     # {:alternative, intention}. If that doesn't find an intention, it finally
     # returns a {:noalternative, intention}
     case topic_capabilities do
-      [h|t] ->
+      [_head|_tail] ->
         {:reference, intention}
       nil ->
         {:ok, intention} = IntentionProvider.intention(capability_name)
         topic_capabilities = intention[capability_name]
         IO.puts "topic_capabilities: #{inspect topic_capabilities}"
+        IO.puts "capability_name: #{inspect capability_name}"
 
         # if the capability is contextual and applies only for meta, stop
         # searching the global registry - no intention capability found!
@@ -282,8 +275,8 @@ defmodule Dobar.Conversation.Dialog do
   end
   defp validate_alternative({:alternative, intention}, %Intent{} = input_intent) do
     case input_intent do
-      %{confidence: conf} when conf > @confidence_treshold
-      -> {:alternative, intention}
+      %{confidence: conf} when conf > @confidence_treshold ->
+        {:alternative, intention}
       _ ->
         {:noalternative, intention}
     end

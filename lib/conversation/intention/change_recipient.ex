@@ -5,6 +5,7 @@ defmodule Dobar.Conversation.Intention.ChangeRecipient do
   intention :change_recipient do
     relationship :meta
     topic :message_recipient, prio: 2, entity: "contact"
+    topic :cancel_command, reference: :cancel_command
   end
 
 

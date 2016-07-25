@@ -100,12 +100,12 @@ defmodule Dobar.Conversation.Topic do
     intent = args[:intent]
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
-    |> Enum.map(&(create_topic(&1, intent.entities)))
+    |> Enum.map(&(create_capability(&1, intent.entities)))
     |> validate_capabilities(intent)
   end
 
   def handle_call(:react, _from, state) do
-    answer = case next_expected_topic(state.capabilities) do
+    answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         %Reaction{type: :question,
                   intent: state.intent,
@@ -121,10 +121,10 @@ defmodule Dobar.Conversation.Topic do
 
   def handle_call({:react, %Intent{} = intent}, _from, state) do
     topic_status =
-      with {:ok, expected}   <- next_expected_topic(state.capabilities),
-           {:ok, capability} <- complete_topic(expected, intent),
+      with {:ok, expected}   <- next_capability(state.capabilities),
+           {:ok, capability} <- complete_capability(expected, intent),
            {:ok, value}      <- Capability.complete(capability.pid, intent),
-      do:  next_expected_topic(state.capabilities)
+      do:  next_capability(state.capabilities)
 
     answer = case topic_status do
       {:ok, capability} ->
@@ -157,13 +157,12 @@ defmodule Dobar.Conversation.Topic do
   # private
   #
 
-  # TODO: rename to `incompleted_capabilities`
   defp incompleted_topics(capabilities) do
     capabilities
     |> Enum.map(&(%{capability: &1, completed: Capability.completed?(&1.pid)}))
-    |> Enum.filter(fn(topic) -> topic.completed == false end)
-    |> Enum.sort(&(
-      Capability.priority(&1.capability.pid) < Capability.priority(&2.capability.pid)))
+    |> Enum.filter(&(&1[:completed] == false))
+    |> Enum.sort(
+      &(Capability.priority(&1.capability.pid) < Capability.priority(&2.capability.pid)))
     |> Enum.map(&(&1.capability))
   end
 
@@ -176,21 +175,19 @@ defmodule Dobar.Conversation.Topic do
     end
   end
 
-  # TODO: rename to `create_capability`
-  defp create_topic(capability, intent_entities) do
+  defp create_capability(capability, intent_entities) do
     {:ok, new_capability} = Capability.start_link(elem(capability, 1), intent_entities)
     %{name: elem(capability, 0), pid: new_capability}
   end
 
-  # TODO: rename to `next_expected_capability`
-  defp next_expected_topic(capabilities) do
+  defp next_capability(capabilities) do
     case capabilities |> incompleted_topics |> List.first do
       nil -> {:completed, topics_list(capabilities)}
       capability -> {:ok, capability}
     end
   end
 
-  defp complete_topic(capability, intent) do
+  defp complete_capability(capability, intent) do
     case Capability.complete?(capability.pid, intent) do
       {:match, _key, _entities} -> {:ok, capability}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
