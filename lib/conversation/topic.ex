@@ -85,7 +85,7 @@ defmodule Dobar.Conversation.Topic do
   Will complete for each and every entity inside the entities list and return the
   next subject capability if any left.
   """
-  def react(pid, [h|t] = entities), do: GenServer.call pid, {:react, entities}
+  def react(pid, %{} = entities), do: GenServer.call pid, {:react, entities}
 
   @doc """
   Will return the Topic's current intent
@@ -100,7 +100,7 @@ defmodule Dobar.Conversation.Topic do
     intent = args[:intent]
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
-    |> Enum.map(&(create_capability(&1, intent.entities)))
+    |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
   end
 
@@ -144,11 +144,11 @@ defmodule Dobar.Conversation.Topic do
     {:reply, answer, state}
   end
 
-  def handle_call({:react, [h|t]}, _from, state) do
-    IO.puts "should fill the capabilities features with the provided list"
-    raise "reaction not implemented; tbd"
-    {:reply, nil, state}
-  end
+  # def handle_call({:react, %{} = features}, _from, state) do
+  #   IO.puts "should fill the capabilities features with the provided list"
+  #   raise "reaction not implemented; tbd"
+  #   {:reply, nil, state}
+  # end
 
   def handle_call(:get_intent, _from, state) do
     {:reply, state.intent, state}
@@ -175,8 +175,8 @@ defmodule Dobar.Conversation.Topic do
     end
   end
 
-  defp create_capability(capability, intent_entities) do
-    {:ok, new_capability} = Capability.start_link(elem(capability, 1), intent_entities)
+  defp create_capability(capability, intent) do
+    {:ok, new_capability} = Capability.start_link(elem(capability, 1), intent)
     %{name: elem(capability, 0), pid: new_capability}
   end
 
@@ -188,7 +188,7 @@ defmodule Dobar.Conversation.Topic do
   end
 
   defp complete_capability(capability, intent) do
-    case Capability.complete?(capability.pid, intent) do
+    case Capability.compatibility(capability.pid, intent) do
       {:match, _key, _entities} -> {:ok, capability}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
     end

@@ -45,6 +45,8 @@ defmodule Dobar.Conversation.Dialog do
   def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
     IO.puts "begin topic"
 
+    Process.flag(:trap_exit, true)
+
     {:ok, topic} = Dobar.Conversation.Topic.start_link(intent)
 
     case Dobar.Conversation.Topic.react(topic) do
@@ -56,8 +58,17 @@ defmodule Dobar.Conversation.Dialog do
       %Reaction{type: :completed} = reaction ->
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
+        unless root_dialog?(self) do
+          send(state.parent, {:meta, reaction})
+        end
         {:stop, :normal, nil}
     end
+  end
+
+  def handle_cast({:evaluate, %Intent{name: "cancel_command"} = intent}, state) do
+    {:ok, pid} = Dobar.Conversation.Dialog.start_link self
+    Dobar.Conversation.Dialog.evaluate pid, intent
+    {:noreply, Map.merge(state, %{meta: pid})}
   end
 
   @doc """
@@ -77,10 +88,10 @@ defmodule Dobar.Conversation.Dialog do
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
 
-        if not_root?(self) do
+        unless root_dialog?(self) do
           IO.puts "ending topic, intent: #{inspect intent}"
           IO.puts "end state: #{inspect state}"
-          send state.parent, {:meta, reaction}
+          send(state.parent, {:meta, reaction})
         end
 
         {:stop, :normal, nil}
@@ -96,7 +107,7 @@ defmodule Dobar.Conversation.Dialog do
 
             Process.flag(:trap_exit, true)
 
-            {:ok, pid} = Dobar.Conversation.Dialog.start_link self, intention
+            {:ok, pid} = Dobar.Conversation.Dialog.start_link self
             Dobar.Conversation.Dialog.evaluate pid, intent
 
             {:noreply, Map.merge(state, %{meta: pid})}
@@ -143,7 +154,7 @@ defmodule Dobar.Conversation.Dialog do
       %{features: %{confirm: "yes"}} ->
         IO.puts "ok, kill this dialog"
 
-        if not_root?(self) do
+        unless root_dialog?(self) do
           send(state.parent, {:meta, :continue})
         end
         {:stop, :normal, nil}
@@ -217,6 +228,25 @@ defmodule Dobar.Conversation.Dialog do
     end
   end
 
+  def handle_info({:meta, reaction}, state) do
+    IO.puts "xxx: reaction type: #{inspect reaction.type}"
+    IO.puts "xxx: reaction features: #{inspect reaction.features}"
+
+    x = Dobar.Conversation.Topic.react(state.topic, reaction.features)
+
+    # case Dobar.Conversation.Topic.react(state.topic, reaction.features) do
+    #   %Reaction{type: :question} = reaction ->
+    #     IO.puts "reaction type: #{inspect reaction.type}"
+    #     IO.puts "reaction features: #{inspect reaction.features}"
+    #     IO.puts "________________________________________________"
+    #     {:noreply, Map.merge(state, %{meta: nil})}
+    #   %Reaction{type: :completed} = reaction ->
+    #     IO.puts "reaction type: #{inspect reaction.type}"
+    #     IO.puts "reaction features: #{inspect reaction.features}"
+    #     {:stop, :normal, nil}
+    # end
+  end
+
   # TODO: to be defined and expressed inside the main flow concept
   def handle_info({:EXIT, _from ,reason}, state) do
     IO.puts "EXIIIIIIIIIIIIIIIIT: #{inspect reason}"
@@ -284,10 +314,6 @@ defmodule Dobar.Conversation.Dialog do
   defp validate_alternative({:noalternative, intention}, _) do
     {:noalternative, intention}
   end
-
-  # defp alternative_meta?
-
-  defp not_root?(pid), do: root_dialog?(pid) == false
 
   defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
 end

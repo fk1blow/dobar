@@ -7,6 +7,7 @@ defmodule Dobar.Conversation.Intention.Provider do
     send_message: Intention.SendMessage,
     cancel_command: Intention.CancelCommand,
     change_recipient: Intention.ChangeRecipient,
+    change_field: Intention.ChangeField,
     create_alarm: Intention.CreateAlarm,
     switch_conversation: Intention.SwitchConversation,
     confirmation: Intention.Confirmation
@@ -14,7 +15,7 @@ defmodule Dobar.Conversation.Intention.Provider do
 
   def intention(name), do: get_intention(@intentions, name)
 
-  defp get_intention([h|t] = intentions, name) when is_atom(name) do
+  defp get_intention([_head|_tail] = intentions, name) when is_atom(name) do
     case intentions[name] do
       nil -> {:error, "no intention found"}
       _   -> {:ok, intentions[name].intentions}

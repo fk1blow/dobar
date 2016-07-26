@@ -68,20 +68,20 @@ defmodule Dobar.Conversation.Capability do
 
   alias Dobar.Model.Intent
 
-  def start_link(capability, entities) do
-    GenServer.start_link __MODULE__, [capability: capability, prefill: entities]
+  def start_link(capability, intent) do
+    GenServer.start_link __MODULE__, [capability: capability, prefill: intent]
   end
 
   def complete(pid, %Intent{} = intent) do
     GenServer.call(pid, {:complete, intent})
   end
 
-  def complete?(pid, %Intent{} = intent) do
-    GenServer.call(pid, {:can_complete, intent})
-  end
-
   def completed?(pid) do
     GenServer.call(pid, :is_completed)
+  end
+
+  def compatibility(pid, %Intent{} = intent) do
+    GenServer.call(pid, {:compatibility, intent})
   end
 
   def outcome(pid) do
@@ -120,9 +120,9 @@ defmodule Dobar.Conversation.Capability do
     {:reply, %{question: question}, state}
   end
 
-  def handle_call({:can_complete, %Intent{entities: entities} = intent}, _from, state) do
+  def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
     capability_entities = state.capability.entity
-    match = case match_entity(capability_entities, entities) do
+    match = case match_entity(capability_entities, intent) do
       nil   -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
     end
@@ -131,7 +131,7 @@ defmodule Dobar.Conversation.Capability do
 
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
-    capability_value = case match_entity(capability_entities, entities) do
+    capability_value = case match_entity(capability_entities, intent) do
       nil   -> nil
       [h|t] -> h.value
     end
@@ -155,30 +155,38 @@ defmodule Dobar.Conversation.Capability do
   # private
   #
 
-  defp prefill_value(prefill, %{entity: entities}) when is_list entities do
+  defp prefill_value(%Intent{} = prefill, %{entity: entities}) when is_list entities do
     case match_entity(entities, prefill) do
       nil    -> nil
       entity -> List.first(entity).value
     end
   end
-  defp prefill_value(prefill, %{entity: entity}) do
+  defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_atom entity do
+    case prefill.entities[entity] do
+      nil    -> nil
+      entity -> List.first(entity).value
+    end
+  end
+  defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_bitstring entity do
     entity = String.to_atom entity
-    case prefill[entity] do
+    case prefill.entities[entity] do
       nil    -> nil
       entity -> List.first(entity).value
     end
   end
 
-  defp match_entity(entities, target) when is_bitstring entities do
-    target[String.to_atom entities]
+  defp match_entity(:input, %Intent{} = target) do
+    [%{confidence: 1, type: "value", value: Map.get(target, :input)}]
   end
-  defp match_entity(entities, target) when is_list entities do
-    case Enum.find(entities, &(target[&1])) do
+  defp match_entity(entities, %Intent{} = target) when is_bitstring entities do
+    target.entities[String.to_atom entities]
+  end
+  defp match_entity(entities, %Intent{} = target) when is_list entities do
+    case Enum.find(entities, &(target.entities[&1])) do
       nil -> nil
-      entity -> target[entity]
+      entity -> target.entities[entity]
     end
   end
-
 
   defp capability_slot_key(capability, %Intent{entities: entities}) do
     case capability.entity do
