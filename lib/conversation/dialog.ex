@@ -10,11 +10,9 @@ defmodule Dobar.Conversation.Dialog do
   def start_link(:root_dialog) do
     GenServer.start_link __MODULE__, [parent: nil], name: :root_dialog
   end
-
   def start_link(parent) do
     GenServer.start_link __MODULE__, [parent: parent]
   end
-
   def start_link(parent, passthrough) do
     GenServer.start_link __MODULE__, [parent: parent, passthrough: passthrough]
   end
@@ -29,13 +27,21 @@ defmodule Dobar.Conversation.Dialog do
   def init([parent: nil]) do
     {:ok, %{topic: nil, meta: nil, parent: nil}}
   end
-
   def init([parent: parent]) do
     {:ok, %{topic: nil, meta: nil, parent: parent}}
   end
-
   def init([parent: parent, passthrough: passthrough]) do
     {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
+  end
+
+  def handle_cast({:evaluate, %Intent{name: "change_field"}}, %{parent: parent} = state)
+  when is_nil(parent) == false do
+    IO.puts "change_field"
+
+    unless root_dialog?(self) do
+      send(state.parent, {:meta, :capabilities})
+    end
+    {:noreply, state}
   end
 
   @doc """
@@ -43,7 +49,7 @@ defmodule Dobar.Conversation.Dialog do
   It also creates a new dialog and starts it - by invoking `continue`.
   """
   def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
-    IO.puts "begin topic"
+    IO.puts "begin topic: #{inspect intent}"
 
     Process.flag(:trap_exit, true)
 
@@ -65,6 +71,11 @@ defmodule Dobar.Conversation.Dialog do
     end
   end
 
+  @doc """
+  Handles The intent evaluation for "cancel_command" specific intent.
+  Note that is shouldn't work if there's no parent dialog - cancel command
+  is a meta topic so it shouldn't work by itself!
+  """
   def handle_cast({:evaluate, %Intent{name: "cancel_command"} = intent}, state) do
     {:ok, pid} = Dobar.Conversation.Dialog.start_link self
     Dobar.Conversation.Dialog.evaluate pid, intent
@@ -226,6 +237,12 @@ defmodule Dobar.Conversation.Dialog do
         IO.puts "reaction features: #{inspect reaction.features}"
         {:stop, :normal, nil}
     end
+  end
+
+  def handle_info({:meta, :capabilities}, state) do
+    IO.puts "this is the parent: #{inspect self}"
+    IO.puts "meta asked for my capabilities"
+    {:noreply, state}
   end
 
   def handle_info({:meta, reaction}, state) do

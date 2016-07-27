@@ -83,6 +83,9 @@ defmodule Dobar.Conversation.Capability do
   def compatibility(pid, %Intent{} = intent) do
     GenServer.call(pid, {:compatibility, intent})
   end
+  # def compatibility(pid, %{} = tests) do
+  #   GenServer.call(pid, {:compatibility, tests})
+  # end
 
   def outcome(pid) do
     GenServer.call(pid, :get_outcome)
@@ -128,6 +131,13 @@ defmodule Dobar.Conversation.Capability do
     end
     {:reply, match, state}
   end
+
+  # TBD
+  # def handle_call({:compatibility, %{} = test_features}, _from, state) do
+  #   IO.puts "state: #{inspect state}"
+  #   raise "compability not implemented; tbd"
+  #   {:reply, nil, state}
+  # end
 
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity

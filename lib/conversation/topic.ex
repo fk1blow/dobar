@@ -122,7 +122,7 @@ defmodule Dobar.Conversation.Topic do
   def handle_call({:react, %Intent{} = intent}, _from, state) do
     topic_status =
       with {:ok, expected}   <- next_capability(state.capabilities),
-           {:ok, capability} <- complete_capability(expected, intent),
+           {:ok, capability} <- capability_match(expected, intent),
            {:ok, value}      <- Capability.complete(capability.pid, intent),
       do:  next_capability(state.capabilities)
 
@@ -144,7 +144,14 @@ defmodule Dobar.Conversation.Topic do
     {:reply, answer, state}
   end
 
+  # TBD
   # def handle_call({:react, %{} = features}, _from, state) do
+  #   processed_features = state.capabilities
+  #   |> Stream.map(&(%{capability: &1, test_features: features}))
+  #   |> Stream.each(&(Capability.compatibility(&1.capability.pid, &1.test_features)))
+
+  #   IO.inspect Enum.to_list(processed_features)
+
   #   IO.puts "should fill the capabilities features with the provided list"
   #   raise "reaction not implemented; tbd"
   #   {:reply, nil, state}
@@ -187,7 +194,7 @@ defmodule Dobar.Conversation.Topic do
     end
   end
 
-  defp complete_capability(capability, intent) do
+  defp capability_match(capability, intent) do
     case Capability.compatibility(capability.pid, intent) do
       {:match, _key, _entities} -> {:ok, capability}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
