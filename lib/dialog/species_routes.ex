@@ -5,5 +5,7 @@ defmodule Dobar.Dialog.SpeciesRoutes do
 
   dialog :cancel_command, to: Dobar.Dialog.CancelCommand
 
+  dialog :create_alarm, to: Dobar.Dialog.GenericDialog
+
   IO.inspect @dialogs
 end
