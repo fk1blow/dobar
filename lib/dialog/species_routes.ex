@@ -3,5 +3,5 @@ defmodule Dobar.Dialog.SpeciesRoutes do
 
   dialog :generic_dialog, to: Dobar.Dialog.GenericDialog
   dialog :cancel_command, to: Dobar.Dialog.CancelCommand
-  # dialog :create_alarm, to: Dobar.Dialog.GenericDialog
+  dialog :create_alarm, to: Dobar.Dialog.GenericDialog
 end

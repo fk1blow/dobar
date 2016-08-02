@@ -93,10 +93,8 @@ defmodule Dobar.Dialog.Species do
 
                 Process.flag(:trap_exit, true)
 
-                # {:ok, pid} = Dobar.Conversation.Dialog.start_link self
                 reference_dialog = Dobar.Dialog.SpeciesRoutes.dialog intent.name
                 {:ok, pid} = reference_dialog.start_link self
-                # Dobar.Conversation.Dialog.evaluate pid, intent
                 reference_dialog.evaluate pid, intent
 
                 {:topic_alternative, {reaction, %{meta: pid}}}
@@ -106,14 +104,13 @@ defmodule Dobar.Dialog.Species do
 
                 Process.flag(:trap_exit, true)
 
-                # {:ok, pid} = Dobar.Conversation.Dialog.start_link self, intention
                 reference_dialog = Dobar.Dialog.SpeciesRoutes.dialog intent.name
                 {:ok, pid} = reference_dialog.start_link self, intention
 
                 switch_intent = %Intent{name: "switch_conversation",
                                         confidence: 1,
                                         input: "confirm your shit"}
-                Dobar.Conversation.Dialog.evaluate pid, switch_intent
+                reference_dialog.evaluate pid, switch_intent
 
                 {:topic_alternative, {reaction, %{meta: pid}}}
 
@@ -125,19 +122,19 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_meta(%Reaction{intent: %{name: "cancel_command"}} = reaction, state) do
-        IO.puts "meta ended"
+        IO.puts "meta ended by: cancel"
         IO.puts "reaction from meta: #{inspect reaction}"
 
-        case reaction do
-          %{features: %{confirm: "yes"}} ->
+        case reaction.features do
+          [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "ok, kill this dialog"
 
             unless root_dialog?(self) do
               GenServer.cast state.parent, {:meta, :continue}
             end
-            {:stop, :normal, nil}
+            {:topic_end, :completed}
 
-          %{features: %{infirm: "no"}} ->
+          [{:approve, %{entity: :infirm}, "no"}] ->
             IO.puts "no, continue with the dialog"
 
             case Dobar.Conversation.Topic.react(state.topic) do
@@ -145,21 +142,22 @@ defmodule Dobar.Dialog.Species do
                 IO.puts "reaction type: #{inspect reaction.type}"
                 IO.puts "reaction features: #{inspect reaction.features}"
                 IO.puts "________________________________________________"
-                {:noreply, Map.merge(state, %{meta: nil})}
+                {:topic_output, {reaction, %{meta: nil}}}
+
               %Reaction{type: :completed} = reaction ->
                 IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
                 IO.puts "reaction type: #{inspect reaction.type}"
                 IO.puts "reaction features: #{inspect reaction.features}"
-                {:stop, :normal, nil}
+                {:topic_end, :completed}
             end
         end
       end
       def handle_meta(%Reaction{intent: %{name: "switch_conversation"}} = reaction, state) do
-        IO.puts "meta ended"
+        IO.puts "meta ended by: switch"
         IO.puts "reaction from meta: #{inspect reaction}"
 
-        case reaction do
-          %{features: %{confirm: "yes"}} ->
+        case reaction.features do
+          [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "ok, kill this (alternative)dialog"
             # If it's the root dialog, just send this away(to an event handler,
             # at some point), else send the meta to the parent(chain)
@@ -168,9 +166,10 @@ defmodule Dobar.Dialog.Species do
             else
               GenServer.cast state.parent, {:meta, reaction}
             end
-            {:stop, :normal, nil}
+            # {:stop, :normal, nil}
+            {:topic_end, :completed}
 
-          %{features: %{infirm: "no"}} ->
+          [{:approve, %{entity: :infirm}, "no"}] ->
             IO.puts "no, continue with the dialog"
 
             case Dobar.Conversation.Topic.react(state.topic) do
@@ -178,29 +177,31 @@ defmodule Dobar.Dialog.Species do
                 IO.puts "reaction type: #{inspect reaction.type}"
                 IO.puts "reaction features: #{inspect reaction.features}"
                 IO.puts "________________________________________________"
-                {:noreply, Map.merge(state, %{meta: nil})}
+                # {:noreply, Map.merge(state, %{meta: nil})}
+                {:topic_output, {reaction, %{meta: nil}}}
               %Reaction{type: :completed} = reaction ->
                 IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
                 IO.puts "reaction type: #{inspect reaction.type}"
                 IO.puts "reaction features: #{inspect reaction.features}"
-                {:stop, :normal, nil}
+                # {:stop, :normal, nil}
+                {:topic_end, :completed}
             end
         end
       end
       def handle_meta(:continue, state) do
         IO.puts "meta died! should continue with the dialog"
+        case Dobar.Conversation.Topic.react(state.topic) do
+          %Reaction{type: :question} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            IO.puts "________________________________________________"
+            {:topic_output, {reaction, %{meta: nil}}}
 
-        # case Dobar.Conversation.Topic.react(state.topic) do
-        #   %Reaction{type: :question} = reaction ->
-        #     IO.puts "reaction type: #{inspect reaction.type}"
-        #     IO.puts "reaction features: #{inspect reaction.features}"
-        #     IO.puts "________________________________________________"
-        #     {:noreply, Map.merge(state, %{meta: nil})}
-        #   %Reaction{type: :completed} = reaction ->
-        #     IO.puts "reaction type: #{inspect reaction.type}"
-        #     IO.puts "reaction features: #{inspect reaction.features}"
-        #     {:stop, :normal, nil}
-        # end
+          %Reaction{type: :completed} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            {:topic_end, :completed}
+        end
       end
 
       defoverridable [handle_intent: 2, handle_meta: 2]
@@ -250,13 +251,21 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_cast({:meta, %Reaction{} = reaction}, state) do
-        handle_meta reaction, state
-        {:noreply, state}
+        case handle_meta reaction, state do
+          {:topic_output, {output, some_state}} ->
+            {:noreply, Map.merge(state, some_state)}
+          {:topic_end, :completed} ->
+            {:stop, :normal, nil}
+        end
       end
 
       def handle_cast({:meta, :continue}, state) do
-        handle_meta :continue, state
-        {:noreply, state}
+        case handle_meta :continue, state do
+          {:topic_output, {output, some_state}} ->
+            {:noreply, Map.merge(state, some_state)}
+          {:topic_end, :completed} ->
+            {:stop, :normal, nil}
+        end
       end
 
       # private
