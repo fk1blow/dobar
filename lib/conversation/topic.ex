@@ -67,7 +67,11 @@ defmodule Dobar.Conversation.Topic do
   prefilling the capabilities with the %Intent
   """
   def start_link(%Intent{} = intent) do
-    GenServer.start_link(__MODULE__, [intent: intent])
+    GenServer.start_link(__MODULE__, [intent])
+  end
+
+  def start_link([_head|_tail] = capabilities) do
+    GenServer.start_link(__MODULE__, capabilities)
   end
 
   @doc """
@@ -92,16 +96,26 @@ defmodule Dobar.Conversation.Topic do
   """
   def intent(pid), do: GenServer.call pid, :get_intent
 
+  @doc """
+  Gets the representation of all the capabilities of the current topic.
+  """
+  def capabilities(pid), do: GenServer.call pid, :get_capabilities
+
   # callbacks
   #
 
-  # stop the dialog if there are no capabilities for the intent that was passed
-  def init(args) do
-    intent = args[:intent]
+  def init([%Intent{} = intent]) do
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
+  end
+
+  def init([_head|_tail] = prefab_capabilities) do
+    prefab_capabilities
+    |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
+    |> Enum.map(&(create_capability(&1, %Intent{name: :prefab})))
+    |> validate_capabilities(%Intent{name: :prefab})
   end
 
   def handle_call(:react, _from, state) do
@@ -161,6 +175,13 @@ defmodule Dobar.Conversation.Topic do
     {:reply, state.intent, state}
   end
 
+  def handle_call(:get_capabilities, _from, state) do
+    capabilities = state.capabilities
+    |> Enum.map(&(Capability.structure &1.pid))
+    |> Enum.map(&(elem &1, 1))
+    {:reply, capabilities, state}
+  end
+
   # private
   #
 
@@ -183,14 +204,19 @@ defmodule Dobar.Conversation.Topic do
   end
 
   defp create_capability(capability, intent) do
-    {:ok, new_capability} = Capability.start_link(elem(capability, 1), intent)
+    {:ok, new_capability} = Capability.start_link(capability, intent)
     %{name: elem(capability, 0), pid: new_capability}
   end
 
   defp next_capability(capabilities) do
     case capabilities |> incompleted_topics |> List.first do
-      nil -> {:completed, topics_list(capabilities)}
-      capability -> {:ok, capability}
+      nil ->
+        completed = capabilities
+        |> Enum.map(&(Capability.structure &1.pid))
+        |> Enum.map(&(elem &1, 1))
+        {:completed, completed}
+      capability ->
+        {:ok, capability}
     end
   end
 
@@ -199,14 +225,6 @@ defmodule Dobar.Conversation.Topic do
       {:match, _key, _entities} -> {:ok, capability}
       {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
     end
-  end
-
-  # TODO: must return a %Topic{} struct, to better understand the entities involved
-  defp topics_list(capabilities) do
-    capabilities
-    |> Enum.map(&(Capability.structure &1.pid))
-    |> Enum.map(&(elem(&1, 1)))
-    |> List.foldl(%{}, &(Map.put(&2, &1.name, &1.value)))
   end
 
   defp filter_capabilities(capabilities) do

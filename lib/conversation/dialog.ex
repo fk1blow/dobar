@@ -7,15 +7,15 @@ defmodule Dobar.Conversation.Dialog do
 
   @confidence_treshold 0.75
 
-  def start_link(:root_dialog) do
-    GenServer.start_link __MODULE__, [parent: nil], name: :root_dialog
-  end
-  def start_link(parent) do
-    GenServer.start_link __MODULE__, [parent: parent]
-  end
-  def start_link(parent, passthrough) do
-    GenServer.start_link __MODULE__, [parent: parent, passthrough: passthrough]
-  end
+  # def start_link(:root_dialog) do
+  #   GenServer.start_link __MODULE__, [parent: nil], name: :root_dialog
+  # end
+  # def start_link(parent) do
+  #   GenServer.start_link __MODULE__, [parent: parent]
+  # end
+  # def start_link(parent, passthrough) do
+  #   GenServer.start_link __MODULE__, [parent: parent, passthrough: passthrough]
+  # end
 
   def evaluate(pid, %Intent{} = intent) do
     GenServer.cast pid, {:evaluate, intent}
@@ -34,22 +34,33 @@ defmodule Dobar.Conversation.Dialog do
     {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
   end
 
-  def handle_cast({:evaluate, %Intent{name: "change_field"}}, %{parent: parent} = state)
-  when is_nil(parent) == false do
-    IO.puts "change_field"
-
-    unless root_dialog?(self) do
-      send(state.parent, {:meta, :capabilities})
-    end
-    {:noreply, state}
+  def handle_call({:meta, :capabilities}, _from, state) do
+    IO.puts "this is the parent: #{inspect self}"
+    IO.puts "meta asked for my capabilities"
+    capabilities = Dobar.Conversation.Topic.capabilities state.topic
+    {:reply, capabilities, state}
   end
+
+  # def handle_cast({:evaluate, %{name: "change_field"} = intent}, %{parent: parent} = state)
+  # when is_nil(parent) == false do
+  #   IO.puts "begin topic change_field: #{inspect intent}"
+
+  #   capabilities = GenServer.call(state.parent, {:meta, :capabilities})
+  #   # |> Enum.filter()
+
+  #   IO.puts "xxx: capabilities: #{inspect capabilities}"
+
+  #   {:ok, topic} = Dobar.Conversation.Topic.start_link(capabilities)
+
+  #   {:noreply, Map.merge(state, %{topic: topic})}
+  # end
 
   @doc """
   Handles the intent evaluation when there is no active dialog yet
   It also creates a new dialog and starts it - by invoking `continue`.
   """
   def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
-    IO.puts "begin topic: #{inspect intent}"
+    IO.puts "#{inspect self} begin topic: #{inspect intent}"
 
     Process.flag(:trap_exit, true)
 
@@ -69,17 +80,6 @@ defmodule Dobar.Conversation.Dialog do
         end
         {:stop, :normal, nil}
     end
-  end
-
-  @doc """
-  Handles The intent evaluation for "cancel_command" specific intent.
-  Note that is shouldn't work if there's no parent dialog - cancel command
-  is a meta topic so it shouldn't work by itself!
-  """
-  def handle_cast({:evaluate, %Intent{name: "cancel_command"} = intent}, state) do
-    {:ok, pid} = Dobar.Conversation.Dialog.start_link self
-    Dobar.Conversation.Dialog.evaluate pid, intent
-    {:noreply, Map.merge(state, %{meta: pid})}
   end
 
   @doc """
@@ -112,7 +112,14 @@ defmodule Dobar.Conversation.Dialog do
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
 
-        case find_alternative(intent, topic) |> validate_alternative(intent) do
+        topic_intent = Dobar.Conversation.Topic.intent(topic)
+
+        alternative = intent.name
+          |> String.to_atom
+          |> find_alternative(String.to_atom(topic_intent.name))
+          |> validate_alternative(intent)
+
+        case alternative do
           {:reference, intention} ->
             IO.puts "reference found: #{inspect intention}"
 
@@ -239,16 +246,12 @@ defmodule Dobar.Conversation.Dialog do
     end
   end
 
-  def handle_info({:meta, :capabilities}, state) do
-    IO.puts "this is the parent: #{inspect self}"
-    IO.puts "meta asked for my capabilities"
-    {:noreply, state}
-  end
-
   def handle_info({:meta, reaction}, state) do
     IO.puts "xxx: reaction type: #{inspect reaction.type}"
     IO.puts "xxx: reaction features: #{inspect reaction.features}"
 
+    # This version of the `Topic.react` function should fill all the capabilities
+    # of the topic and react to the intention passed
     x = Dobar.Conversation.Topic.react(state.topic, reaction.features)
 
     # case Dobar.Conversation.Topic.react(state.topic, reaction.features) do
@@ -273,10 +276,13 @@ defmodule Dobar.Conversation.Dialog do
   # private utils
   #
 
-  defp find_alternative(intent, topic) do
-    capability_name = String.to_atom intent.name
-    topic_intent = Dobar.Conversation.Topic.intent(topic)
-    topic_intent_name = String.to_atom topic_intent.name
+  # TODO: find if theres a need for this alternative match
+  defp find_alternative(intent_name, nil) do
+    {:noalternative, nil}
+  end
+  defp find_alternative(intent_name, topic_intent_name) do
+    capability_name = intent_name
+    topic_intent_name = topic_intent_name
 
     # extract the intention for the current topic
     {:ok, intention} = IntentionProvider.intention(topic_intent_name)

@@ -83,6 +83,8 @@ defmodule Dobar.Conversation.Capability do
   def compatibility(pid, %Intent{} = intent) do
     GenServer.call(pid, {:compatibility, intent})
   end
+
+  # TBD
   # def compatibility(pid, %{} = tests) do
   #   GenServer.call(pid, {:compatibility, tests})
   # end
@@ -103,8 +105,10 @@ defmodule Dobar.Conversation.Capability do
   #
 
   def init(args) do
-    {:ok, %{capability: args[:capability],
-            value: prefill_value(args[:prefill], args[:capability]),
+    capability = args[:capability]
+    {:ok, %{name: elem(capability, 0),
+            capability: elem(capability, 1),
+            value: prefill_value(args[:prefill], elem(capability, 1)),
             created_on: nil}}
   end
 
@@ -159,7 +163,9 @@ defmodule Dobar.Conversation.Capability do
       name when is_bitstring(name) -> String.to_atom(name)
       name                         -> name
     end
-    {:reply, {:ok, %{name: slot_key, value: state.value}}, state}
+    # reply = %{name: slot_key, value: state.value, prio: state.capability.prio}
+    reply = {state.name, state.capability, state.value}
+    {:reply, {:ok, reply}, state}
   end
 
   # private

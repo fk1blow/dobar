@@ -1,3 +1,4 @@
+# TODO: rename it do `Dobar.Conversation.Intention.IntentionBehaviour
 defmodule Dobar.Conversation.IntentionBehaviour do
   defmacro __using__(_opts) do
     quote do
