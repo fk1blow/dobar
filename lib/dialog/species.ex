@@ -52,6 +52,7 @@ defmodule Dobar.Dialog.Species do
             {:topic_end, :completed}
         end
       end
+
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil, parent: parent}) do
         IO.puts "continue topic: #{inspect intent}"
 
@@ -218,29 +219,22 @@ defmodule Dobar.Dialog.Species do
       end
 
       @doc """
-      Handles the intent evaluation when there is no active dialog yet
-      It also creates a new dialog and starts it - by invoking `continue`.
-      """
-      def handle_cast({:evaluate, intent}, %{topic: nil, meta: nil} = state) do
-        case handle_intent intent, state do
-          {:topic_output, {output, some_state}} ->
-            {:noreply, Map.merge(state, some_state)}
-          {:topic_end, :completed} ->
-            {:stop, :normal, nil}
-        end
-      end
-
-      @doc """
       Handles the intent evaluation when a topic already exist but not a meta.
       """
       def handle_cast({:evaluate, intent}, %{topic: topic, meta: nil} = state) do
         case handle_intent intent, state do
           {:topic_output, {output, nil}} ->
             {:noreply, state}
+
+          {:topic_output, {output, some_state}} ->
+            {:noreply, Map.merge(state, some_state)}
+
           {:topic_end, :completed} ->
             {:stop, :normal, nil}
+
           {:topic_alternative, {ouput, some_state}} ->
             {:noreply, Map.merge(state, some_state)}
+
           {:topic_nomatch, for_intention} ->
             {:noreply, state}
         end
@@ -256,11 +250,13 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_cast({:meta, %Reaction{} = reaction}, state) do
-        handle_meta reaction
+        handle_meta reaction, state
+        {:noreply, state}
       end
 
       def handle_cast({:meta, :continue}, state) do
         handle_meta :continue, state
+        {:noreply, state}
       end
 
       # private

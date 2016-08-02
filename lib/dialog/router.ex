@@ -12,10 +12,17 @@ defmodule Dobar.Dialog.Router do
   defmacro __before_compile__(_env) do
     quote do
       def dialog(name) when is_atom(name) do
-        @dialogs[name]
+        get_dialog(name)
       end
       def dialog(name) when is_bitstring(name) do
-        @dialogs[String.to_atom name]
+        get_dialog(String.to_atom name)
+      end
+
+      defp get_dialog(name) do
+        case @dialogs[name] do
+          nil -> Dobar.Dialog.GenericDialog
+          dialog -> dialog
+        end
       end
     end
   end
