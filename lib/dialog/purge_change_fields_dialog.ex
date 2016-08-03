@@ -4,15 +4,14 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   # use the `handle_intent/2` to capture the intent and create the topic manually
 
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, parent: parent}) do
-    IO.puts "xxxxxx rrrrrr xxxxxx begin topic: #{inspect intent}"
+    IO.puts "purge change fields; begin topic: #{inspect intent}"
 
     Process.flag(:trap_exit, true)
 
     parent_capabilities = GenServer.call(parent, :topic_capabilities)
+    entities = intent.entities.field_type
 
-    IO.puts "xxxxxxx: #{inspect parent_capabilities}"
-
-    capabilities = case compare_capabilities(parent_capabilities, intent.entities) do
+    capabilities = case compare_capabilities(parent_capabilities, entities) do
       {:ok, capabilities} -> capabilities
       {:error, reason} -> raise "cannot match capabilities against intent entities"
     end
