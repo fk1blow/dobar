@@ -1,4 +1,4 @@
-defmodule Dobar.Dialog.CancelCommand do
+defmodule Dobar.Dialog.CancelCommandDialog do
   use Dobar.Dialog.Species
 
   # def handle_intent(intent, %{topic: nil} = state) do

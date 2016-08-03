@@ -18,6 +18,8 @@ defmodule Dobar.Dialog.Router do
         get_dialog(String.to_atom name)
       end
 
+      def generic_dialog, do: Dobar.Dialog.GenericDialog
+
       defp get_dialog(name) do
         case @dialogs[name] do
           nil -> Dobar.Dialog.GenericDialog

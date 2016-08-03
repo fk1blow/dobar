@@ -70,6 +70,10 @@ defmodule Dobar.Conversation.Topic do
     GenServer.start_link(__MODULE__, [intent])
   end
 
+  @doc """
+  Starts a new Topic with a strict set of capabilities handed over by the caller.
+  The topic's capabilities will be constructued manually, creating a fake %Intent.
+  """
   def start_link([_head|_tail] = capabilities) do
     GenServer.start_link(__MODULE__, capabilities)
   end
@@ -78,13 +82,11 @@ defmodule Dobar.Conversation.Topic do
   Reacts with the current state of the Topic
   """
   def react(pid), do: GenServer.call pid, :react
-
   @doc """
   Will complete the next possible topic and return the next subject capability
   if any left.
   """
   def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
-
   @doc """
   Will complete for each and every entity inside the entities list and return the
   next subject capability if any left.
@@ -105,14 +107,15 @@ defmodule Dobar.Conversation.Topic do
   #
 
   def init([%Intent{} = intent]) do
+    IO.puts "xxxxx: #{inspect available_capabilities(intent)}"
+
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
   end
-
-  def init([_head|_tail] = prefab_capabilities) do
-    prefab_capabilities
+  def init([_head|_tail] = capabilities) do
+    capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, %Intent{name: :prefab})))
     |> validate_capabilities(%Intent{name: :prefab})
@@ -132,7 +135,6 @@ defmodule Dobar.Conversation.Topic do
 
     {:reply, answer, state}
   end
-
   def handle_call({:react, %Intent{} = intent}, _from, state) do
     topic_status =
       with {:ok, expected}   <- next_capability(state.capabilities),
@@ -174,7 +176,6 @@ defmodule Dobar.Conversation.Topic do
   def handle_call(:get_intent, _from, state) do
     {:reply, state.intent, state}
   end
-
   def handle_call(:get_capabilities, _from, state) do
     capabilities = state.capabilities
     |> Enum.map(&(Capability.structure &1.pid))

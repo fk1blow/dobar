@@ -10,7 +10,8 @@ defmodule Dobar.Conversation.Intention.Provider do
     change_field: Intention.ChangeField,
     create_alarm: Intention.CreateAlarm,
     switch_conversation: Intention.SwitchConversation,
-    confirmation: Intention.Confirmation
+    confirmation: Intention.Confirmation,
+    purge_change_fields: Intention.PurgeChangeFields
   ]
 
   def intention(name), do: get_intention(@intentions, name)
