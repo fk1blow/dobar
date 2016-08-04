@@ -122,12 +122,6 @@ defmodule Dobar.Conversation.Topic do
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
   end
-  # def init([_head|_tail] = capabilities) do
-  #   capabilities
-  #   |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
-  #   |> Enum.map(&(create_capability(&1, %Intent{name: "ephemeral_bearer"})))
-  #   |> validate_capabilities(%Intent{name: "ephemeral_bearer"})
-  # end
 
   def handle_call(:react, _from, state) do
     answer = case next_capability(state.capabilities) do
