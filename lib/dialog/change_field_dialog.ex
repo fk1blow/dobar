@@ -13,13 +13,6 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
   def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
     IO.puts "#{inspect self} begin topic for: change field dialog: #{inspect intent}"
 
-    capabilities = GenServer.call(parent, :topic_capabilities)
-    compared = compare_capabilities(capabilities, intent.entities.field_type)
-
-    IO.puts "compared capabilities vs intent's entities: #{inspect compared}"
-
-    Process.flag(:trap_exit, true)
-
     {:ok, topic} = Topic.start_link(intent)
 
     case Topic.react(topic) do

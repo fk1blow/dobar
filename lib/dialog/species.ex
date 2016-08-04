@@ -203,16 +203,17 @@ defmodule Dobar.Dialog.Species do
           [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "yes, now change the fields"
 
-            topic_capabilities = Topic.capabilities(state.topic)
-            entities = reaction.intent.entities.field_type
+            # NOT USED ATM
+            # topic_capabilities = Topic.capabilities(state.topic)
+            # entities = reaction.intent.entities.field_type
 
-            capabilities = case compare_capabilities(topic_capabilities, entities) do
-              {:ok, capabilities} -> capabilities
-              {:error, reason} -> raise "cannot match capabilities against intent entities"
-            end
+            # capabilities = case compare_capabilities(topic_capabilities, entities) do
+            #   {:ok, capabilities} -> capabilities
+            #   {:error, reason} -> raise "cannot match capabilities against intent entities"
+            # end
 
-            matches = topic_capabilities
-            |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
+            # matches = topic_capabilities
+            # |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
 
             intent = %Intent{name: "purge_change_fields",
                              entities: reaction.intent.entities,
@@ -242,10 +243,8 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      def handle_meta(%Reaction{} = reaction, state) do
-        IO.puts "meta handler for other reactions"
+      def handle_meta(%Reaction{intent: %{name: "purge_change_fields"}} = reaction, state) do
+        IO.puts "handle_meta purge_change_fields"
 
         case Topic.react(state.topic, ephemeral_intent(reaction.features)) do
           %Reaction{type: :question} = reaction ->
@@ -258,11 +257,8 @@ defmodule Dobar.Dialog.Species do
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
             {:topic_end, :completed}
-          reaction -> IO.puts "xxxxxxxxxx why??? : #{inspect reaction}"
         end
       end
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       def handle_meta(:canceled, state) do
         IO.puts "meta died! should continue with the dialog"
         case Topic.react(state.topic) do

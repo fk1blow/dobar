@@ -7,8 +7,8 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     Process.flag(:trap_exit, true)
 
     parent_capabilities = GenServer.call(parent, :topic_capabilities)
-    entities = intent.entities.field_type
 
+    entities = intent.entities.field_type
     capabilities = case compare_capabilities(parent_capabilities, entities) do
       {:ok, capabilities} -> capabilities
       {:error, reason} -> raise "cannot match capabilities against intent entities"
@@ -17,7 +17,8 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     matches = parent_capabilities
     |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
 
-    {:ok, topic} = Topic.start_link(ephemeral_intent, matches)
+    intent = %Intent{name: "purge_change_fields", confidence: 1}
+    {:ok, topic} = Topic.start_link(intent, matches)
 
     case Topic.react(topic) do
       %Reaction{type: :question} = reaction ->
