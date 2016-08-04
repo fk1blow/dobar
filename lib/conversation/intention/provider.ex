@@ -11,7 +11,8 @@ defmodule Dobar.Conversation.Intention.Provider do
     create_alarm: Intention.CreateAlarm,
     switch_conversation: Intention.SwitchConversation,
     confirmation: Intention.Confirmation,
-    purge_change_fields: Intention.PurgeChangeFields
+    purge_change_fields: Intention.PurgeChangeFields,
+    ephemeral_bearer: Intention.EphemeralBearer
   ]
 
   def intention(name), do: get_intention(@intentions, name)

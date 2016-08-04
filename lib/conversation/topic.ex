@@ -67,15 +67,15 @@ defmodule Dobar.Conversation.Topic do
   prefilling the capabilities with the %Intent
   """
   def start_link(%Intent{} = intent) do
-    GenServer.start_link(__MODULE__, [intent])
+    GenServer.start_link(__MODULE__, intent)
   end
 
   @doc """
   Starts a new Topic with a strict set of capabilities handed over by the caller.
   The topic's capabilities will be constructued manually, creating a fake %Intent.
   """
-  def start_link([_head|_tail] = capabilities) do
-    GenServer.start_link(__MODULE__, capabilities)
+  def start_link(%Intent{} = intent, capabilities) do
+    GenServer.start_link(__MODULE__, [intent: intent, capabilities: capabilities])
   end
 
   @doc """
@@ -106,20 +106,28 @@ defmodule Dobar.Conversation.Topic do
   # callbacks
   #
 
-  def init([%Intent{} = intent]) do
-    IO.puts "xxxxx: #{inspect available_capabilities(intent)}"
-
+  def init(%Intent{} = intent) do
     capabilities = available_capabilities(intent)
     |> Enum.filter(&(is_tuple(&1)))
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
   end
-  def init([_head|_tail] = capabilities) do
+
+  def init(args) do
+    intent = args[:intent]
+    capabilities = args[:capabilities]
+
     capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
-    |> Enum.map(&(create_capability(&1, %Intent{name: :prefab})))
-    |> validate_capabilities(%Intent{name: :prefab})
+    |> Enum.map(&(create_capability(&1, intent)))
+    |> validate_capabilities(intent)
   end
+  # def init([_head|_tail] = capabilities) do
+  #   capabilities
+  #   |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
+  #   |> Enum.map(&(create_capability(&1, %Intent{name: "ephemeral_bearer"})))
+  #   |> validate_capabilities(%Intent{name: "ephemeral_bearer"})
+  # end
 
   def handle_call(:react, _from, state) do
     answer = case next_capability(state.capabilities) do

@@ -77,6 +77,7 @@ defmodule Dobar.Dialog.Species do
 
           %Reaction{type: :nomatch} = reaction ->
             IO.puts "cannot match"
+            IO.puts "will search for intent: #{inspect intent}"
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
 
@@ -216,7 +217,7 @@ defmodule Dobar.Dialog.Species do
             end
 
             matches = topic_capabilities
-            |> Enum.filter(&(entities_match_capabilities(elem(&1, 1).entity, capabilities)))
+            |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
 
             intent = %Intent{name: "purge_change_fields",
                              entities: reaction.intent.entities,
@@ -418,10 +419,10 @@ defmodule Dobar.Dialog.Species do
         end
       end
 
-      defp entities_match_capabilities([h|t] = entity, capabilities) do
+      defp entities_matches([h|t] = entity, capabilities) do
         MapSet.intersection(MapSet.new(entity), capabilities) |> MapSet.size > 0
       end
-      defp entities_match_capabilities(entity, capabilities) do
+      defp entities_matches(entity, capabilities) do
         Enum.any?(capabilities, fn x -> x == entity end)
       end
     end
