@@ -4,8 +4,6 @@ defmodule Dobar.Conversation.Intention.ChangeField do
 
   intention :change_field do
     relationship :meta
-    # topic :field_type, prio: 1, entity: "field_type"
-    # topic :field_value, prio: 2, entity: :input
     topic :approve, entity: [:confirm, :infirm]
     topic :cancel_command, reference: :cancel_command
   end

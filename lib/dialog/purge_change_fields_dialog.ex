@@ -1,8 +1,6 @@
 defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   use Dobar.Dialog.Species
 
-  # use the `handle_intent/2` to capture the intent and create the topic manually
-
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, parent: parent}) do
     IO.puts "purge change fields; begin topic: #{inspect intent}"
 
@@ -19,9 +17,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     matches = parent_capabilities
     |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
 
-    IO.puts "matches: #{inspect matches}"
-
-    {:ok, topic} = Topic.start_link(%Intent{name: "ephemeral_bearer"}, matches)
+    {:ok, topic} = Topic.start_link(ephemeral_intent, matches)
 
     case Topic.react(topic) do
       %Reaction{type: :question} = reaction ->

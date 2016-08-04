@@ -4,5 +4,6 @@ defmodule Dobar.Conversation.Intention.PurgeChangeFields do
   intention :purge_change_fields do
     topic :change_field, reference: :change_field
     topic :cancel_command, reference: :cancel_command
+    topic :approve, prio: 99999999, entity: [:confirm, :infirm]
   end
 end

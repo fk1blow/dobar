@@ -196,11 +196,6 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       def handle_meta(%Reaction{intent: %{name: "change_field"}} = reaction, state) do
         IO.puts "handle_meta change_field"
 
@@ -249,10 +244,23 @@ defmodule Dobar.Dialog.Species do
       end
       # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # NOT IMPLEMENTED!!!
-      # def handle_meta(%Reaction{}, state) do
-      #   raise "meta for other reactions not implemented"
-      # end
+      def handle_meta(%Reaction{} = reaction, state) do
+        IO.puts "meta handler for other reactions"
+
+        case Topic.react(state.topic, ephemeral_intent(reaction.features)) do
+          %Reaction{type: :question} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            IO.puts "________________________________________________"
+            {:topic_output, {reaction, %{meta: nil}}}
+
+          %Reaction{type: :completed} = reaction ->
+            IO.puts "reaction type: #{inspect reaction.type}"
+            IO.puts "reaction features: #{inspect reaction.features}"
+            {:topic_end, :completed}
+          reaction -> IO.puts "xxxxxxxxxx why??? : #{inspect reaction}"
+        end
+      end
       # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       def handle_meta(:canceled, state) do
@@ -420,10 +428,25 @@ defmodule Dobar.Dialog.Species do
       end
 
       defp entities_matches([h|t] = entity, capabilities) do
-        MapSet.intersection(MapSet.new(entity), capabilities) |> MapSet.size > 0
+        MapSet.new(entity) |> MapSet.intersection(capabilities) |> MapSet.size > 0
       end
       defp entities_matches(entity, capabilities) do
         Enum.any?(capabilities, fn x -> x == entity end)
+      end
+
+      defp ephemeral_intent(features \\ nil) do
+        entities = case features do
+          nil -> nil
+          features ->
+            List.foldl(features, %{}, fn feature, acc ->
+              field_name = elem(feature, 1).entity
+              entity = [%{confidence: 1, type: "value", value: elem(feature, 2)}]
+              field_map = Map.put(%{}, field_name, entity)
+              Map.merge(acc, field_map)
+            end)
+        end
+
+        %Intent{name: "ephemeral_bearer", entities: entities}
       end
     end
   end

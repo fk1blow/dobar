@@ -84,11 +84,6 @@ defmodule Dobar.Conversation.Capability do
     GenServer.call(pid, {:compatibility, intent})
   end
 
-  # TBD
-  # def compatibility(pid, %{} = tests) do
-  #   GenServer.call(pid, {:compatibility, tests})
-  # end
-
   def outcome(pid) do
     GenServer.call(pid, :get_outcome)
   end
@@ -163,7 +158,6 @@ defmodule Dobar.Conversation.Capability do
       name when is_bitstring(name) -> String.to_atom(name)
       name                         -> name
     end
-    # reply = %{name: slot_key, value: state.value, prio: state.capability.prio}
     reply = {state.name, state.capability, state.value}
     {:reply, {:ok, reply}, state}
   end

@@ -72,7 +72,7 @@ defmodule Dobar.Conversation.Topic do
 
   @doc """
   Starts a new Topic with a strict set of capabilities handed over by the caller.
-  The topic's capabilities will be constructued manually, creating a fake %Intent.
+  The topic's capabilities will be constructued manually, added to the provided intent.
   """
   def start_link(%Intent{} = intent, capabilities) do
     GenServer.start_link(__MODULE__, [intent: intent, capabilities: capabilities])
@@ -115,9 +115,7 @@ defmodule Dobar.Conversation.Topic do
 
   def init(args) do
     intent = args[:intent]
-    capabilities = args[:capabilities]
-
-    capabilities
+    args[:capabilities]
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
@@ -137,7 +135,33 @@ defmodule Dobar.Conversation.Topic do
 
     {:reply, answer, state}
   end
+  def handle_call({:react, %Intent{name: "ephemeral_bearer"} = intent}, _from, state) do
+    # takes each capability, test it for compability againts the intent,
+    # filters out `:input` capabilities and `:nomatches` then takes the compatible
+    # ones and compleste them
+    state.capabilities
+    |> Stream.map(&(%{cpid: &1.pid, compat: Capability.compatibility(&1.pid, intent)}))
+    |> Stream.filter(&(elem(&1.compat, 1) != :input))
+    |> Stream.filter(&(elem(&1.compat, 0) != :nomatch))
+    |> Stream.each(&(Capability.complete(&1.cpid, intent)))
+    |> Stream.run
+
+    answer = case next_capability(state.capabilities) do
+      {:ok, capability} ->
+        %Reaction{type: :question,
+                  intent: state.intent,
+                  features: Capability.outcome(capability.pid)}
+      {:completed, capabilities} ->
+        %Reaction{type: :completed,
+                  intent: state.intent,
+                  features: capabilities}
+    end
+
+    {:reply, answer, state}
+  end
   def handle_call({:react, %Intent{} = intent}, _from, state) do
+    # takes the next capability, tests it for compability match and if compatible,
+    # completes it with the intent and asks for the next capability of the topic
     topic_status =
       with {:ok, expected}   <- next_capability(state.capabilities),
            {:ok, capability} <- capability_match(expected, intent),
@@ -161,19 +185,6 @@ defmodule Dobar.Conversation.Topic do
 
     {:reply, answer, state}
   end
-
-  # TBD
-  # def handle_call({:react, %{} = features}, _from, state) do
-  #   processed_features = state.capabilities
-  #   |> Stream.map(&(%{capability: &1, test_features: features}))
-  #   |> Stream.each(&(Capability.compatibility(&1.capability.pid, &1.test_features)))
-
-  #   IO.inspect Enum.to_list(processed_features)
-
-  #   IO.puts "should fill the capabilities features with the provided list"
-  #   raise "reaction not implemented; tbd"
-  #   {:reply, nil, state}
-  # end
 
   def handle_call(:get_intent, _from, state) do
     {:reply, state.intent, state}
