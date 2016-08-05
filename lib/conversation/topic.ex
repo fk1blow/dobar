@@ -135,7 +135,7 @@ defmodule Dobar.Conversation.Topic do
 
     {:reply, answer, state}
   end
-  def handle_call({:react, %Intent{name: "ephemeral_bearer"} = intent}, _from, state) do
+  def handle_call({:react, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
     # ones and compleste them

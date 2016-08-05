@@ -246,7 +246,9 @@ defmodule Dobar.Dialog.Species do
       def handle_meta(%Reaction{intent: %{name: "purge_change_fields"}} = reaction, state) do
         IO.puts "handle_meta purge_change_fields"
 
-        case Topic.react(state.topic, ephemeral_intent(reaction.features)) do
+        IO.puts "x: #{inspect carrier_intent(reaction.features)}"
+
+        case Topic.react(state.topic, carrier_intent(reaction.features)) do
           %Reaction{type: :question} = reaction ->
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
@@ -257,6 +259,8 @@ defmodule Dobar.Dialog.Species do
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
             {:topic_end, :completed}
+
+          reaction -> IO.puts "xxxxxxxxxx: #{inspect reaction}"
         end
       end
       def handle_meta(:canceled, state) do
@@ -430,19 +434,16 @@ defmodule Dobar.Dialog.Species do
         Enum.any?(capabilities, fn x -> x == entity end)
       end
 
-      defp ephemeral_intent(features \\ nil) do
-        entities = case features do
-          nil -> nil
-          features ->
-            List.foldl(features, %{}, fn feature, acc ->
-              field_name = elem(feature, 1).entity
-              entity = [%{confidence: 1, type: "value", value: elem(feature, 2)}]
-              field_map = Map.put(%{}, field_name, entity)
-              Map.merge(acc, field_map)
-            end)
-        end
+      defp carrier_intent(features) do
+        entities = features
+        |> List.foldl(%{}, fn feature, acc ->
+          field_name = elem(feature, 1).entity
+          entity = [%{confidence: 1, type: "value", value: elem(feature, 2)}]
+          field_map = Map.put(%{}, field_name, entity)
+          Map.merge(acc, field_map)
+        end)
 
-        %Intent{name: "ephemeral_bearer", entities: entities}
+        %Intent{name: "carrier_bearer", entities: entities}
       end
     end
   end

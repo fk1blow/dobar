@@ -12,7 +12,7 @@ defmodule Dobar.Conversation.Intention.Provider do
     switch_conversation: Intention.SwitchConversation,
     confirmation: Intention.Confirmation,
     purge_change_fields: Intention.PurgeChangeFields,
-    ephemeral_bearer: Intention.EphemeralBearer
+    # carrier_bearer: Intention.CarrierBearer
   ]
 
   def intention(name), do: get_intention(@intentions, name)
