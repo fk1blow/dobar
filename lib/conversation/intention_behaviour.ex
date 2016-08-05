@@ -39,6 +39,8 @@ defmodule Dobar.Conversation.IntentionBehaviour do
         end
       {:topic, _, topic} ->
         [extract_topic.(topic)]
+      {:relationship, _, relation} ->
+        [extract_topic.(relation)]
     end
 
     quote do
