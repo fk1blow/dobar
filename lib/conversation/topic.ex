@@ -59,38 +59,34 @@ defmodule Dobar.Conversation.Topic do
 
   alias Dobar.Model.Reaction
   alias Dobar.Model.Intent
-  alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
   alias Dobar.Conversation.Capability
+  alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
   @doc """
   Starts a new Topic that represents the given `Dobar.Modal.Intent` while
   prefilling the capabilities with the %Intent
+
+  Starts a new Topic with a strict set of capabilities handed over by the caller.
+  The topic's capabilities will be constructued manually, added to the provided intent.
   """
   def start_link(%Intent{} = intent) do
     GenServer.start_link(__MODULE__, intent)
   end
-
-  @doc """
-  Starts a new Topic with a strict set of capabilities handed over by the caller.
-  The topic's capabilities will be constructued manually, added to the provided intent.
-  """
   def start_link(%Intent{} = intent, capabilities) do
     GenServer.start_link(__MODULE__, [intent: intent, capabilities: capabilities])
   end
 
   @doc """
   Reacts with the current state of the Topic
-  """
-  def react(pid), do: GenServer.call pid, :react
-  @doc """
+
   Will complete the next possible topic and return the next subject capability
   if any left.
-  """
-  def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
-  @doc """
+
   Will complete for each and every entity inside the entities list and return the
   next subject capability if any left.
   """
+  def react(pid), do: GenServer.call pid, :react
+  def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
   def react(pid, %{} = entities), do: GenServer.call pid, {:react, entities}
 
   @doc """
@@ -104,7 +100,7 @@ defmodule Dobar.Conversation.Topic do
   def capabilities(pid), do: GenServer.call pid, :get_capabilities
 
   # callbacks
-  #
+  # ---------
 
   def init(%Intent{} = intent) do
     capabilities = available_capabilities(intent)
@@ -112,10 +108,8 @@ defmodule Dobar.Conversation.Topic do
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
   end
-
-  def init(args) do
-    intent = args[:intent]
-    args[:capabilities]
+  def init([intent: %Intent{} = intent, capabilities: capabilities]) do
+    capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
     |> validate_capabilities(intent)
@@ -185,7 +179,6 @@ defmodule Dobar.Conversation.Topic do
 
     {:reply, answer, state}
   end
-
   def handle_call(:get_intent, _from, state) do
     {:reply, state.intent, state}
   end

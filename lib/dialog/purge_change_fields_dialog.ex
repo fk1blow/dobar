@@ -1,14 +1,14 @@
 defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   use Dobar.Dialog.Species
 
-  def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, parent: parent}) do
+  def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
     IO.puts "purge change fields; begin topic: #{inspect intent}"
 
     Process.flag(:trap_exit, true)
 
-    parent_capabilities = GenServer.call(parent, :topic_capabilities)
-
+    parent_capabilities = GenServer.call(state.parent, :topic_capabilities)
     entities = intent.entities.field_type
+
     capabilities = case compare_capabilities(parent_capabilities, entities) do
       {:ok, capabilities} -> capabilities
       {:error, reason} -> raise "cannot match capabilities against intent entities"
@@ -31,7 +31,8 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
         IO.puts "reaction type: #{inspect reaction.type}"
         IO.puts "reaction features: #{inspect reaction.features}"
         unless root_dialog?(self) do
-          GenServer.cast parent, {:meta, reaction}
+          GenServer.cast(state.parent,
+            {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
         end
         {:topic_end, :completed}
     end

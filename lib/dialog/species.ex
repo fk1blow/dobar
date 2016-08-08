@@ -5,6 +5,7 @@ defmodule Dobar.Dialog.Species do
 
       alias Dobar.Model.Reaction
       alias Dobar.Model.Intent
+      alias Dobar.Model.Meta
       alias Dobar.Conversation.Topic
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
@@ -14,7 +15,7 @@ defmodule Dobar.Dialog.Species do
       #
 
       def start_link(:root_dialog) do
-        GenServer.start_link __MODULE__, [parent: nil], name: :root_dialog
+        GenServer.start_link __MODULE__, nil, name: :root_dialog
       end
       def start_link(parent) do
         GenServer.start_link __MODULE__, [parent: parent]
@@ -30,7 +31,7 @@ defmodule Dobar.Dialog.Species do
       # overridable delegates
       #
 
-      def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, parent: parent}) do
+      def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
         IO.puts "#{inspect self} begin topic: #{inspect intent}"
 
         Process.flag(:trap_exit, true)
@@ -48,12 +49,13 @@ defmodule Dobar.Dialog.Species do
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
             unless root_dialog?(self) do
-              GenServer.cast parent, {:meta, reaction}
+              GenServer.cast(state.parent,
+                {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
             end
             {:topic_end, :completed}
         end
       end
-      def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil, parent: parent}) do
+      def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
         IO.puts "continue topic: #{inspect intent}"
 
         case Topic.react(topic, intent) do
@@ -70,7 +72,8 @@ defmodule Dobar.Dialog.Species do
 
             unless root_dialog?(self) do
               IO.puts "ending topic, intent: #{inspect intent}"
-              GenServer.cast parent, {:meta, reaction}
+              GenServer.cast(state.parent,
+                {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
             end
 
             {:topic_end, :completed}
@@ -122,11 +125,11 @@ defmodule Dobar.Dialog.Species do
         end
       end
 
-      def handle_meta(%Reaction{intent: %{name: "cancel_command"}} = reaction, state) do
+      def handle_meta(%Meta{reaction: %{intent: %{name: "cancel_command"}}} = meta, state) do
         IO.puts "meta ended by: cancel"
-        IO.puts "reaction from meta: #{inspect reaction}"
+        IO.puts "reaction from meta: #{inspect meta.reaction}"
 
-        case reaction.features do
+        case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "ok, kill this dialog"
 
@@ -134,7 +137,7 @@ defmodule Dobar.Dialog.Species do
               # there exists the `:completed` message wich dies and sends a list
               # of capabilities values, that the parent should add to its
               # own capabilities
-              GenServer.cast state.parent, {:meta, :canceled}
+              GenServer.cast(state.parent, {:meta, :canceled})
             end
             {:topic_end, :completed}
 
@@ -156,11 +159,11 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_meta(%Reaction{intent: %{name: "switch_conversation"}} = reaction, state) do
+      def handle_meta(%Meta{reaction: %{intent: %{name: "switch_conversation"}}} = meta, state) do
         IO.puts "meta ended by: switch"
-        IO.puts "reaction from meta: #{inspect reaction}"
+        IO.puts "reaction from meta: #{inspect meta}"
 
-        case reaction.features do
+        case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "ok, kill this (alternative)dialog"
             # If it's the root dialog, just send this away(to an event handler,
@@ -168,7 +171,8 @@ defmodule Dobar.Dialog.Species do
             if root_dialog?(self) do
               IO.puts "ROOT: should do something with this alternative-reaction dialog"
             else
-              GenServer.cast state.parent, {:meta, reaction}
+              GenServer.cast(state.parent, {:meta,
+                %Meta{reaction: meta.reaction, passthrough: state.passthrough}})
             end
             # {:stop, :normal, nil}
             {:topic_end, :completed}
@@ -196,10 +200,10 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_meta(%Reaction{intent: %{name: "change_field"}} = reaction, state) do
-        IO.puts "handle_meta change_field"
+      def handle_meta(%Meta{reaction: %{intent: %{name: "change_field"}}} = meta, state) do
+        IO.puts "handle_meta change_field, meta: #{inspect meta}"
 
-        case reaction.features do
+        case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "yes, now change the fields"
 
@@ -216,7 +220,7 @@ defmodule Dobar.Dialog.Species do
             # |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
 
             intent = %Intent{name: "purge_change_fields",
-                             entities: reaction.intent.entities,
+                             entities: meta.reaction.intent.entities,
                              confidence: 1}
 
             dialog = Dobar.Dialog.SpeciesRoutes.dialog intent.name
@@ -243,10 +247,10 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_meta(%Reaction{intent: %{name: "purge_change_fields"}} = reaction, state) do
+      def handle_meta(%Meta{reaction: %{intent: %{name: "purge_change_fields"}}} = meta, state) do
         IO.puts "handle_meta purge_change_fields"
 
-        case Topic.react(state.topic, carrier_bearer(reaction.features)) do
+        case Topic.react(state.topic, carrier_bearer(meta.reaction.features)) do
           %Reaction{type: :question} = reaction ->
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
@@ -280,11 +284,11 @@ defmodule Dobar.Dialog.Species do
       # callbacks
       #
 
-      def init([parent: nil]) do
-        {:ok, %{topic: nil, meta: nil, parent: nil}}
+      def init(nil) do
+        {:ok, %{topic: nil, meta: nil, parent: nil, passthrough: nil}}
       end
       def init([parent: parent]) do
-        {:ok, %{topic: nil, meta: nil, parent: parent}}
+        {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: nil}}
       end
       def init([parent: parent, passthrough: passthrough]) do
         {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
@@ -313,11 +317,12 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
+        # the dialog has a meta chain so proxy the call until the last meta-dialog
         GenServer.cast meta, {:evaluate, intent}
         {:noreply, state}
       end
-      def handle_cast({:meta, %Reaction{} = reaction}, state) do
-        case handle_meta(reaction, state) do
+      def handle_cast({:meta, %Meta{} = meta}, state) do
+        case handle_meta(meta, state) do
           {:topic_output, {output, some_state}} ->
             {:noreply, Map.merge(state, some_state)}
           {:topic_end, :completed} ->
