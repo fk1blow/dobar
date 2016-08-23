@@ -1,4 +1,4 @@
-defmodule Dobar.Conversation.Topic do
+defmodule Dobar.Dialog.Topic do
   @moduledoc """
 
   Conversation Topic
@@ -39,7 +39,7 @@ defmodule Dobar.Conversation.Topic do
 
   #### encapsulation
 
-  You don;t really (need to)know how the Topic does its job, other than a standard
+  You don't really (need to) know how the Topic does its job, other than a standard
   generic contract - it reacts(using `react/1`, `react/2`) to the Dialog and to
   intentions, advancing in its state as it uses differrent capabilities and filling
   their needs for input(slots).
@@ -59,7 +59,7 @@ defmodule Dobar.Conversation.Topic do
 
   alias Dobar.Model.Reaction
   alias Dobar.Model.Intent
-  alias Dobar.Conversation.Capability
+  alias Dobar.Dialog.Capability
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
   @doc """
@@ -85,7 +85,10 @@ defmodule Dobar.Conversation.Topic do
   Will complete for each and every entity inside the entities list and return the
   next subject capability if any left.
   """
-  def react(pid), do: GenServer.call pid, :react
+
+  # TODO: rename to Topic.advance/1 and Topic.advance/2
+
+  def react(pid), do: GenServer.call pid, {:react, nil}
   def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
   def react(pid, %{} = entities), do: GenServer.call pid, {:react, entities}
 
@@ -103,10 +106,11 @@ defmodule Dobar.Conversation.Topic do
   # ---------
 
   def init(%Intent{} = intent) do
-    capabilities = available_capabilities(intent)
-    |> Enum.filter(&(is_tuple(&1)))
-    |> Enum.map(&(create_capability(&1, intent)))
-    |> validate_capabilities(intent)
+    capabilities =
+      available_capabilities(intent)
+      |> Enum.filter(&(is_tuple(&1)))
+      |> Enum.map(&(create_capability(&1, intent)))
+      |> validate_capabilities(intent)
   end
   def init([intent: %Intent{} = intent, capabilities: capabilities]) do
     capabilities
@@ -115,7 +119,7 @@ defmodule Dobar.Conversation.Topic do
     |> validate_capabilities(intent)
   end
 
-  def handle_call(:react, _from, state) do
+  def handle_call({:react, nil}, _from, state) do
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         %Reaction{type: :question,
@@ -183,9 +187,10 @@ defmodule Dobar.Conversation.Topic do
     {:reply, state.intent, state}
   end
   def handle_call(:get_capabilities, _from, state) do
-    capabilities = state.capabilities
-    |> Enum.map(&(Capability.structure &1.pid))
-    |> Enum.map(&(elem &1, 1))
+    capabilities =
+      state.capabilities
+      |> Enum.map(&(Capability.structure &1.pid))
+      |> Enum.map(&(elem &1, 1))
     {:reply, capabilities, state}
   end
 
@@ -204,7 +209,11 @@ defmodule Dobar.Conversation.Topic do
   # TODO: watch out for when there is no intention defined for the input intent
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
-    case IntentionProvider.intention(intent_name) do
+    intention = IntentionProvider.intention(intent_name)
+
+    IO.puts "intention: #{inspect intention}"
+
+    case intention do
       {:ok, intent_def} -> filter_capabilities(intent_def[intent_name])
       {:error, reason} -> []
     end

@@ -6,7 +6,7 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Model.Reaction
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
-      alias Dobar.Conversation.Topic
+      alias Dobar.Dialog.Topic
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
       @confidence_treshold 0.8
@@ -36,23 +36,28 @@ defmodule Dobar.Dialog.Species do
 
         Process.flag(:trap_exit, true)
 
-        {:ok, topic} = Topic.start_link(intent)
+        IO.puts "!!! TREAT THE CASE WHERE YOU DON'T HAVE AN INTENTION DEFINED WHEN YOU START THE DIALOG"
 
-        case Topic.react(topic) do
-          %Reaction{type: :question} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            IO.puts "________________________________________________"
-            {:topic_output, {reaction, %{topic: topic}}}
+        case IntentionProvider.intention(String.to_atom intent.name) do
+          {:error, reason} -> IO.puts "cannot start topic and dialog"
+          {:ok, intention} ->
+            {:ok, topic} = Topic.start_link intent
+            case Topic.react(topic) do
+              %Reaction{type: :question} = reaction ->
+                IO.puts "reaction type: #{inspect reaction.type}"
+                IO.puts "reaction features: #{inspect reaction.features}"
+                IO.puts "________________________________________________"
+                {:topic_output, {reaction, %{topic: topic}}}
 
-          %Reaction{type: :completed} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            unless root_dialog?(self) do
-              GenServer.cast(state.parent,
-                {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
+              %Reaction{type: :completed} = reaction ->
+                IO.puts "reaction type: #{inspect reaction.type}"
+                IO.puts "reaction features: #{inspect reaction.features}"
+                unless root_dialog?(self) do
+                  GenServer.cast(state.parent,
+                    {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
+                end
+                {:topic_end, :completed}
             end
-            {:topic_end, :completed}
         end
       end
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
@@ -69,6 +74,7 @@ defmodule Dobar.Dialog.Species do
           %Reaction{type: :completed} = reaction ->
             IO.puts "reaction type: #{inspect reaction.type}"
             IO.puts "reaction features: #{inspect reaction.features}"
+            IO.puts "should validate confirmation?????????????????????????????????"
 
             unless root_dialog?(self) do
               IO.puts "ending topic, intent: #{inspect intent}"
@@ -97,7 +103,7 @@ defmodule Dobar.Dialog.Species do
 
                 Process.flag(:trap_exit, true)
 
-                dialog = Dobar.Dialog.SpeciesRoutes.dialog intent.name
+                dialog = Dobar.Dialog.Species.Routes.specie intent.name
                 {:ok, pid} = dialog.start_link(self)
                 dialog.evaluate(pid, intent)
 
@@ -108,7 +114,7 @@ defmodule Dobar.Dialog.Species do
 
                 Process.flag(:trap_exit, true)
 
-                dialog = Dobar.Dialog.SpeciesRoutes.dialog(intent.name)
+                dialog = Dobar.Dialog.Species.Routes.specie(intent.name)
                 {:ok, pid} = dialog.start_link(self, intention)
 
                 switch_intent = %Intent{name: "switch_conversation",
@@ -223,7 +229,7 @@ defmodule Dobar.Dialog.Species do
                              entities: meta.reaction.intent.entities,
                              confidence: 1}
 
-            dialog = Dobar.Dialog.SpeciesRoutes.dialog intent.name
+            dialog = Dobar.Dialog.Species.Routes.specie intent.name
             {:ok, pid} = dialog.start_link(self)
             dialog.evaluate(pid, intent)
 
@@ -284,15 +290,12 @@ defmodule Dobar.Dialog.Species do
       # callbacks
       #
 
-      def init(nil) do
-        {:ok, %{topic: nil, meta: nil, parent: nil, passthrough: nil}}
-      end
-      def init([parent: parent]) do
-        {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: nil}}
-      end
-      def init([parent: parent, passthrough: passthrough]) do
-        {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
-      end
+      def init(nil),
+        do: {:ok, %{topic: nil, meta: nil, parent: nil, passthrough: nil}}
+      def init([parent: parent]),
+        do: {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: nil}}
+      def init([parent: parent, passthrough: passthrough]),
+        do: {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
 
       def handle_call(:topic_capabilities, _from, %{topic: topic} = state) do
         {:reply, Topic.capabilities(topic), state}
@@ -312,7 +315,7 @@ defmodule Dobar.Dialog.Species do
           {:topic_alternative, {ouput, some_state}} ->
             {:noreply, Map.merge(state, some_state)}
 
-          {:topic_nomatch, for_intention} ->
+          {:topic_nomatch, _} ->
             {:noreply, state}
         end
       end
@@ -349,6 +352,7 @@ defmodule Dobar.Dialog.Species do
       defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
 
       # TODO: find if theres a need for this alternative match
+      # TODO: the alternative is not handling undefined modules fetch error!!!
       defp find_alternative(intent_name, nil) do
         {:noalternative, nil}
       end
@@ -356,8 +360,12 @@ defmodule Dobar.Dialog.Species do
         capability_name = intent_name
         topic_intent_name = topic_intent_name
 
+        IO.puts "xxx1"
+
         # extract the intention for the current topic
         {:ok, intention} = IntentionProvider.intention(topic_intent_name)
+
+        IO.puts "xxx2"
 
         # extract the capabilities of the current topic
         topic_capabilities = intention[topic_intent_name][capability_name]

@@ -1,3 +1,4 @@
+# TODO: move to Dobar.Dialog.Species.ChangeFieldDialog
 defmodule Dobar.Dialog.ChangeFieldDialog do
   @moduledoc """
   This specialized dialog will handle "change_field" intents in a special way.
@@ -7,8 +8,8 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
   Note that it can have a "change_field" meta-dialog itself(alongside
   a "cancel_command" meta-dialog).
   """
-  use Dobar.Dialog.Species
 
+  use Dobar.Dialog.Species
 
   def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
     IO.puts "#{inspect self} begin topic for: change field dialog: #{inspect intent}"
@@ -32,7 +33,6 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
     end
   end
 
-  def handle_intent(intent, state) do
-    super(intent, state)
-  end
+  def handle_intent(intent, state),
+    do: super(intent, state)
 end

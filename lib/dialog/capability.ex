@@ -1,4 +1,4 @@
-defmodule Dobar.Conversation.Capability do
+defmodule Dobar.Dialog.Capability do
   @moduledoc """
   The capability represents a single unit that describes a feature of the topic.
 
@@ -131,13 +131,6 @@ defmodule Dobar.Conversation.Capability do
     {:reply, match, state}
   end
 
-  # TBD
-  # def handle_call({:compatibility, %{} = test_features}, _from, state) do
-  #   IO.puts "state: #{inspect state}"
-  #   raise "compability not implemented; tbd"
-  #   {:reply, nil, state}
-  # end
-
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
     capability_value = case match_entity(capability_entities, intent) do
@@ -153,14 +146,8 @@ defmodule Dobar.Conversation.Capability do
     {:reply, {:ok, capability_value}, new_state}
   end
 
-  def handle_call(:structure, _from, state) do
-    slot_key = case state.capability.entity do
-      name when is_bitstring(name) -> String.to_atom(name)
-      name                         -> name
-    end
-    reply = {state.name, state.capability, state.value}
-    {:reply, {:ok, reply}, state}
-  end
+  def handle_call(:structure, _from, state),
+    do: {:reply, {:ok, {state.name, state.capability, state.value}}, state}
 
   # private
   #
@@ -178,18 +165,18 @@ defmodule Dobar.Conversation.Capability do
     end
   end
   defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_bitstring entity do
-    entity = String.to_atom entity
+    entity = entity |> String.to_atom
     case prefill.entities[entity] do
       nil    -> nil
       entity -> List.first(entity).value
     end
   end
 
-  defp match_entity(:input, %Intent{} = target) do
-    [%{confidence: 1, type: "value", value: Map.get(target, :input)}]
+  defp match_entity(:input, %Intent{} = intent_target) do
+    [%{confidence: 1, type: "value", value: intent_target |> Map.get(:input)}]
   end
-  defp match_entity(entities, %Intent{} = target) when is_bitstring entities do
-    target.entities[String.to_atom entities]
+  defp match_entity(entities, %Intent{} = intent_target) when is_bitstring entities do
+    intent_target.entities[String.to_atom entities]
   end
   defp match_entity(entities, %Intent{} = target) when is_list entities do
     case Enum.find(entities, &(target.entities[&1])) do

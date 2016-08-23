@@ -38,7 +38,6 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     end
   end
 
-  def handle_intent(intent, state) do
-    super(intent, state)
-  end
+  def handle_intent(intent, state),
+    do: super(intent, state)
 end

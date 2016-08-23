@@ -11,11 +11,13 @@ defmodule Dobar do
       supervisor(Dobar.Endpoint, []),
       # Start the Ecto repository
       supervisor(Dobar.Repo, []),
-      # start the interface supervisor
+      # Start the interface supervisor
       supervisor(Dobar.Interface, []),
-      # start the intention supervisor
+      # Start the intention supervisor
       supervisor(Dobar.Intent, []),
-      # start the conversation supervisor
+      # Start the conversation supervisor
+      supervisor(Dobar.Conversation, [])
+      # Start the dialog supervisor???? can it be a worker???
       supervisor(Dobar.Conversation, [])
     ]
 
