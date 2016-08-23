@@ -15,7 +15,7 @@ defmodule Dobar.Conversation do
     {:ok, nil}
   end
 
-  defp start_dialog_handler do
+  defp start_dialog_handlers do
     GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.ReactionsHandler, nil)
     GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.InputHandler, nil)
   end

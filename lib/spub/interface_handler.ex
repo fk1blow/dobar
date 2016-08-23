@@ -12,7 +12,7 @@ defmodule Dobar.Spub.InterfaceHandler do
 
   def handle_event({:response_evaluated, %Response{} = response}, _state) do
     Logger.info "response has been evaluated to: #{inspect response}"
-    Dobar.Interface.Controller.parse_output response
+    Dobar.Interface.Controller.send_output {:text, response}
     {:ok, nil}
   end
 end

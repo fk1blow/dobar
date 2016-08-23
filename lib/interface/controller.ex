@@ -39,22 +39,18 @@ defmodule Dobar.Interface.Controller do
     Receiver.Text.parse input
     {:noreply, nil}
   end
-
   def handle_cast({:parse_audio, input}, _state) do
     Receiver.Audio.parse input
     {:noreply, nil}
   end
-
-  def handle_cast({:parse_data, data} _state) do
+  def handle_cast({:parse_data, data}, _state) do
     IO.puts "shoud parse data, inside the Interface.Controller"
     {:noreply, nil}
   end
-
   def handle_cast({:send_text, output}, _state) do
-    IO.puts "should send text, output inside the Interface.Controller"
+    IO.puts "should send text output, inside the Interface.Controller"
     {:noreply, nil}
   end
-
   def handle_cast({:send_data, data}, _state) do
     IO.puts "should send data, inside the Interface.Controller"
     {:noreply, nil}
