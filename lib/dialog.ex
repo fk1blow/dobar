@@ -7,10 +7,14 @@ defmodule Dobar.Dialog do
 
   def init(_) do
     children = [
-      # start the `intent_events` event manager
-      worker(GenEvent, [[name: :intent_events]]),
-      # start the intent resolver gen server
-      worker(Dobar.Intent.Resolver, [])
+      # Start the dialog events manager
+      worker(GenEvent, [[name: :dialog_events]]),
+      # Start the conversation module
+      worker(Dobar.Conversation, []),
+      # Start the generic dialog specie
+      # TODO: in the near future, use the Dialog Provider or something else
+      # because even the first root dialog may be a specialized one
+      worker(Dobar.Dialog.GenericDialog, [:root_dialog]),
     ]
     supervise children, strategy: :one_for_one
   end

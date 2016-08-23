@@ -1,18 +1,22 @@
 defmodule Dobar.Conversation do
-  use Supervisor
+  use GenServer
 
   def start_link do
-    Supervisor.start_link __MODULE__, [], name: __MODULE__
+    GenServer.start_link __MODULE__, [], name: __MODULE__
   end
 
   def init(_) do
-    children = [
-      # worker(Dobar.Conversation.Dialog, [:root_dialog]),
-      # TODO: in the near future, use the Dialog Provider or something else
-      # because even the first root dialog may be a specialized one
-      worker(Dobar.Dialog.GenericDialog, [:root_dialog]),
-    ]
+    start_dialog_handlers
+    {:ok, nil}
+  end
 
-    supervise children, strategy: :one_for_all
+  def handle_info({:gen_event_EXIT, _handler, _reason}, manager) do
+    start_dialog_handlers
+    {:ok, nil}
+  end
+
+  defp start_dialog_handler do
+    GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.ReactionsHandler, nil)
+    GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.InputHandler, nil)
   end
 end

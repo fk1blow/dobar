@@ -15,10 +15,8 @@ defmodule Dobar do
       supervisor(Dobar.Interface, []),
       # Start the intention supervisor
       supervisor(Dobar.Intent, []),
-      # Start the conversation supervisor
-      supervisor(Dobar.Conversation, [])
-      # Start the dialog supervisor???? can it be a worker???
-      supervisor(Dobar.Conversation, [])
+      # Start the dialog supervisor
+      supervisor(Dobar.Dialog, [])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
