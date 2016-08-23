@@ -12,7 +12,7 @@ defmodule Dobar.Spub.IntentHandler do
   alias Dobar.Model.Intent
 
   # triggered from `Interface.Controller`
-  def handle_event({:text_input_evaluated, input}, _state) do
+  def handle_event({:input_intent_parsed, input}, _state) do
     Logger.info "text input evaluated to: #{inspect input}"
     Dobar.Intent.Resolver.evaluate_input input
     {:ok, nil}
