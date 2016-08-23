@@ -18,13 +18,18 @@ defmodule Dobar.Interface.Controller do
   def parse_input({:text, input}) do
     GenServer.cast @name, {:parse_text, input}
   end
-
   def parse_input({:audio, input}) do
     GenServer.cast @name, {:parse_audio, input}
   end
+  def parse_input({:data, data}) do
+    GenServer.cast @name, {:parse_data, data}
+  end
 
-  def parse_output(output) do
-    GenServer.cast @name, {:parse_output, output}
+  def send_output({:text, output}) do
+    GenServer.cast @name, {:send_text, output}
+  end
+  def send_output({:data, data}) do
+    GenServer.cast @name, {:send_data, data}
   end
 
   # callbacks
@@ -40,7 +45,18 @@ defmodule Dobar.Interface.Controller do
     {:noreply, nil}
   end
 
-  def handle_cast({:parse_output, output}, _state) do
+  def handle_cast({:parse_data, data} _state) do
+    IO.puts "shoud parse data, inside the Interface.Controller"
+    {:noreply, nil}
+  end
+
+  def handle_cast({:send_text, output}, _state) do
+    IO.puts "should send text, output inside the Interface.Controller"
+    {:noreply, nil}
+  end
+
+  def handle_cast({:send_data, data}, _state) do
+    IO.puts "should send data, inside the Interface.Controller"
     {:noreply, nil}
   end
 end
