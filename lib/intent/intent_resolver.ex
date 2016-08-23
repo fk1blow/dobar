@@ -5,7 +5,7 @@ defmodule Dobar.Intent.Resolver do
   alias Dobar.Model.Input.Text, as: TextInput
   alias Dobar.Model.Input.Audio, as: AudioInput
   alias Dobar.Model.Capability
-  alias Dobar.Spub.IntentHandler
+  alias Dobar.Intent.IntentHandler
 
   @name __MODULE__
 
