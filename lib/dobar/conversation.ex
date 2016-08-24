@@ -10,7 +10,9 @@ defmodule Dobar.Conversation do
 
   ## interface
 
-  react(atom, String.t) :: :ok
+  Conversation.react/2
+
+  @spec react(type :: atom, input :: String.t | AudioBuffer.t) :: :ok
 
   ## usage
   Use Conversation.react/1 when receiving input from the user, where the parameter
@@ -21,6 +23,7 @@ defmodule Dobar.Conversation do
   use GenServer
 
   @conversation __MODULE__
+  @type conversation_input :: String.t | AudioBuffer.t
 
   alias Dobar.Interface.Controller, as: InterfaceController
 
@@ -33,6 +36,7 @@ defmodule Dobar.Conversation do
     {:ok, nil}
   end
 
+  @spec react(type :: atom, input :: conversation_input) :: :ok
   def react(:text, input),
     do: GenServer.cast @conversation, {:parse_input, :text, input}
   def react(:audio, input),
