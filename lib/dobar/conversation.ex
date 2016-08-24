@@ -1,5 +1,26 @@
 defmodule Dobar.Conversation do
+  @moduledoc """
+  API entrypoint module for Dobar Conversation application.
+
+  It represents the front API of Dobar's application, which is supposed to react
+  to text and audio inputs; another type of input may be "data", which is usually
+  results coming from 3p services(Dobar Interposer).
+  The reaction of a conversation are always reactions that wrap either text or
+  data. The data is to be sent to a 3p service!
+
+  ## interface
+
+  react(atom, String.t) :: :ok
+
+  ## usage
+  Use Conversation.react/1 when receiving input from the user, where the parameter
+  is the raw input. The result is :ok because the conversation needs to be async
+  when processing this data - mostly calls external "3p" apis.
+  """
+
   use GenServer
+
+  alias Dobar.Interface.Controller, as: InterfaceController
 
   def start_link do
     GenServer.start_link __MODULE__, [], name: __MODULE__
@@ -8,6 +29,21 @@ defmodule Dobar.Conversation do
   def init(_) do
     start_dialog_handlers
     {:ok, nil}
+  end
+
+  def react(:text, input), do: GenServer.cast __MODULE__, {:text, input}
+  def react(:audio, input), do: GenServer.cast __MODULE__, {:audio, input}
+
+  # callbacks
+  #
+
+  def handle_cast({:parse_input, :text, input}, state) do
+    InterfaceController.parse_input {:text, input}
+    {:noreply, state}
+  end
+  def handle_cast({:parse_input, :audio, input}, state) do
+    InterfaceController.parse_input {:audio, input}
+    {:noreply, state}
   end
 
   def handle_info({:gen_event_EXIT, _handler, _reason}, manager) do

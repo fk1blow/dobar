@@ -11,9 +11,7 @@ defmodule Dobar do
       supervisor(Dobar.Endpoint, []),
       # Start the Ecto repository
       supervisor(Dobar.Repo, []),
-      # Start the interface supervisor
-      supervisor(Dobar.Interface, []),
-      # Start the intention supervisor
+      # Start the intent supervisor
       supervisor(Dobar.Intent, []),
       # Start the dialog supervisor
       supervisor(Dobar.Dialog, [])
