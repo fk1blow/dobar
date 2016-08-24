@@ -20,10 +20,12 @@ defmodule Dobar.Conversation do
 
   use GenServer
 
+  @conversation __MODULE__
+
   alias Dobar.Interface.Controller, as: InterfaceController
 
   def start_link do
-    GenServer.start_link __MODULE__, [], name: __MODULE__
+    GenServer.start_link @conversation, [], name: @conversation
   end
 
   def init(_) do
@@ -31,22 +33,24 @@ defmodule Dobar.Conversation do
     {:ok, nil}
   end
 
-  def react(:text, input), do: GenServer.cast __MODULE__, {:text, input}
-  def react(:audio, input), do: GenServer.cast __MODULE__, {:audio, input}
+  def react(:text, input),
+    do: GenServer.cast @conversation, {:parse_input, :text, input}
+  def react(:audio, input),
+    do: GenServer.cast @conversation, {:parse_input, :audio, input}
 
   # callbacks
   #
 
-  def handle_cast({:parse_input, :text, input}, state) do
+  def handle_cast({:parse_input, :text, input}, _) do
     InterfaceController.parse_input {:text, input}
-    {:noreply, state}
+    {:noreply, nil}
   end
-  def handle_cast({:parse_input, :audio, input}, state) do
+  def handle_cast({:parse_input, :audio, input}, _) do
     InterfaceController.parse_input {:audio, input}
-    {:noreply, state}
+    {:noreply, nil}
   end
 
-  def handle_info({:gen_event_EXIT, _handler, _reason}, manager) do
+  def handle_info({:gen_event_EXIT, _handler, _reason}, _manager) do
     start_dialog_handlers
     {:ok, nil}
   end
