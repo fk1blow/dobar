@@ -3,7 +3,7 @@ defmodule Dobar.Dialog.Species do
     quote do
       use GenServer
 
-      alias Dobar.Model.Reaction
+      alias Dobar.Model.Topic.Reaction, as: Reaction
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
       alias Dobar.Dialog.Topic

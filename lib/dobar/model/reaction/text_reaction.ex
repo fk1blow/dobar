@@ -1,3 +1,3 @@
 defmodule Dobar.Model.Reaction.Text do
-  defstruct text: nil, topic_reaction: %Dobar.Model.Reaction{}
+  defstruct about: nil, topic_reaction: %Dobar.Model.Topic.Reaction{}
 end
