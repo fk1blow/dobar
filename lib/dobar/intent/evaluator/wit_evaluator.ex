@@ -6,10 +6,13 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   alias HTTPoison.Response
 
+  @request_timeout 5000
+
   def text_query(message, context) do
     case generate_request(message, context) do
       {:ok, request} ->
-        HTTPoison.get(request[:url], request[:headers], [timeout: 10000])
+        # the `timeout` option doesn't work at all!
+        HTTPoison.get(request[:url], request[:headers], [timeout: @request_timeout])
         |> handle_response
         |> parse_response
       {:error, message} -> {:error, message}
@@ -19,8 +22,8 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def handle_response({:ok, %Response{status_code: 200, body: body}}) do
     {:ok, body}
   end
-  def handle_response({:ok, %Response{body: body}}) do
-    {:error, body}
+  def handle_response({:error, error}) do
+    {:error, error}
   end
 
   def parse_response({:ok, body}) do

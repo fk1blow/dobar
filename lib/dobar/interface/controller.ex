@@ -1,4 +1,5 @@
 defmodule Dobar.Interface.Controller do
+  require Logger
   alias Dobar.Interface.Receiver
 
   def parse_input({:text, input}) do
@@ -12,9 +13,9 @@ defmodule Dobar.Interface.Controller do
   end
 
   def send_output({:text, output}) do
-    IO.puts "should send text output, inside the Interface.Controller"
+    Logger.info "output: " <> output
   end
   def send_output({:data, data}) do
-    IO.puts "should send data, inside the Interface.Controller"
+    Logger.debug "should send data, inside the Interface.Controller"
   end
 end

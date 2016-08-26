@@ -2,11 +2,16 @@ defmodule Dobar.Dialog.Species do
   defmacro __using__(_opts) do
     quote do
       use GenServer
-
+      # reactions models
       alias Dobar.Model.Topic.Reaction, as: Reaction
+      alias Dobar.Model.Reaction.Text, as: TextReaction
+      alias Dobar.Model.Reaction.Need, as: NeedReaction
+      alias Dobar.Model.Reaction.Error, as: ErrorReaction
+      alias Dobar.Model.Reaction.Logging, as: LoggingReaction
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
       alias Dobar.Dialog.Topic
+
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
       @confidence_treshold 0.8
@@ -32,26 +37,27 @@ defmodule Dobar.Dialog.Species do
       #
 
       def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
-        IO.puts "#{inspect self} begin topic: #{inspect intent}"
-
-        Process.flag(:trap_exit, true)
-
-        IO.puts "!!! TREAT THE CASE WHERE YOU DON'T HAVE AN INTENTION DEFINED WHEN YOU START THE DIALOG"
-
         case IntentionProvider.intention(String.to_atom intent.name) do
-          {:error, reason} -> IO.puts "cannot start topic and dialog"
+          {:error, reason} ->
+            GenEvent.notify(:dialog_events,
+              %ErrorReaction{about: :undefined_intention, input_intent: intent})
+            {:error, {:no_intention, intent}}
+
           {:ok, intention} ->
+            GenEvent.notify(:dialog_events, %LoggingReaction{about: :begin_topic, data: {intent}})
+
+            Process.flag(:trap_exit, true)
             {:ok, topic} = Topic.start_link intent
+
             case Topic.react(topic) do
               %Reaction{type: :question} = reaction ->
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
-                IO.puts "________________________________________________"
+                GenEvent.notify(:dialog_events,
+                  %TextReaction{about: :question, topic_reaction: reaction})
                 {:topic_output, {reaction, %{topic: topic}}}
 
               %Reaction{type: :completed} = reaction ->
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
+                # IO.puts "reaction type: #{inspect reaction.type}"
+                # IO.puts "reaction features: #{inspect reaction.features}"
                 unless root_dialog?(self) do
                   GenServer.cast(state.parent,
                     {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
@@ -316,6 +322,9 @@ defmodule Dobar.Dialog.Species do
             {:noreply, Map.merge(state, some_state)}
 
           {:topic_nomatch, _} ->
+            {:noreply, state}
+
+          {:error, {:no_intention, intent}} ->
             {:noreply, state}
         end
       end

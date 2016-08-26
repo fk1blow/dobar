@@ -5,7 +5,6 @@ defmodule Dobar.Intent.IntentHandler do
   """
 
   require Logger
-
   use GenEvent
 
   alias Dobar.Model.Capability
