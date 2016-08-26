@@ -1,6 +1,5 @@
 defmodule Dobar.Interface.Controller do
   alias Dobar.Interface.Receiver
-  alias Dobar.Spub.InterfaceHandler
 
   def parse_input({:text, input}) do
     Receiver.Text.parse input

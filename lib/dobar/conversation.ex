@@ -15,17 +15,26 @@ defmodule Dobar.Conversation do
   @spec react(type :: atom, input :: String.t | AudioBuffer.t) :: :ok
 
   ## usage
+
   Use Conversation.react/1 when receiving input from the user, where the parameter
   is the raw input. The result is :ok because the conversation needs to be async
   when processing this data - mostly calls external "3p" apis.
+
+  ## the need for a GenServer
+
+  Basically, the need for a genserver is related to the GenEvent handler to
+  `dialog_events` which sets up handlers to `ReactionHandler` and `InputHandler`.
+  Also, this deals nicely with the supervision, where a handler dies and needs to
+  be restarted - this server will deal with adding the handlers back to the manager.
+
+  TODO: add input handler to the flow, however that will be
   """
 
   use GenServer
+  alias Dobar.Interface.Controller, as: InterfaceController
 
   @conversation __MODULE__
   @type conversation_input :: String.t | AudioBuffer.t
-
-  alias Dobar.Interface.Controller, as: InterfaceController
 
   def start_link do
     GenServer.start_link @conversation, [], name: @conversation
