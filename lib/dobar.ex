@@ -14,7 +14,9 @@ defmodule Dobar do
       # Start the intent supervisor
       supervisor(Dobar.Intent, []),
       # Start the dialog supervisor
-      supervisor(Dobar.Dialog, [])
+      supervisor(Dobar.Dialog, []),
+      # Start the interface of the dialog system
+      supervisor(Dobar.Interface.Supervisor, [])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]

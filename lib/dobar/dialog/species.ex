@@ -56,9 +56,10 @@ defmodule Dobar.Dialog.Species do
                 {:topic_output, {reaction, %{topic: topic}}}
 
               %Reaction{type: :completed} = reaction ->
-                # IO.puts "reaction type: #{inspect reaction.type}"
-                # IO.puts "reaction features: #{inspect reaction.features}"
-                unless root_dialog?(self) do
+                if root_dialog?(self) do
+                  GenEvent.notify(:dialog_events, %TextReaction{
+                    about: :statement, text: "dialog completed", topic_reaction: reaction})
+                else
                   GenServer.cast(state.parent,
                     {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
                 end
@@ -369,12 +370,8 @@ defmodule Dobar.Dialog.Species do
         capability_name = intent_name
         topic_intent_name = topic_intent_name
 
-        IO.puts "xxx1"
-
         # extract the intention for the current topic
         {:ok, intention} = IntentionProvider.intention(topic_intent_name)
-
-        IO.puts "xxx2"
 
         # extract the capabilities of the current topic
         topic_capabilities = intention[topic_intent_name][capability_name]
@@ -392,8 +389,10 @@ defmodule Dobar.Dialog.Species do
           [_head|_tail] ->
             {:reference, intention}
           nil ->
+            IO.puts "xxx3"
             {:ok, intention} = IntentionProvider.intention(capability_name)
             topic_capabilities = intention[capability_name]
+            IO.puts "xxx4"
 
             # if the capability is contextual and applies only for meta, stop
             # searching the global registry - no intention capability found!

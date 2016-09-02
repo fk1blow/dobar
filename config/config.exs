@@ -30,5 +30,10 @@ config :phoenix, :generators,
 
 # Configure dobar intent evaluators
 config :dobar, Intent.Evaluator,
-  use_wrapper: Dobar.Intent.Evaluator.Wit,
+  service: Dobar.Intent.Evaluator.Wit,
   wit_token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"
+
+# Configures Dobar's conversation interface
+config :dobar, Dialog.Interface,
+  adapter: Dobar.Interface.Adapter.Console,
+  responders: nil

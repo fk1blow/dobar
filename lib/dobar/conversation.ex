@@ -51,9 +51,6 @@ defmodule Dobar.Conversation do
   def react(:audio, input),
     do: GenServer.cast @conversation, {:parse_input, :audio, input}
 
-  # callbacks
-  #
-
   def handle_cast({:parse_input, :text, input}, _) do
     InterfaceController.parse_input {:text, input}
     {:noreply, nil}

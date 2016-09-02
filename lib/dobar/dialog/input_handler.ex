@@ -13,8 +13,8 @@ defmodule Dobar.Dialog.InputHandler do
     {:ok, nil}
   end
 
-  def handle_event(%ErrorReaction{about: :undefined_intention} = error, _state) do
-    Logger.debug "handler reaction to :undefined_intention"
+  def handle_event(%ErrorReaction{} = error, _state) do
+    Logger.debug "handler reaction to: #{inspect error.about}"
     Logger.debug "input intent: #{inspect error.input_intent}"
     {:ok, nil}
   end

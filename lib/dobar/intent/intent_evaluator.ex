@@ -31,7 +31,7 @@ defmodule Dobar.Intent.Evaluator do
 
   defp call_intention_api(input) do
     evaluator = Application.get_env(:dobar, Intent.Evaluator)
-    api = evaluator[:use_wrapper] || Dobar.Intent.Evaluator.Wit
+    api = evaluator[:service] || Dobar.Intent.Evaluator.Wit
     # "nil" represents the context wich is deprecated
     apply(api, :text_query, [input, nil])
   end
