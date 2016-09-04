@@ -4,7 +4,7 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
 
   Shameless copy of Hedwig IM's console adapter
   url: https://github.com/hedwig-im/hedwig/blob/master/lib/hedwig/adapters/console.ex
-  hedwig im homepage: https://github.com/hedwig-im
+  Hedwig-IM homepage: https://github.com/hedwig-im
   """
 
   @prompt_messages "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
