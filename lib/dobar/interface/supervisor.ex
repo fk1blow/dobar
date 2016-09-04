@@ -1,14 +1,16 @@
 defmodule Dobar.Interface.Supervisor do
   use Supervisor
 
-  def start_link do
-    Supervisor.start_link __MODULE__, [], name: __MODULE__
+  def start_link(opts) do
+    Supervisor.start_link __MODULE__,
+      [event_manager: opts[:event_manager]],
+      name: __MODULE__
   end
 
-  def init(_) do
+  def init(args) do
     children = [
       worker(Dobar.Interface,
-        [[event_manager: Dobar.Interface.Events, interface_conf: Dialog.Interface]])
+        [[event_manager: args[:event_manager], interface_conf: Dialog.Interface]])
     ]
     supervise(children, strategy: :one_for_one)
   end

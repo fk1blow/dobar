@@ -5,14 +5,14 @@
 # is restricted to this project.
 use Mix.Config
 
-# Configures the endpoint
-config :dobar, Dobar.Endpoint,
-  url: [host: "localhost"],
-  root: Path.dirname(__DIR__),
-  secret_key_base: "r8j41QSJNrq2ZqivWM/AoAAJg6VGeVIA9MBFx4VLKV8fPR/jnlz85CMdSnRLBvp0",
-  render_errors: [accepts: ~w(html json)],
-  pubsub: [name: Dobar.PubSub,
-           adapter: Phoenix.PubSub.PG2]
+# # Configures the endpoint
+# config :dobar, Dobar.Endpoint,
+#   url: [host: "localhost"],
+#   root: Path.dirname(__DIR__),
+#   secret_key_base: "r8j41QSJNrq2ZqivWM/AoAAJg6VGeVIA9MBFx4VLKV8fPR/jnlz85CMdSnRLBvp0",
+#   render_errors: [accepts: ~w(html json)],
+#   pubsub: [name: Dobar.PubSub,
+#            adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -21,12 +21,7 @@ config :logger, :console,
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{Mix.env}.exs"
-
-# Configure phoenix generators
-config :phoenix, :generators,
-  migration: true,
-  binary_id: false
+# import_config "#{Mix.env}.exs"
 
 # Configure dobar intent evaluators
 config :dobar, Intent.Evaluator,
@@ -37,3 +32,8 @@ config :dobar, Intent.Evaluator,
 config :dobar, Dialog.Interface,
   adapter: Dobar.Interface.Adapter.Console,
   responders: nil
+
+# Configure the intentions definitions
+# These configs should be defined inside the host app, not inside Dobar itsel!!!
+config :dobar, Intentions.Definitions,
+  intentions: Dobar.Intentions

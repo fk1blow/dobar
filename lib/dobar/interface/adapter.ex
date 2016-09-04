@@ -11,6 +11,8 @@ defmodule Dobar.Interface.Adapter do
   defmacro __using__(_opts) do
     quote do
       use GenServer
+      import Kernel, except: [send: 2]
+
       @behaviour Dobar.Interface.Adapter
 
       # def start_link do
@@ -36,11 +38,11 @@ defmodule Dobar.Interface.Adapter do
   defcallback connect :: term
   defcallback send(atom, String.t) :: term
 
-  def start_adapter(module), do: module |> validate |> start
+  def start_adapter(module), do: module |> validate |> start(self)
 
   # private
 
-  defp validate(nil), do: {:error, "unable to use undefined/nil adapter"}
+  defp validate(nil), do: {:error, "unable to use undefined or nil interface adapter"}
   defp validate(module) do
     case Code.ensure_loaded? module do
       true -> {:ok, module}
@@ -48,6 +50,7 @@ defmodule Dobar.Interface.Adapter do
     end
   end
 
-  defp start({:error, reason}), do: {:error, reason}
-  defp start({:ok, module}), do: apply(module, :start_link, [])
+  defp start({:error, reason}, _), do: {:error, reason}
+  defp start({:ok, module}, interface_pid),
+    do: apply(module, :start_link, [[adapter_proc: interface_pid]])
 end

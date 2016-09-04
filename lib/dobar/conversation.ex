@@ -33,40 +33,41 @@ defmodule Dobar.Conversation do
   use GenServer
   alias Dobar.Interface.Controller, as: InterfaceController
 
-  @conversation __MODULE__
+  @server __MODULE__
   @type conversation_input :: String.t | AudioBuffer.t
 
-  def start_link do
-    GenServer.start_link @conversation, [], name: @conversation
+  def start_link(opts) do
+    GenServer.start_link @server, opts, name: @server
   end
 
-  def init(_) do
-    start_dialog_handlers
-    {:ok, nil}
+  def init(args) do
+    start_dialog_handlers(args[:input_events])
+    {:ok, %{input_events_manager: args[:input_events]}}
   end
 
-  @spec react(type :: atom, input :: conversation_input) :: :ok
-  def react(:text, input),
-    do: GenServer.cast @conversation, {:parse_input, :text, input}
-  def react(:audio, input),
-    do: GenServer.cast @conversation, {:parse_input, :audio, input}
+  # @spec react(type :: atom, input :: conversation_input) :: :ok
+  # def react(:text, input),
+  #   do: GenServer.cast @conversation, {:parse_input, :text, input}
+  # def react(:audio, input),
+  #   do: GenServer.cast @conversation, {:parse_input, :audio, input}
 
-  def handle_cast({:parse_input, :text, input}, _) do
-    InterfaceController.parse_input {:text, input}
-    {:noreply, nil}
-  end
-  def handle_cast({:parse_input, :audio, input}, _) do
-    InterfaceController.parse_input {:audio, input}
-    {:noreply, nil}
+  # def handle_cast({:parse_input, :text, input}, _) do
+  #   InterfaceController.parse_input {:text, input}
+  #   {:noreply, nil}
+  # end
+  # def handle_cast({:parse_input, :audio, input}, _) do
+  #   InterfaceController.parse_input {:audio, input}
+  #   {:noreply, nil}
+  # end
+
+  def handle_info({:gen_event_EXIT, _handler, _reason}, state) do
+    start_dialog_handlers(state.input_events_manager)
+    {:ok, state}
   end
 
-  def handle_info({:gen_event_EXIT, _handler, _reason}, _manager) do
-    start_dialog_handlers
-    {:ok, nil}
-  end
-
-  defp start_dialog_handlers do
-    GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.ReactionsHandler, nil)
-    GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.InputHandler, nil)
+  defp start_dialog_handlers(manager) do
+    GenEvent.add_mon_handler(manager, Dobar.Conversation.TextInputHandler, nil)
+    # GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.ReactionsHandler, nil)
+    # GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.InputHandler, nil)
   end
 end

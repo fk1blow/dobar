@@ -1,34 +1,42 @@
 defmodule Dobar.Interface.Adapter.Console.Connection do
-  use GenServer
+  @moduledoc """
+  The console adapter connection
 
-  def start_link do
+  Shameless copy of Hedwig IM's console adapter
+  url: https://github.com/hedwig-im/hedwig/blob/master/lib/hedwig/adapters/console.ex
+  hedwig im homepage: https://github.com/hedwig-im
+  """
+
+  @prompt_messages "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
+
+  def start_link(opts) do
     {user, 0} = System.cmd("whoami", [])
     clear_screen()
     show_banner()
-    Task.start_link __MODULE__, :loop, [user]
+    Task.start_link __MODULE__, :loop, [String.strip(user), opts[:adapter]]
   end
 
-  def loop(user) do
+  def loop(user, adapter) do
     user
     |> prompt
     |> IO.ANSI.format
     |> IO.gets
     |> String.strip
-    |> send_message
-    loop(user)
+    |> send_message(adapter)
+    loop(user, adapter)
   end
 
-  def send(pid, message) do
-    GenServer.cast pid, {:send, message}
-  end
+  # def send(pid, message) do
+  #   GenServer.cast pid, {:send, message}
+  # end
 
-  def handle_cast({:send, message}, state) when is_binary(message) do
-    IO.puts "should send the message to the console"
-    {:noreply, state}
-  end
+  # def handle_cast({:send, message}, state) when is_binary(message) do
+  #   IO.puts "should send the message to the console"
+  #   {:noreply, state}
+  # end
 
-  defp send_message(message) do
-    IO.puts "message to send: #{inspect message}"
+  defp send_message(message, adapter) do
+    Kernel.send adapter, {:input, :text, message}
   end
 
   defp print(message) do
@@ -40,12 +48,20 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
   end
 
   defp prompt(name) do
-    [:white, :bright, name, "> ", :normal, :default_color]
+    [:white, :bright, name, prompt_message(@prompt_messages), :normal, :default_color]
   end
 
   defp show_banner do
     print """
     DoBar console adapter - press Ctrl+c to exit.
     """
+  end
+
+  defp prompt_message(messages) do
+    messages
+    |> String.codepoints
+    |> Enum.uniq
+    |> Enum.random
+    |> (&(" " <> &1 <> " ")).()
   end
 end

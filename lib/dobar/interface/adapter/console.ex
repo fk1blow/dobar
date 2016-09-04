@@ -3,15 +3,16 @@ defmodule Dobar.Interface.Adapter.Console do
 
   alias Dobar.Interface.Adapter.Console.Connection
 
-  def start_link do
-    GenServer.start_link __MODULE__, [], name: __MODULE__
+  def start_link(opts) do
+    GenServer.start_link __MODULE__, [adapter: opts[:adapter_proc]], name: __MODULE__
   end
 
-  def init(_) do
-    {:ok, connection} = Connection.start_link
-    {:ok, %{connection: connection, adapter: nil}}
+  def init(args) do
+    {:ok, connection} = Connection.start_link([adapter: args[:adapter]])
+    {:ok, %{connection: connection}}
   end
 
+  # ????????
   def send(message) do
     GenServer.call __MODULE__, {:send, message}
   end
