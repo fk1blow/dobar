@@ -31,7 +31,7 @@ defmodule Dobar.Conversation do
   """
 
   use GenServer
-  alias Dobar.Interface.Controller, as: InterfaceController
+  # alias Dobar.Interface.Controller, as: InterfaceController
 
   @server __MODULE__
   @type conversation_input :: String.t | AudioBuffer.t
@@ -42,6 +42,7 @@ defmodule Dobar.Conversation do
 
   def init(args) do
     start_dialog_handlers(args[:input_events])
+    Dobar.Conversation.Intention.start_link
     {:ok, %{input_events_manager: args[:input_events]}}
   end
 
@@ -67,6 +68,7 @@ defmodule Dobar.Conversation do
 
   defp start_dialog_handlers(manager) do
     GenEvent.add_mon_handler(manager, Dobar.Conversation.TextInputHandler, nil)
+
     # GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.ReactionsHandler, nil)
     # GenEvent.add_mon_handler(:dialog_events, Dobar.Dialog.InputHandler, nil)
   end

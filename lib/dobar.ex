@@ -12,12 +12,12 @@ defmodule Dobar do
       # Start the dialog supervisor
       # supervisor(Dobar.Dialog, []),
 
-      # Start the interface events manager used by both interface and Conversation api
-      worker(Dobar.InterfaceEvents, []),
+      # Start the interface events manager used by interface and Conversation api
+      worker(GenEvent, [[name: Dobar.InterfaceEvents]]),
       # Start the interface of the dialog system
       supervisor(Dobar.Interface.Supervisor, [[event_manager: Dobar.InterfaceEvents]]),
       # Start the conversation supervisor
-      supervisor(Dobar.Conversation.Supervisor, [[input_events_manager: Dobar.InterfaceEvents]])
+      supervisor(Dobar.Conversation.Supervisor, [[input_events_manager: Dobar.InterfaceEvents]]),
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]

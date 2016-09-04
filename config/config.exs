@@ -24,8 +24,8 @@ config :logger, :console,
 # import_config "#{Mix.env}.exs"
 
 # Configure dobar intent evaluators
-config :dobar, Intent.Evaluator,
-  service: Dobar.Intent.Evaluator.Wit,
+config :dobar, Intention.Evaluator,
+  service: Dobar.Conversation.Intention.Evaluator.Wit,
   wit_token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"
 
 # Configures Dobar's conversation interface

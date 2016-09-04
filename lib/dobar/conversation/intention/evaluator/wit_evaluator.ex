@@ -1,4 +1,4 @@
-defmodule Dobar.Intent.Evaluator.Wit do
+defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   @moduledoc """
   This module has to communicate with the expression api provided by wit.ai
   It has to provide 2 basic functions: `text_query` and `voice_query`.
@@ -11,7 +11,6 @@ defmodule Dobar.Intent.Evaluator.Wit do
   def text_query(message, context) do
     case generate_request(message, context) do
       {:ok, request} ->
-        # the `timeout` option doesn't work at all!
         HTTPoison.get(request[:url], request[:headers], [timeout: @request_timeout])
         |> handle_response
         |> parse_response
@@ -43,8 +42,11 @@ defmodule Dobar.Intent.Evaluator.Wit do
 
   defp build_request(message) do
     url = "https://api.wit.ai/message?v=20160516&q=#{message}"
-    config = Application.get_env(:dobar, Intent.Evaluator)
-    headers = %{"Authorization" => "Bearer #{config[:wit_token]}"}
+    headers = %{"Authorization" => "Bearer #{configured_token}"}
     {:ok, %{url: url, headers: headers}}
+  end
+
+  defp configured_token do
+    Application.get_env(:dobar, Intention.Evaluator) |> Keyword.get(:wit_token)
   end
 end

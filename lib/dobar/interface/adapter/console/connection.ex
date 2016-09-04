@@ -13,17 +13,18 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     {user, 0} = System.cmd("whoami", [])
     clear_screen()
     show_banner()
-    Task.start_link __MODULE__, :loop, [String.strip(user), opts[:adapter]]
+    prompt_message = prompt_message(@prompt_messages)
+    Task.start_link __MODULE__, :loop, [String.strip(user), opts[:adapter], prompt_message]
   end
 
-  def loop(user, adapter) do
+  def loop(user, adapter, post) do
     user
-    |> prompt
+    |> prompt(post)
     |> IO.ANSI.format
     |> IO.gets
     |> String.strip
     |> send_message(adapter)
-    loop(user, adapter)
+    loop(user, adapter, post)
   end
 
   # def send(pid, message) do
@@ -47,8 +48,8 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     print [:clear, :home]
   end
 
-  defp prompt(name) do
-    [:white, :bright, name, prompt_message(@prompt_messages), :normal, :default_color]
+  defp prompt(name, message) do
+    [:white, :bright, name, message, :normal, :default_color]
   end
 
   defp show_banner do

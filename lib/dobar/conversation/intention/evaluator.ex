@@ -1,4 +1,4 @@
-defmodule Dobar.Intent.Evaluator do
+defmodule Dobar.Conversation.Intention.Evaluator do
   @moduledoc """
   It extracts the intent from an input(text, for now) and outputs an
   %Intent struct the intent representation
@@ -8,6 +8,8 @@ defmodule Dobar.Intent.Evaluator do
   """
 
   alias Dobar.Model.Intent
+
+  @default_evaluator Dobar.Conversation.Intention.Evaluator.Wit
 
   def evaluate_input({:text, input}) do
     call_intention_api(input)
@@ -23,16 +25,18 @@ defmodule Dobar.Intent.Evaluator do
   end
 
   defp notify_handlers({:error, error}) do
-    GenEvent.notify(:intent_events, {:intention_evaluation_error, error})
+    # GenEvent.notify(:intent_events, {:intention_evaluation_error, error})
   end
   defp notify_handlers({:ok, intent}) do
-    GenEvent.notify(:intent_events, {:intention_evaluated, intent})
+    IO.puts "evaluated intent: #{inspect intent}"
+    IO.puts "should pass the intent back to the conversation... somehow"
+    # GenEvent.notify(:intent_events, {:intention_evaluated, intent})
   end
 
   defp call_intention_api(input) do
     evaluator = Application.get_env(:dobar, Intent.Evaluator)
-    api = evaluator[:service] || Dobar.Intent.Evaluator.Wit
-    # "nil" represents the context wich is deprecated
+    api = evaluator[:service] || @default_evaluator
+    # "nil" represents the context wich was deprecated by wit.ai
     apply(api, :text_query, [input, nil])
   end
 end
