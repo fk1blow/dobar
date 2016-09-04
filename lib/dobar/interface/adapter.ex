@@ -36,32 +36,18 @@ defmodule Dobar.Interface.Adapter do
   defcallback connect :: term
   defcallback send(atom, String.t) :: term
 
-  def start(namespace) do
-    namespace
-    |> interface_config
-    |> available_adapter
-    |> validate_adapter
-    |> start_adapter
-  end
+  def start_adapter(module), do: module |> validate |> start
 
-  defp interface_config(namespace) do
-    Application.get_env(:dobar, namespace) |> Keyword.get(:adapter)
-  end
+  # private
 
-  defp available_adapter(nil), do: {:error, "no adapter found for :adapter config"}
-  defp available_adapter(adapter), do: {:ok, adapter}
-
-  defp validate_adapter({:error, reason}), do: {:error, reason}
-  defp validate_adapter({:ok, module}) do
+  defp validate(nil), do: {:error, "unable to use undefined/nil adapter"}
+  defp validate(module) do
     case Code.ensure_loaded? module do
       true -> {:ok, module}
       false -> {:error, "adapter module does not exist"}
     end
   end
 
-  defp start_adapter({:error, reason}), do: {:error, reason}
-  defp start_adapter({:ok, module}) do
-    {:ok, pid} = apply(module, :start_link, [])
-    {:ok, module, pid}
-  end
+  defp start({:error, reason}), do: {:error, reason}
+  defp start({:ok, module}), do: apply(module, :start_link, [])
 end

@@ -1,4 +1,4 @@
-defmodule Dobar.Interface.Supervisor do
+defmodule Dobar.Timeline.Supervisor do
   use Supervisor
 
   def start_link do
@@ -7,8 +7,7 @@ defmodule Dobar.Interface.Supervisor do
 
   def init(_) do
     children = [
-      worker(Dobar.Interface,
-        [[event_manager: Dobar.Interface.Events, interface_conf: Dialog.Interface]])
+      worker(Dobar.Timeline, [])
     ]
     supervise(children, strategy: :one_for_one)
   end

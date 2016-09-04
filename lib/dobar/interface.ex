@@ -1,14 +1,18 @@
 defmodule Dobar.Interface do
   use GenServer
 
-  def start_link do
-    GenServer.start_link __MODULE__, [], name: __MODULE__
+  def start_link(opts) do
+    GenServer.start_link __MODULE__,
+      [event_manager: opts[:event_manager], interface_conf: opts[:interface_conf]],
+      name: __MODULE__
   end
 
-  def init(_) do
-    case Dobar.Interface.Adapter.start(Dialog.Interface) do
-      {:ok, module, adapter} -> {:ok, %{adapter: adapter, module: module}}
-      {:error, reason} -> {:stop, reason}
+  def init(args) do
+    case Dobar.Interface.Adapter.start_adapter(args[:interface_conf] |> available_adapter) do
+      {:ok, adapter} ->
+        {:ok, %{adapter: adapter, event_manager: args[:event_manager]}}
+      {:error, reason} ->
+        {:stop, reason}
     end
   end
 
@@ -16,9 +20,13 @@ defmodule Dobar.Interface do
     GenServer.cast __MODULE__, {:send, :text, message}
   end
 
-  # TBD
+  # TBD ????
   def handle_cast({:send, :text, message}, state) do
     apply state.module, :send, [message]
     {:noreply, state}
+  end
+
+  defp available_adapter(config_namespace) do
+    Application.get_env(:dobar, config_namespace) |> Keyword.get(:adapter)
   end
 end
