@@ -10,27 +10,18 @@ defmodule Dobar.Conversation.Intention.Evaluator do
   alias Dobar.Model.Intent
 
   @default_evaluator Dobar.Conversation.Intention.Evaluator.Wit
+  @type evaluated_intent :: {:error, any} | {:ok, Intent.t}
 
   def evaluate_input({:text, input}) do
-    call_intention_api(input)
-    |> parse_intention
-    |> notify_handlers
+    call_intention_api(input) |> parse_intention
   end
 
+  @spec parse_intention(tuple) :: evaluated_intent
   defp parse_intention({:error, error}), do: {:error, error}
   defp parse_intention({:ok, intention}) do
     intent = hd intention.outcomes
     {:ok, %Intent{name: intent.intent, input: intent._text,
       entities: intent.entities, confidence: intent.confidence}}
-  end
-
-  defp notify_handlers({:error, error}) do
-    # GenEvent.notify(:intent_events, {:intention_evaluation_error, error})
-  end
-  defp notify_handlers({:ok, intent}) do
-    IO.puts "evaluated intent: #{inspect intent}"
-    IO.puts "should pass the intent back to the conversation... somehow"
-    # GenEvent.notify(:intent_events, {:intention_evaluated, intent})
   end
 
   defp call_intention_api(input) do

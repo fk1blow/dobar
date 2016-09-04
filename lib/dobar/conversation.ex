@@ -42,7 +42,6 @@ defmodule Dobar.Conversation do
 
   def init(args) do
     start_dialog_handlers(args[:input_events])
-    Dobar.Conversation.Intention.start_link
     {:ok, %{input_events_manager: args[:input_events]}}
   end
 
