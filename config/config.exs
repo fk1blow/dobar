@@ -26,7 +26,7 @@ config :logger, :console,
 # Configure dobar intent evaluators
 config :dobar, Intention.Evaluator,
   service: Dobar.Conversation.Intention.Evaluator.Wit,
-  wit_token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"
+  opts: [token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 # Configures Dobar's conversation interface
 config :dobar, Dialog.Interface,

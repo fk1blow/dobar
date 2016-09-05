@@ -47,6 +47,8 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   end
 
   defp configured_token do
-    Application.get_env(:dobar, Intention.Evaluator) |> Keyword.get(:wit_token)
+    Application.get_env(:dobar, Intention.Evaluator)
+    |> Keyword.get(:opts)
+    |> Keyword.get(:token)
   end
 end
