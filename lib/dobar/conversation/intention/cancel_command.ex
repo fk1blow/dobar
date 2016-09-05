@@ -1,6 +1,6 @@
 # TODO: this file should be moved outside the conversation realm
 defmodule Dobar.Conversation.Intention.CancelCommand do
-  use Dobar.Conversation.IntentionBehaviour
+  use Dobar.Conversation.Intention.Definition
 
   # TODO: can add a meta key that signals the "relationship" that it has with
   # other intentions, eg: it doesn't react "well"(define what "well" means) when

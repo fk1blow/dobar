@@ -1,15 +1,14 @@
+# TODO: must be renamed to InterfaceInputHandler
 defmodule Dobar.Conversation.TextInputHandler do
   use GenEvent
 
   alias Dobar.Conversation.Intention.Evaluator
 
   def handle_event({:input, :text, input}, _) do
-    task = Task.async(Dobar.Conversation.Intention.Evaluator,
-      :evaluate_input, [{:text, input}])
-
-    result = Task.await(task)
-    IO.puts "should pass the intent to... next something-something; result...: #{inspect result}"
-
+    task = Task.async(Evaluator, :evaluate_input, [{:text, input}])
+    {:ok, intent} = Task.await(task)
+    IO.puts "intent: #{inspect intent}"
+    Dobar.Dialog.GenericDialog.evaluate :root_dialog, intent
     {:ok, nil}
   end
 end

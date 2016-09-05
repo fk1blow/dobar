@@ -1,5 +1,4 @@
-# TODO: this file should be moved outside the conversation realm
-defmodule Dobar.Conversation.Intention.SendMessage do
+defmodule Dobar.IntentionDefinitions do
   use Dobar.Conversation.Intention.Definition
 
   intention :send_message do

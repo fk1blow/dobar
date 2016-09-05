@@ -1,5 +1,6 @@
 defmodule Dobar.Interface do
   use GenServer
+  alias Dobar.Interface.Adapter
 
   def start_link(opts) do
     GenServer.start_link __MODULE__,
@@ -8,12 +9,23 @@ defmodule Dobar.Interface do
   end
 
   def init(args) do
-    case Dobar.Interface.Adapter.start_adapter(args[:interface_conf] |> available_adapter) do
+    case Adapter.start_adapter(args[:interface_conf] |> available_adapter) do
       {:ok, adapter} ->
+        Kernel.send adapter, {:connect, []}
         {:ok, %{adapter: adapter, event_manager: args[:event_manager]}}
       {:error, reason} ->
         {:stop, reason}
     end
+  end
+
+  def send(:text, message) do
+    GenServer.cast __MODULE__, {:send, :text, message}
+  end
+
+  # TODO: :send should rather be :outpout
+  def handle_cast({:send, :text, message}, %{adapter: adapter} = state) do
+    # apply adapter, :send, [:text, message]
+    {:noreply, state}
   end
 
   def handle_info({:input, :text, message}, %{event_manager: nil} = state) do
@@ -24,16 +36,7 @@ defmodule Dobar.Interface do
     {:noreply, state}
   end
 
-  # TBD ????
-  # def send(:text, message) do
-  #   GenServer.cast __MODULE__, {:send, :text, message}
-  # end
-
-  # TBD ????
-  # def handle_cast({:send, :text, message}, state) do
-  #   apply state.module, :send, [message]
-  #   {:noreply, state}
-  # end
+  # Private
 
   defp available_adapter(config_namespace) do
     Application.get_env(:dobar, config_namespace) |> Keyword.get(:adapter)

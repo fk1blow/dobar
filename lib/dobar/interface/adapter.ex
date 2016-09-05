@@ -15,32 +15,19 @@ defmodule Dobar.Interface.Adapter do
 
       @behaviour Dobar.Interface.Adapter
 
-      # def start_link do
-      #   GenServer.start_link __MODULE__, [], name: __MODULE__
-      # end
-
-      # def connect(pid, opts) do
-        # GenServer.call pid, {:connect, opts}
-      # end
-
-      def send(pid, {:send, :text, message}) do
-        GenServer.call pid, {:send, :text, message}
+      def send(:text, message) do
+        GenServer.cast __MODULE__, {:send, :text, message}
       end
-
-      # def handle_call({:connect, opts}, _from, state) do
-      #   {:reply, nil, state}
-      # end
 
       defoverridable [send: 2]
     end
   end
 
-  defcallback connect :: term
   defcallback send(atom, String.t) :: term
 
   def start_adapter(module), do: module |> validate |> start(self)
 
-  # private
+  # Private
 
   defp validate(nil), do: {:error, "unable to use undefined or nil interface adapter"}
   defp validate(module) do
@@ -52,5 +39,5 @@ defmodule Dobar.Interface.Adapter do
 
   defp start({:error, reason}, _), do: {:error, reason}
   defp start({:ok, module}, interface_pid),
-    do: apply(module, :start_link, [[adapter_proc: interface_pid]])
+    do: apply(module, :start_link, [[adapter_interface: interface_pid]])
 end

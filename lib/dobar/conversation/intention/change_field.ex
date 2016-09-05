@@ -1,6 +1,6 @@
 # TODO: this file should be moved outside the conversation realm
 defmodule Dobar.Conversation.Intention.ChangeField do
-  use Dobar.Conversation.IntentionBehaviour
+  use Dobar.Conversation.Intention.Definition
 
   intention :change_field do
     relationship :meta

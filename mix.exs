@@ -16,7 +16,7 @@ defmodule Dobar.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {Dobar, []},
-     applications: [:logger, :httpoison]]
+     applications: [:logger, :crypto, :httpoison]]
   end
 
   # Specifies your project dependencies.

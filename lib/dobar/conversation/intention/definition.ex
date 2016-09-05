@@ -1,12 +1,11 @@
-# TODO: rename it do `Dobar.Conversation.Intention.IntentionBehaviour
-defmodule Dobar.Conversation.IntentionBehaviour do
+defmodule Dobar.Conversation.Intention.Definition do
   defmacro __using__(_opts) do
     quote do
-      import Dobar.Conversation.IntentionBehaviour
+      import Dobar.Conversation.Intention.Definition
       @intentions Map.new
       @topic_list []
 
-      @before_compile Dobar.Conversation.IntentionBehaviour
+      @before_compile Dobar.Conversation.Intention.Definition
     end
   end
 

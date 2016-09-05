@@ -1,16 +1,12 @@
-defmodule Dobar.Dialog do
+defmodule Dobar.Dialog.Supervisor do
   use Supervisor
 
-  def start_link do
+  def start_link(opts) do
     Supervisor.start_link __MODULE__, [], name: __MODULE__
   end
 
   def init(_) do
     children = [
-      # Start the dialog events manager
-      worker(GenEvent, [[name: :dialog_events]]),
-      # Start the conversation module
-      worker(Dobar.Conversation, []),
       # Start the generic dialog specie
       # TODO: in the near future, use the Dialog Provider or something else
       # because even the first root dialog may be a specialized one

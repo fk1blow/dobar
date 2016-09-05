@@ -10,6 +10,7 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
   @prompt_messages "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
 
   def start_link(opts) do
+    IO.puts "opts: #{inspect opts}"
     {user, 0} = System.cmd("whoami", [])
     clear_screen()
     show_banner()

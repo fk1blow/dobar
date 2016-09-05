@@ -1,5 +1,5 @@
 defmodule Dobar.Conversation.Intention.PurgeChangeFields do
-  use Dobar.Conversation.IntentionBehaviour
+  use Dobar.Conversation.Intention.Definition
 
   intention :purge_change_fields do
     # this becomes mind blowing to understand...

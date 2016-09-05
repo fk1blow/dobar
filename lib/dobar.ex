@@ -9,25 +9,29 @@ defmodule Dobar do
     children = [
       # Start the intent supervisor
       # supervisor(Dobar.Intent, []),
+
       # Start the dialog supervisor
       # supervisor(Dobar.Dialog, []),
 
       # Start the interface events manager used by interface and Conversation api
-      worker(GenEvent, [[name: Dobar.InterfaceEvents]]),
+      # worker(Dobar.GenericEventManager, [[name: :interface_events]])
+      worker(GenEvent, [[name: Dobar.InterfaceEvents]], id: :interface_events),
+      # Start the dialog events manager used by the dialog and conversation api
+      # worker(Dobar.GenericEventManager, [[name: :dialog_events]])
+      worker(GenEvent, [[name: Dobar.DialogEvents]], id: :dialog_events),
       # Start the interface of the dialog system
-      supervisor(Dobar.Interface.Supervisor, [[event_manager: Dobar.InterfaceEvents]]),
+      supervisor(Dobar.Interface.Supervisor, [[
+        event_manager: Dobar.InterfaceEvents,
+        interface_conf: Dialog.Interface]]),
+      # Start the dialog species supervisor
+      supervisor(Dobar.Dialog.Supervisor, [[dialog_events_manager: Dobar.DialogEvents]]),
       # Start the conversation supervisor
-      supervisor(Dobar.Conversation.Supervisor, [[input_events_manager: Dobar.InterfaceEvents]]),
+      supervisor(Dobar.Conversation.Supervisor,
+        [[input_events_manager: Dobar.InterfaceEvents,
+          dialog_events_manager: Dobar.DialogEvents]])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
     Supervisor.start_link(children, opts)
-  end
-
-  # Tell Phoenix to update the endpoint configuration
-  # whenever the application is updated.
-  def config_change(changed, _new, removed) do
-    Dobar.Endpoint.config_change(changed, removed)
-    :ok
   end
 end
