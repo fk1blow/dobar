@@ -4,8 +4,10 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   alias Dobar.Model.Reaction.Text, as: TextReaction
   alias Dobar.Model.Reaction.Error, as: ErrorReaction
+  alias Dobar.Model.Reaction.Need, as: NeedReaction
 
   def handle_event(%TextReaction{about: about} = reaction, _) do
+    IO.puts "text reaction: #{inspect reaction}"
     Dobar.Interface.send(:text,
       "should send data to the ouput, represented by the interface controller")
     {:ok, nil}
@@ -20,6 +22,11 @@ defmodule Dobar.Conversation.ReactionHandler do
   def handle_event(%ErrorReaction{about: :undefined_intention} = error, _state) do
     Logger.info "undefined intention has been reached"
     # bla-bla send {:text, "cannot react because i'm unable to handle undefined intention"}
+    {:ok, nil}
+  end
+
+  def handle_event(%NeedReaction{} = reaction, _) do
+    Logger.info "DoBar needs something - add description of the need reaction"
     {:ok, nil}
   end
 
