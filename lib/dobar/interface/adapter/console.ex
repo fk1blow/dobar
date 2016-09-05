@@ -11,13 +11,9 @@ defmodule Dobar.Interface.Adapter.Console do
     {:ok, %{connection: nil, adapter: args[:adapter_interface]}}
   end
 
-  def send(:text, message) do
-    GenServer.cast __MODULE__, {:send, :text, message}
-  end
-
-  def handle_cast({:send, :text, message}, state) do
-    IO.puts "adapter should send message to connection, message: #{inspect message}"
-    # Connection.send state.connection, message
+  def handle_info({:send, :text, message}, %{connection: connection} = state) do
+    IO.puts "connection: #{inspect connection}"
+    Connection.send connection, message
     {:noreply, state}
   end
 

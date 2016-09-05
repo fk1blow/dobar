@@ -2,7 +2,7 @@ defmodule Dobar.Dialog.Species do
   defmacro __using__(_opts) do
     quote do
       use GenServer
-      # reactions models
+
       alias Dobar.Model.Topic.Reaction, as: Reaction
       alias Dobar.Model.Reaction.Text, as: TextReaction
       alias Dobar.Model.Reaction.Need, as: NeedReaction
@@ -11,7 +11,6 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
       alias Dobar.Dialog.Topic
-
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
       @confidence_treshold 0.8

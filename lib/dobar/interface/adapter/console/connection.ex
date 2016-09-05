@@ -7,15 +7,21 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
   Hedwig-IM homepage: https://github.com/hedwig-im
   """
 
+  use GenServer
+
   @prompt_messages "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
 
   def start_link(opts) do
-    IO.puts "opts: #{inspect opts}"
     {user, 0} = System.cmd("whoami", [])
     clear_screen()
     show_banner()
     prompt_message = prompt_message(@prompt_messages)
-    Task.start_link __MODULE__, :loop, [String.strip(user), opts[:adapter], prompt_message]
+    GenServer.start_link __MODULE__,  [String.strip(user), opts[:adapter], prompt_message]
+  end
+
+  def init([user, adapter, prompt]) do
+    Task.async(__MODULE__, :loop, [user, adapter, prompt])
+    {:ok, %{user: user, adapter: adapter, prompt: prompt}}
   end
 
   def loop(user, adapter, post) do
@@ -28,14 +34,14 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     loop(user, adapter, post)
   end
 
-  # def send(pid, message) do
-  #   GenServer.cast pid, {:send, message}
-  # end
+  def send(pid, message) do
+    GenServer.cast pid, message
+  end
 
-  # def handle_cast({:send, message}, state) when is_binary(message) do
-  #   IO.puts "should send the message to the console"
-  #   {:noreply, state}
-  # end
+  def handle_cast(message, state) do
+    output(message, state.user, state.prompt)
+    {:noreply, state}
+  end
 
   defp send_message(message, adapter) do
     Kernel.send adapter, {:input, :text, message}
@@ -45,12 +51,17 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     message |> IO.ANSI.format |> IO.puts
   end
 
+  defp output(nil, _name, _prompt_message), do: nil
+  defp output(msg, name, prompt_message) do
+    print [:yellow, msg, :default_color]
+  end
+
   defp clear_screen do
     print [:clear, :home]
   end
 
-  defp prompt(name, message) do
-    [:white, :bright, name, message, :normal, :default_color]
+  defp prompt(name, prompt_message) do
+    [:white, :bright, name, prompt_message, :normal, :default_color]
   end
 
   defp show_banner do

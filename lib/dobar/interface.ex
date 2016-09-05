@@ -24,7 +24,7 @@ defmodule Dobar.Interface do
 
   # TODO: :send should rather be :outpout
   def handle_cast({:send, :text, message}, %{adapter: adapter} = state) do
-    # apply adapter, :send, [:text, message]
+    Kernel.send adapter, {:send, :text, message}
     {:noreply, state}
   end
 

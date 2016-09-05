@@ -6,7 +6,6 @@ defmodule Dobar.Conversation.ReactionHandler do
   alias Dobar.Model.Reaction.Error, as: ErrorReaction
 
   def handle_event(%TextReaction{about: about} = reaction, _) do
-    Logger.info "text"
     Dobar.Interface.send(:text,
       "should send data to the ouput, represented by the interface controller")
     {:ok, nil}
