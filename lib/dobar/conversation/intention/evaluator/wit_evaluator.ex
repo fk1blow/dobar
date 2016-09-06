@@ -42,13 +42,13 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
 
   defp build_request(message) do
     url = "https://api.wit.ai/message?v=20160516&q=#{message}"
-    headers = %{"Authorization" => "Bearer #{configured_token}"}
+    headers = %{"Authorization" => "Bearer #{service_token}"}
     {:ok, %{url: url, headers: headers}}
   end
 
-  defp configured_token do
-    Application.get_env(:dobar, Intention.Evaluator)
-    |> Keyword.get(:opts)
+  defp service_token do
+    Application.get_env(:dobar, Dobar.Conversation)
+    |> Keyword.get(:evaluator)
     |> Keyword.get(:token)
   end
 end

@@ -6,28 +6,7 @@ defmodule Dobar.Interface.Adapter do
   it facilitates conversations input and output, reactive and proactive.
   """
 
-  use Behaviour
-
-  defmacro __using__(_opts) do
-    quote do
-      use GenServer
-      import Kernel, except: [send: 2]
-
-      @behaviour Dobar.Interface.Adapter
-
-      def send(:text, message) do
-        GenServer.cast __MODULE__, {:send, :text, message}
-      end
-
-      defoverridable [send: 2]
-    end
-  end
-
-  defcallback send(atom, String.t) :: term
-
-  def start_adapter(module), do: module |> validate |> start(self)
-
-  # Private
+  def start_adapter(module, interface), do: module |> validate |> start(interface)
 
   defp validate(nil), do: {:error, "unable to use undefined or nil interface adapter"}
   defp validate(module) do

@@ -19,21 +19,18 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
-# import_config "#{Mix.env}.exs"
-
-# Configure dobar intent evaluators
-config :dobar, Intention.Evaluator,
-  service: Dobar.Conversation.Intention.Evaluator.Wit,
-  opts: [token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
-
 # Configures Dobar's conversation interface
-config :dobar, Dialog.Interface,
+config :dobar, Dobar.Conversation,
   adapter: Dobar.Interface.Adapter.Console,
-  responders: nil
+  responders: nil,
+  evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
+              token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 # Configure the intentions definitions
 # These configs should be defined inside the host app, not inside Dobar itsel!!!
 config :dobar, Intentions.Definitions,
   intentions: Dobar.Intentions
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+# import_config "#{Mix.env}.exs"

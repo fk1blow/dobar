@@ -1,5 +1,7 @@
 defmodule Dobar.Conversation.Intention.Evaluator do
   @moduledoc """
+  Conversation Intention Evaluator
+
   It extracts the intent from an input(text, for now) and outputs an
   %Intent struct the intent representation
 
@@ -10,24 +12,20 @@ defmodule Dobar.Conversation.Intention.Evaluator do
   alias Dobar.Model.Intent
 
   @default_evaluator Dobar.Conversation.Intention.Evaluator.Wit
-  @type evaluated_intent :: {:error, any} | {:ok, Intent.t}
 
-  def evaluate_input({:text, input}) do
-    call_intention_api(input) |> parse_intention
-  end
+  def evaluate({:text, input, evaluator}),
+    do: evaluator |> do_evaluate(@default_evaluator, :text_query, input) |> parse
 
-  @spec parse_intention(tuple) :: evaluated_intent
-  defp parse_intention({:error, error}), do: {:error, error}
-  defp parse_intention({:ok, intention}) do
+  # "nil" represents the context wich was deprecated by wit.ai
+  defp do_evaluate(nil, default_evaluator, input_type, input),
+    do: apply(default_evaluator, input_type, [input, nil])
+  defp do_evaluate(evaluator, default_evaluator, input_type, input),
+    do: apply(evaluator, input_type, [input, nil])
+
+  defp parse({:error, error}), do: {:error, error}
+  defp parse({:ok, intention}) do
     intent = hd intention.outcomes
     {:ok, %Intent{name: intent.intent, input: intent._text,
       entities: intent.entities, confidence: intent.confidence}}
-  end
-
-  defp call_intention_api(input) do
-    evaluator = Application.get_env(:dobar, Intent.Evaluator)
-    api = evaluator[:service] || @default_evaluator
-    # "nil" represents the context wich was deprecated by wit.ai
-    apply(api, :text_query, [input, nil])
   end
 end

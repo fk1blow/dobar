@@ -11,7 +11,8 @@ defmodule Dobar.Conversation.Supervisor do
     children = [
       worker(Dobar.Conversation, [
         [input_events_manager: args[:input_events_manager],
-         dialog_events_manager: args[:dialog_events_manager]]])
+         dialog_events_manager: args[:dialog_events_manager]]]),
+      worker(Dobar.Conversation.Intention, []),
     ]
     supervise(children, strategy: :one_for_one)
   end
