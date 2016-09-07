@@ -1,10 +1,11 @@
-defmodule Dobar.Xapp.Conversation.Definition do
+defmodule Dobar.Xapp.Definition do
   use Dobar.Conversation
 
+  # ADDED INSIDE THE DEFINITION, HARDCODED ENTRY - TO BE TESTED!!!
   # this should actually be internal to the Dialog Species modules
-  intention :carrier_bearer do
-    relationship :meta
-  end
+  # intention :carrier_bearer do
+  #   relationship :meta
+  # end
 
   intention :cancel_command do
     relationship :meta

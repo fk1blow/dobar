@@ -210,9 +210,6 @@ defmodule Dobar.Dialog.Topic do
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
     intention = IntentionProvider.intention(intent_name)
-
-    IO.puts "available capabilities intention: #{inspect intention}"
-
     case intention do
       {:ok, intent_def} -> filter_capabilities(intent_def[intent_name])
       {:error, reason} -> []

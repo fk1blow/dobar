@@ -4,39 +4,37 @@ defmodule Dobar.Conversation do
       use Dobar.Conversation.Definition
       use GenServer
 
-      def start_link(opts) do
-        GenServer.start_link __MODULE__, opts, name: __MODULE__
+      @input_events_manager Dobar.InterfaceEvents
+      @dialog_events_manager Dobar.DialogEvents
+
+      def start_link do
+        GenServer.start_link __MODULE__, [], name: __MODULE__
       end
 
-      def init(args) do
-        _ = start_children
-        event_handlers = %{input_events_manager: args[:input_events_manager],
-                           dialog_events_manager: args[:dialog_events_manager]}
-        start_event_handlers(event_handlers)
-        {:ok, event_handlers}
+      def init(_args) do
+        start_children(intention_definitions)
+        start_event_handlers()
+        {:ok, nil}
       end
 
       def handle_info({:gen_event_EXIT, _handler, _reason}, state) do
-        start_event_handlers(state)
+        start_event_handlers()
         {:ok, state}
       end
 
       # Private
 
-      defp start_children do
+      defp start_children(definitions) do
         import Supervisor.Spec
         children = [
-          worker(Dobar.Conversation.Intention.Provider, [[definitions: intentions]])
+          worker(Dobar.Conversation.Intention.Provider, [[definitions: definitions]])
         ]
         Supervisor.start_link(children, strategy: :one_for_one)
       end
 
-      defp start_event_handlers(event_managers) do
-          GenEvent.add_mon_handler(
-            event_managers[:input_events_manager], Dobar.Conversation.TextInputHandler, nil)
-
-          GenEvent.add_mon_handler(
-            event_managers[:dialog_events_manager], Dobar.Conversation.ReactionHandler, nil)
+      defp start_event_handlers do
+        GenEvent.add_mon_handler(@input_events_manager, Dobar.Conversation.TextInputHandler, nil)
+        GenEvent.add_mon_handler(@dialog_events_manager, Dobar.Conversation.ReactionHandler, nil)
       end
     end
   end

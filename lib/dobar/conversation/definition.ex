@@ -2,7 +2,9 @@ defmodule Dobar.Conversation.Definition do
   defmacro __using__(_opts) do
     quote do
       import Dobar.Conversation.Definition
-      @intentions Map.new
+
+      @default_intentions %{carrier_bearer: [meta: []]}
+      @intentions Map.merge(%{}, @default_intentions)
       @topic_list []
       @before_compile Dobar.Conversation.Definition
     end
@@ -10,7 +12,7 @@ defmodule Dobar.Conversation.Definition do
 
   defmacro __before_compile__(_env) do
     quote do
-      def intentions, do: @intentions
+      def intention_definitions, do: @intentions
     end
   end
 

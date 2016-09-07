@@ -19,7 +19,8 @@ defmodule Dobar do
       # Start the interface of the dialog system
       supervisor(Dobar.Interface.Supervisor, [[
         event_manager: Dobar.InterfaceEvents,
-        interface_conf: Dobar.Conversation]]),
+        interface_conf: Dobar.Conversation
+      ]]),
 
       # Moving to the second stage where the Conversation module has different
       # responsabilities and therefore completely different thant this one
@@ -29,10 +30,8 @@ defmodule Dobar do
       #   dialog_events_manager: Dobar.DialogEvents]])
 
       # TESTING PURPOSE ONLY
-      worker(Dobar.Xapp.Conversation.Definition, [[
-        input_events_manager: Dobar.InterfaceEvents,
-        dialog_events_manager: Dobar.DialogEvents
-      ]])
+      # this is supposed to be declared by the user that wants to use Dobar
+      worker(Dobar.Xapp.Definition, [])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
