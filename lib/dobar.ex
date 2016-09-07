@@ -15,15 +15,28 @@ defmodule Dobar do
       # worker(Dobar.GenericEventManager, [[name: :dialog_events]])
       worker(GenEvent, [[name: Dobar.DialogEvents]], id: :dialog_events),
 
-      # Start the interface of the dialog system
-      supervisor(Dobar.Interface.Supervisor, [[
-        event_manager: Dobar.InterfaceEvents,
-        interface_conf: Dobar.Conversation]]),
+      # here or "there" ?!
+      # Start the Intention worker
+      # worker(Dobar.Conversation.Intention, []),
 
+      # TEMPORARELY DISABLED FOR TESTING PURPOSE ONLY
+      # Start the interface of the dialog system
+      # supervisor(Dobar.Interface.Supervisor, [[
+      #   event_manager: Dobar.InterfaceEvents,
+      #   interface_conf: Dobar.Conversation]]),
+
+      # Moving to the second stage where the Conversation module has different
+      # responsabilities and therefore completely different thant this one
       # Start the conversation supervisor
-      supervisor(Dobar.Conversation.Supervisor, [[
+      # supervisor(Dobar.Conversation.Supervisor, [[
+      #   input_events_manager: Dobar.InterfaceEvents,
+      #   dialog_events_manager: Dobar.DialogEvents]])
+
+      # TESTING PURPOSE ONLY
+      worker(Dobar.Xapp.Conversation.Definition, [[
         input_events_manager: Dobar.InterfaceEvents,
-        dialog_events_manager: Dobar.DialogEvents]])
+        dialog_events_manager: Dobar.DialogEvents
+      ]])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]

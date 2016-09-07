@@ -1,26 +1,22 @@
-# TODO: useless and fucked up module - refactor it!
 defmodule Dobar.Conversation.Intention.Provider do
-  alias Dobar.Conversation.Intention
+  @moduledoc """
+  Conversation Intention Provider
 
-  # TODO: hardcoded and should be done dinamically
-  @intentions [
-    send_message: Intention.SendMessage,
-    cancel_command: Intention.CancelCommand,
-    change_recipient: Intention.ChangeRecipient,
-    change_field: Intention.ChangeField,
-    # create_alarm: Intention.CreateAlarm,
-    switch_conversation: Intention.SwitchConversation,
-    confirmation: Intention.Confirmation,
-    purge_change_fields: Intention.PurgeChangeFields,
-  ]
+  Provides a store for the intention definitions alongside an interface
+  for fetching them.
+  """
 
-  def intention(name), do: get_intention(@intentions, name)
-
-  defp get_intention([_head|_tail] = intentions, name) when is_atom(name) do
-    case intentions[name] do
-      nil -> {:error, "no intention found"}
-      _   -> {:ok, intentions[name].intentions}
-    end
+  def start_link(opts) do
+    Agent.start_link(fn -> opts[:definitions] || Map.new end, name: __MODULE__)
   end
-  defp get_intention(_intention_list, _), do: {:error, "invalid intention name"}
+
+  def intention(name) when is_atom(name) do
+    Agent.get(__MODULE__, fn definitions -> definitions[name] end)
+    |> validate_intention(name)
+  end
+  def intention(name), do: validate_intention(nil, name)
+
+  defp validate_intention(nil, name),
+    do: {:error, "cannot provide intention for name: #{inspect name}"}
+  defp validate_intention(definition, _name), do: {:ok, definition}
 end

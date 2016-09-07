@@ -23,7 +23,7 @@ defmodule Dobar.Conversation.TextInputHandler do
         {:ok, pid} = GenericDialog.start_link(:root_dialog)
         GenericDialog.evaluate pid, intent
       pid ->
-        GenericDialog.evaluate :root_dialog, intent
+        GenericDialog.evaluate pid, intent
     end
   end
 end

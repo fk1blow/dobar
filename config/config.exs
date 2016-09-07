@@ -27,9 +27,9 @@ config :dobar, Dobar.Conversation,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 # Configure the intentions definitions
-# These configs should be defined inside the host app, not inside Dobar itsel!!!
-config :dobar, Intentions.Definitions,
-  intentions: Dobar.Intentions
+# These config should be defined inside the host app, not inside Dobar itself!!!
+# config :dobar, Intentions.Definitions,
+#   intentions: Dobar.Intentions
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

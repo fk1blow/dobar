@@ -2,6 +2,8 @@ defmodule Dobar.Conversation.Intention do
   @moduledoc """
   Dobar Conversation Intention
 
+  _TBD_
+
   It manages the interface for the conversation intentions and their definitions
   and has the responsability to provide access to the definitions and proper
   initialization from the user.

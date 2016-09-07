@@ -1,13 +1,10 @@
-# Maybe use `Dobar.Conversation.Definition` instead?
-# Deprecated it favor of the `Conversation.Definition` module!
-defmodule Dobar.Conversation.Intention.Definition do
+defmodule Dobar.Conversation.Definition do
   defmacro __using__(_opts) do
     quote do
-      import Dobar.Conversation.Intention.Definition
+      import Dobar.Conversation.Definition
       @intentions Map.new
       @topic_list []
-
-      @before_compile Dobar.Conversation.Intention.Definition
+      @before_compile Dobar.Conversation.Definition
     end
   end
 

@@ -1,4 +1,10 @@
 defmodule Dobar.Interface.Adapter.Console do
+  @moduledoc """
+  Interface Console Adapter
+
+  An interface adapter for the terminal.
+  """
+
   alias Dobar.Interface.Adapter.Console.Connection
 
   def start_link(opts) do
