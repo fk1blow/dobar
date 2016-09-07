@@ -57,7 +57,7 @@ defmodule Dobar.Dialog.Species do
               %Reaction{type: :completed} = reaction ->
                 if root_dialog?(self) do
                   GenEvent.notify(Dobar.DialogEvents, %TextReaction{
-                    about: :statement, text: "dialog completed", topic_reaction: reaction})
+                    about: :completed, text: "dialog completed", topic_reaction: reaction})
                 else
                   GenServer.cast(state.parent,
                     {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
@@ -74,9 +74,10 @@ defmodule Dobar.Dialog.Species do
             {:topic_output, {reaction, nil}}
 
           %Reaction{type: :completed} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            IO.puts "should validate confirmation?????????????????????????????????"
+            GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :completed,
+                            text: "dialog completed",
+                            topic_reaction: reaction})
 
             unless root_dialog?(self) do
               IO.puts "ending topic, intent: #{inspect intent}"

@@ -23,7 +23,7 @@ defmodule Dobar.Conversation.TextInputHandler do
   end
 
   defp evaluate_dialog({:error, reason}) do
-    # Logger.info "cannot evaluate text input because: #{reason}"
+    Logger.info "cannot evaluate text input because: #{reason}"
     Dobar.Interface.output :text, "cannot evaluate input; try again"
   end
   defp evaluate_dialog({:ok, intent}) do
