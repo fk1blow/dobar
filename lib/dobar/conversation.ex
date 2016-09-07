@@ -9,7 +9,7 @@ defmodule Dobar.Conversation do
       end
 
       def init(args) do
-        start_children
+        _ = start_children
         event_handlers = %{input_events_manager: args[:input_events_manager],
                            dialog_events_manager: args[:dialog_events_manager]}
         start_event_handlers(event_handlers)

@@ -211,7 +211,7 @@ defmodule Dobar.Dialog.Topic do
     intent_name = String.to_atom(intent.name)
     intention = IntentionProvider.intention(intent_name)
 
-    IO.puts "intention: #{inspect intention}"
+    IO.puts "available capabilities intention: #{inspect intention}"
 
     case intention do
       {:ok, intent_def} -> filter_capabilities(intent_def[intent_name])

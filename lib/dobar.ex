@@ -15,15 +15,11 @@ defmodule Dobar do
       # worker(Dobar.GenericEventManager, [[name: :dialog_events]])
       worker(GenEvent, [[name: Dobar.DialogEvents]], id: :dialog_events),
 
-      # here or "there" ?!
-      # Start the Intention worker
-      # worker(Dobar.Conversation.Intention, []),
-
       # TEMPORARELY DISABLED FOR TESTING PURPOSE ONLY
       # Start the interface of the dialog system
-      # supervisor(Dobar.Interface.Supervisor, [[
-      #   event_manager: Dobar.InterfaceEvents,
-      #   interface_conf: Dobar.Conversation]]),
+      supervisor(Dobar.Interface.Supervisor, [[
+        event_manager: Dobar.InterfaceEvents,
+        interface_conf: Dobar.Conversation]]),
 
       # Moving to the second stage where the Conversation module has different
       # responsabilities and therefore completely different thant this one
