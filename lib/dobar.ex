@@ -22,13 +22,6 @@ defmodule Dobar do
         interface_conf: Dobar.Conversation
       ]]),
 
-      # Moving to the second stage where the Conversation module has different
-      # responsabilities and therefore completely different thant this one
-      # Start the conversation supervisor
-      # supervisor(Dobar.Conversation.Supervisor, [[
-      #   input_events_manager: Dobar.InterfaceEvents,
-      #   dialog_events_manager: Dobar.DialogEvents]])
-
       # TESTING PURPOSE ONLY
       # this is supposed to be declared by the user that wants to use Dobar
       worker(Dobar.Xapp.Definition, [])
