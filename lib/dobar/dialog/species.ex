@@ -69,10 +69,8 @@ defmodule Dobar.Dialog.Species do
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
         case Topic.react(topic, intent) do
           %Reaction{type: :question} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            IO.puts "________________________________________________"
-
+            GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :question, topic_reaction: reaction})
             {:topic_output, {reaction, nil}}
 
           %Reaction{type: :completed} = reaction ->
