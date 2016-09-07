@@ -5,6 +5,7 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   """
 
   alias HTTPoison.Response
+  alias HTTPoison.Error
 
   @request_timeout 5000
 
@@ -21,8 +22,8 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   def handle_response({:ok, %Response{status_code: 200, body: body}}) do
     {:ok, body}
   end
-  def handle_response({:error, error}) do
-    {:error, error}
+  def handle_response({:error, %Error{reason: reason}}) do
+    {:error, reason}
   end
 
   def parse_response({:ok, body}) do

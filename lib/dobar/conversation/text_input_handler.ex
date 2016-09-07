@@ -1,6 +1,7 @@
 # TODO: must be renamed to InterfaceInputHandler
 defmodule Dobar.Conversation.TextInputHandler do
   use GenEvent
+  require Logger
 
   alias Dobar.Conversation.Intention.Evaluator
   alias Dobar.Dialog.GenericDialog
@@ -9,15 +10,24 @@ defmodule Dobar.Conversation.TextInputHandler do
   # some text in the prompt
 
   def handle_event({:input, :text, input}, _) do
-    evaluator = Application.get_env(:dobar, Dobar.Conversation)
+    Application.get_env(:dobar, Dobar.Conversation)
       |> Keyword.get(:evaluator)
       |> Keyword.get(:service)
-    {:ok, intent} = Task.async(Evaluator, :evaluate, [{:text, input, evaluator}]) |> Task.await
-    evaluate_dialog(intent)
+      |> evaluate_input({:text, input})
+      |> evaluate_dialog
     {:ok, nil}
   end
 
-  defp evaluate_dialog(intent) do
+  defp evaluate_input(evaluator, {:text, input}) do
+    Task.async(Evaluator, :evaluate, [{:text, input, evaluator}]) |> Task.await(10000)
+  end
+
+  defp evaluate_dialog({:error, reason}) do
+    # Logger.info "cannot evaluate text input because: #{reason}"
+    Dobar.Interface.output :text, "cannot evaluate input; try again"
+  end
+  defp evaluate_dialog({:ok, intent}) do
+    # Logger.info "evaluate dialog for intent: #{inspect intent}"
     case Process.whereis(:root_dialog) do
       nil ->
         {:ok, pid} = GenericDialog.start_link(:root_dialog)
