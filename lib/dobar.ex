@@ -17,7 +17,7 @@ defmodule Dobar do
 
       # TEMPORARELY DISABLED FOR TESTING PURPOSE ONLY
       # Start the interface of the dialog system
-      supervisor(Dobar.Interface.Supervisor, [[
+      worker(Dobar.Interface, [[
         event_manager: Dobar.InterfaceEvents,
         interface_conf: Dobar.Conversation
       ]]),

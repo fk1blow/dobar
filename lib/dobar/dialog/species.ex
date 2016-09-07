@@ -8,6 +8,7 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Model.Reaction.Need, as: NeedReaction
       alias Dobar.Model.Reaction.Error, as: ErrorReaction
       alias Dobar.Model.Reaction.Logging, as: LoggingReaction
+
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
       alias Dobar.Dialog.Topic
@@ -15,8 +16,7 @@ defmodule Dobar.Dialog.Species do
 
       @confidence_treshold 0.8
 
-      # public interface
-      #
+      # Public interface
 
       def start_link(:root_dialog) do
         GenServer.start_link __MODULE__, nil, name: :root_dialog
@@ -29,16 +29,12 @@ defmodule Dobar.Dialog.Species do
       end
 
       def evaluate(pid, %Intent{} = intent) do
-        IO.puts "species evaluate, pid: #{inspect pid}"
         GenServer.cast pid, {:evaluate, intent}
       end
 
       # overridable delegates
-      #
 
       def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
-        IO.puts "create new topic: #{inspect intent}"
-
         case IntentionProvider.intention(String.to_atom intent.name) do
           {:error, reason} ->
             GenEvent.notify(Dobar.DialogEvents,
@@ -71,8 +67,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
-        IO.puts "continue topic: #{inspect intent}"
-
         case Topic.react(topic, intent) do
           %Reaction{type: :question} = reaction ->
             IO.puts "reaction type: #{inspect reaction.type}"
@@ -300,7 +294,6 @@ defmodule Dobar.Dialog.Species do
       defoverridable [handle_intent: 2, handle_meta: 2]
 
       # callbacks
-      #
 
       def init(nil),
         do: {:ok, %{topic: nil, meta: nil, parent: nil, passthrough: nil}}
@@ -363,7 +356,6 @@ defmodule Dobar.Dialog.Species do
       end
 
       # private
-      #
 
       defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
 

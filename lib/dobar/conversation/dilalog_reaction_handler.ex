@@ -9,10 +9,9 @@ defmodule Dobar.Conversation.ReactionHandler do
   # events triggered by the Conversation as :dialog_events_manager, in response
   # to Dialog System reactions
 
-  def handle_event(%TextReaction{about: about} = reaction, _) do
-    IO.puts "text reaction: #{inspect reaction}"
-    msg = "should send data to the ouput, represented by the interface controller"
-    Dobar.Interface.output(:text, msg)
+  def handle_event(%TextReaction{} = reaction, _) do
+    message = reaction.topic_reaction.features.question
+    Dobar.Interface.output(:text, message)
     {:ok, nil}
   end
 
