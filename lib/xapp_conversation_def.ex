@@ -14,11 +14,12 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
-  intention :change_recipient do
-    relationship :meta
-    topic :message_recipient, prio: 2, entity: "contact"
-    topic :cancel_command, reference: :cancel_command
-  end
+  # not shure if this is supposed to work
+  # intention :change_recipient do
+  #   relationship :meta
+  #   topic :message_recipient, prio: 2, entity: "contact"
+  #   topic :cancel_command, reference: :cancel_command
+  # end
 
   intention :confirmation do
     relationship :meta

@@ -78,12 +78,9 @@ defmodule Dobar.Dialog.Species do
 
           %Reaction{type: :completed} = reaction ->
             GenEvent.notify(Dobar.DialogEvents,
-              %TextReaction{about: :completed,
-                            text: "ok",
-                            topic_reaction: reaction})
+              %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
 
             if meta_dialog?(self) do
-              IO.puts "ending topic, intent: #{inspect intent}"
               GenServer.cast(state.parent,
                 {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
             end
@@ -137,13 +134,8 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_meta(%Meta{reaction: %{intent: %{name: "cancel_command"}}} = meta, state) do
-        IO.puts "meta ended by: cancel"
-        IO.puts "reaction from meta: #{inspect meta.reaction}"
-
         case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
-            IO.puts "ok, kill this dialog"
-
             if meta_dialog?(self) do
               # there exists the `:completed` message for wich a meta dies
               # and sends a list of capabilities values, that the parent
@@ -153,36 +145,23 @@ defmodule Dobar.Dialog.Species do
             {:topic_end, :completed}
 
           [{:approve, %{entity: :infirm}, "no"}] ->
-            IO.puts "no, continue with the dialog"
-
             case Topic.react(state.topic) do
               %Reaction{type: :question} = reaction ->
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
-                IO.puts "________________________________________________"
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :question, topic_reaction: reaction})
                 {:topic_output, {reaction, %{meta: nil}}}
 
               %Reaction{type: :completed} = reaction ->
-                IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
                 {:topic_end, :completed}
             end
         end
       end
       def handle_meta(%Meta{reaction: %{intent: %{name: "switch_conversation"}}} = meta, state) do
-        IO.puts "meta ended by: switch"
-        IO.puts "reaction from meta: #{inspect meta}"
-
         case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
-            IO.puts "ok, kill this (alternative)dialog"
-            # If it's the root dialog, just send this away(to an event handler,
-            # at some point), else send the meta to the parent(chain)
             if root_dialog?(self) do
-              IO.puts "passthrough: #{inspect meta.passthrough}"
-              IO.puts "ROOT: should do something with this alternative-reaction dialog"
-
               GenEvent.notify(Dobar.DialogEvents,
                 %PassthroughReaction{about: :switch_conversation,
                                      text: 'switch the conversation',
@@ -191,39 +170,28 @@ defmodule Dobar.Dialog.Species do
               GenServer.cast(state.parent, {:meta,
                 %Meta{reaction: meta.reaction, passthrough: state.passthrough}})
             end
-
             {:topic_end, :completed}
 
           [{:approve, %{entity: :infirm}, "no"}] ->
-            IO.puts "no, continue the dialog"
-
             case Topic.react(state.topic) do
               %Reaction{type: :question} = reaction ->
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
-                IO.puts "________________________________________________"
-                # {:noreply, Map.merge(state, %{meta: nil})}
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :question, topic_reaction: reaction})
                 {:topic_output, {reaction, %{meta: nil}}}
 
-              # It could be a bug if thise will ever match, because it should be
+              # It could be a bug if this will ever match, because it should be
               # impossible to try to switch to a new conversation while the
               # dialog has already been completed(or the state is broken!)
               %Reaction{type: :completed} = reaction ->
-                IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
-
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
                 {:topic_end, :completed}
             end
         end
       end
       def handle_meta(%Meta{reaction: %{intent: %{name: "change_field"}}} = meta, state) do
-        IO.puts "handle_meta change_field, meta: #{inspect meta}"
-
         case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
-            IO.puts "yes, now change the fields"
-
             # NOT USED ATM
             # topic_capabilities = Topic.capabilities(state.topic)
             # entities = reaction.intent.entities.field_type
@@ -241,58 +209,48 @@ defmodule Dobar.Dialog.Species do
                              confidence: 1}
 
             dialog = Dobar.Dialog.Species.Routes.specie intent.name
-            IO.puts "new dialog: #{inspect dialog}"
             {:ok, pid} = dialog.start_link([parent: self])
             dialog.evaluate(pid, intent)
 
             {:topic_output, {%Reaction{}, %{meta: pid}}}
 
           [{:approve, %{entity: :infirm}, "no"}] ->
-            IO.puts "no, do not change fields; continue with current dialog"
-
             case Topic.react(state.topic) do
               %Reaction{type: :question} = reaction ->
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
-                IO.puts "________________________________________________"
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :question, topic_reaction: reaction})
                 {:topic_output, {reaction, %{meta: nil}}}
 
               %Reaction{type: :completed} = reaction ->
-                IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
-                IO.puts "reaction type: #{inspect reaction.type}"
-                IO.puts "reaction features: #{inspect reaction.features}"
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
                 {:topic_end, :completed}
             end
         end
       end
       def handle_meta(%Meta{reaction: %{intent: %{name: "purge_change_fields"}}} = meta, state) do
-        IO.puts "handle_meta purge_change_fields"
-
         case Topic.react(state.topic, carrier_bearer(meta.reaction.features)) do
           %Reaction{type: :question} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            IO.puts "________________________________________________"
+           GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :question, topic_reaction: reaction})
             {:topic_output, {reaction, %{meta: nil}}}
 
           %Reaction{type: :completed} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
+            GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
             {:topic_end, :completed}
         end
       end
       def handle_meta(:canceled, state) do
-        IO.puts "meta died! should continue with the dialog"
         case Topic.react(state.topic) do
           %Reaction{type: :question} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
-            IO.puts "________________________________________________"
+           GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :question, topic_reaction: reaction})
             {:topic_output, {reaction, %{meta: nil}}}
 
           %Reaction{type: :completed} = reaction ->
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
+            GenEvent.notify(Dobar.DialogEvents,
+              %TextReaction{about: :completed, text: "ok", topic_reaction: reaction})
             {:topic_end, :completed}
         end
       end
@@ -385,8 +343,6 @@ defmodule Dobar.Dialog.Species do
         capability_name = intent_name
         topic_intent_name = topic_intent_name
 
-        IO.puts "find_alternative"
-
         # extract the intention for the current topic
         {:ok, intention} = IntentionProvider.intention(topic_intent_name)
 
@@ -406,10 +362,8 @@ defmodule Dobar.Dialog.Species do
           [_head|_tail] ->
             {:reference, intention}
           nil ->
-            IO.puts "xxx3"
             {:ok, intention} = IntentionProvider.intention(capability_name)
             topic_capabilities = intention[capability_name]
-            IO.puts "xxx4"
 
             # if the capability is contextual and applies only for meta, stop
             # searching the global registry - no intention capability found!
