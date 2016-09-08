@@ -27,10 +27,18 @@ defmodule Dobar.Conversation.TextInputHandler do
     Dobar.Interface.output :text, "cannot evaluate input; try again"
   end
   defp evaluate_dialog({:ok, intent}) do
-    # Logger.info "evaluate dialog for intent: #{inspect intent}"
+    Logger.info "evaluate dialog for intent: #{intent.name}, confidence: #{intent.confidence}"
     case Process.whereis(:root_dialog) do
       nil ->
-        {:ok, pid} = GenericDialog.start_link(:root_dialog)
+        # Not shure if the version below works better; for future bugs that
+        # may appear, comment the old logic and keep it here
+        # {:ok, pid} = GenericDialog.start_link(:root_dialog)
+        # GenericDialog.evaluate pid, intent
+
+        dialog = Dobar.Dialog.Species.Routes.specie intent.name
+        Logger.info "will evaluate dialog: #{inspect dialog}"
+
+        {:ok, pid} = dialog.start_link(:root_dialog)
         GenericDialog.evaluate pid, intent
       pid ->
         GenericDialog.evaluate pid, intent

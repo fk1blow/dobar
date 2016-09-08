@@ -8,6 +8,7 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Model.Reaction.Need, as: NeedReaction
       alias Dobar.Model.Reaction.Error, as: ErrorReaction
       alias Dobar.Model.Reaction.Logging, as: LoggingReaction
+      alias Dobar.Model.Reaction.Passthrough, as: PassthroughReaction
 
       alias Dobar.Model.Intent
       alias Dobar.Model.Meta
@@ -19,13 +20,14 @@ defmodule Dobar.Dialog.Species do
       # Public interface
 
       def start_link(:root_dialog) do
-        GenServer.start_link __MODULE__, nil, name: :root_dialog
+        GenServer.start_link __MODULE__, [name: :root_dialog], name: :root_dialog
       end
-      def start_link(parent) do
-        GenServer.start_link __MODULE__, [parent: parent]
-      end
-      def start_link(parent, passthrough) do
-        GenServer.start_link __MODULE__, [parent: parent, passthrough: passthrough]
+      # TODO: add `name` as process register only if opts[:name] exists
+      def start_link([h|t] = opts) do
+        GenServer.start_link(__MODULE__,
+          [parent: opts[:parent],
+           name: opts[:name],
+           passthrough: opts[:passthrough]])
       end
 
       def evaluate(pid, %Intent{} = intent) do
@@ -39,13 +41,14 @@ defmodule Dobar.Dialog.Species do
           {:error, reason} ->
             GenEvent.notify(Dobar.DialogEvents,
               %ErrorReaction{about: :undefined_intention, input_intent: intent})
-            {:error, {:no_intention, intent}}
+            {:error, :no_intention}
 
           {:ok, intention} ->
             GenEvent.notify(Dobar.DialogEvents,
               %LoggingReaction{about: :begin_topic, data: {intent}})
 
             Process.flag(:trap_exit, true)
+
             {:ok, topic} = Topic.start_link intent
 
             case Topic.react(topic) do
@@ -57,7 +60,7 @@ defmodule Dobar.Dialog.Species do
               %Reaction{type: :completed} = reaction ->
                 if root_dialog?(self) do
                   GenEvent.notify(Dobar.DialogEvents, %TextReaction{
-                    about: :completed, text: "dialog completed", topic_reaction: reaction})
+                    about: :completed, text: "ok", topic_reaction: reaction})
                 else
                   GenServer.cast(state.parent,
                     {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
@@ -76,10 +79,10 @@ defmodule Dobar.Dialog.Species do
           %Reaction{type: :completed} = reaction ->
             GenEvent.notify(Dobar.DialogEvents,
               %TextReaction{about: :completed,
-                            text: "dialog completed",
+                            text: "ok",
                             topic_reaction: reaction})
 
-            unless root_dialog?(self) do
+            if meta_dialog?(self) do
               IO.puts "ending topic, intent: #{inspect intent}"
               GenServer.cast(state.parent,
                 {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
@@ -105,11 +108,9 @@ defmodule Dobar.Dialog.Species do
                 IO.puts "reference found: #{inspect intention}"
                 IO.puts "and reference intent: #{inspect intent}"
 
-                Process.flag(:trap_exit, true)
-
                 dialog = Dobar.Dialog.Species.Routes.specie intent.name
                 IO.puts "new dialog: #{inspect dialog}"
-                {:ok, pid} = dialog.start_link(self)
+                {:ok, pid} = dialog.start_link([parent: self])
                 dialog.evaluate(pid, intent)
 
                 {:topic_alternative, {reaction, %{meta: pid}}}
@@ -117,10 +118,9 @@ defmodule Dobar.Dialog.Species do
               {:alternative, intention} ->
                 IO.puts "alternative dialog: #{inspect intention}"
 
-                Process.flag(:trap_exit, true)
-
                 dialog = Dobar.Dialog.Species.Routes.specie(intent.name)
-                {:ok, pid} = dialog.start_link(self, intention)
+                IO.puts "new dialog: #{inspect dialog}"
+                {:ok, pid} = dialog.start_link([parent: self, passthrough: intent])
 
                 switch_intent = %Intent{name: "switch_conversation",
                                         confidence: 1,
@@ -144,10 +144,10 @@ defmodule Dobar.Dialog.Species do
           [{:approve, %{entity: :confirm}, "yes"}] ->
             IO.puts "ok, kill this dialog"
 
-            unless root_dialog?(self) do
-              # there exists the `:completed` message wich dies and sends a list
-              # of capabilities values, that the parent should add to its
-              # own capabilities
+            if meta_dialog?(self) do
+              # there exists the `:completed` message for wich a meta dies
+              # and sends a list of capabilities values, that the parent
+              # should add to its own capabilities
               GenServer.cast(state.parent, {:meta, :canceled})
             end
             {:topic_end, :completed}
@@ -180,12 +180,18 @@ defmodule Dobar.Dialog.Species do
             # If it's the root dialog, just send this away(to an event handler,
             # at some point), else send the meta to the parent(chain)
             if root_dialog?(self) do
+              IO.puts "passthrough: #{inspect meta.passthrough}"
               IO.puts "ROOT: should do something with this alternative-reaction dialog"
+
+              GenEvent.notify(Dobar.DialogEvents,
+                %PassthroughReaction{about: :switch_conversation,
+                                     text: 'switch the conversation',
+                                     intent: meta.passthrough})
             else
               GenServer.cast(state.parent, {:meta,
                 %Meta{reaction: meta.reaction, passthrough: state.passthrough}})
             end
-            # {:stop, :normal, nil}
+
             {:topic_end, :completed}
 
           [{:approve, %{entity: :infirm}, "no"}] ->
@@ -206,7 +212,7 @@ defmodule Dobar.Dialog.Species do
                 IO.puts "wahaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaout"
                 IO.puts "reaction type: #{inspect reaction.type}"
                 IO.puts "reaction features: #{inspect reaction.features}"
-                # {:stop, :normal, nil}
+
                 {:topic_end, :completed}
             end
         end
@@ -235,7 +241,8 @@ defmodule Dobar.Dialog.Species do
                              confidence: 1}
 
             dialog = Dobar.Dialog.Species.Routes.specie intent.name
-            {:ok, pid} = dialog.start_link(self)
+            IO.puts "new dialog: #{inspect dialog}"
+            {:ok, pid} = dialog.start_link([parent: self])
             dialog.evaluate(pid, intent)
 
             {:topic_output, {%Reaction{}, %{meta: pid}}}
@@ -294,12 +301,20 @@ defmodule Dobar.Dialog.Species do
 
       # callbacks
 
-      def init(nil),
-        do: {:ok, %{topic: nil, meta: nil, parent: nil, passthrough: nil}}
-      def init([parent: parent]),
-        do: {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: nil}}
-      def init([parent: parent, passthrough: passthrough]),
-        do: {:ok, %{topic: nil, meta: nil, parent: parent, passthrough: passthrough}}
+      def init(:root_dialog) do
+        {:ok, %{name: :root_dialog,
+                topic: nil,
+                meta: nil,
+                parent: nil,
+                passthrough: nil}}
+      end
+      def init([h|t] = args) do
+        {:ok, %{name: args[:name],
+                topic: nil,
+                meta: nil,
+                parent: args[:parent],
+                passthrough: args[:passthrough]}}
+      end
 
       def handle_call(:topic_capabilities, _from, %{topic: topic} = state) do
         {:reply, Topic.capabilities(topic), state}
@@ -322,12 +337,14 @@ defmodule Dobar.Dialog.Species do
           {:topic_nomatch, _} ->
             {:noreply, state}
 
-          {:error, {:no_intention, intent}} ->
+          {:error, :no_intention} ->
             {:noreply, state}
+
+          {:error, :meta_as_root} ->
+            {:stop, :normal, nil}
         end
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
-        IO.puts "xxparent?????"
         # the dialog has a meta chain so proxy the call until the last meta-dialog
         GenServer.cast meta, {:evaluate, intent}
         {:noreply, state}
@@ -357,6 +374,7 @@ defmodule Dobar.Dialog.Species do
       # private
 
       defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
+      defp meta_dialog?(pid), do: !root_dialog?(pid)
 
       # TODO: find if theres a need for this alternative match
       # TODO: the alternative is not handling undefined modules fetch error!!!
@@ -366,6 +384,8 @@ defmodule Dobar.Dialog.Species do
       defp find_alternative(intent_name, topic_intent_name) do
         capability_name = intent_name
         topic_intent_name = topic_intent_name
+
+        IO.puts "find_alternative"
 
         # extract the intention for the current topic
         {:ok, intention} = IntentionProvider.intention(topic_intent_name)

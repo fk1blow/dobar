@@ -30,7 +30,8 @@ defmodule Dobar.Dialog.Topic do
   ## Separation refactor
 
   By removing the `alternate/2` and `fill_topics` and replacing them with the generic
-  `react/1` or `react/2`, you get the benefit of better separation and encapsulation.
+  `react/1` or `react/2`, you get the benefit of consistency, better separation
+  and encapsulation.
 
   #### better separation
 
@@ -110,13 +111,13 @@ defmodule Dobar.Dialog.Topic do
       available_capabilities(intent)
       |> Enum.filter(&(is_tuple(&1)))
       |> Enum.map(&(create_capability(&1, intent)))
-      |> validate_capabilities(intent)
+      |> build_state(intent)
   end
   def init([intent: %Intent{} = intent, capabilities: capabilities]) do
     capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
-    |> validate_capabilities(intent)
+    |> build_state(intent)
   end
 
   def handle_call({:react, nil}, _from, state) do
@@ -233,6 +234,8 @@ defmodule Dobar.Dialog.Topic do
     end
   end
 
+  # this actually tests if the capability is compatible with the entities
+  # inside the intent
   defp capability_match(capability, intent) do
     case Capability.compatibility(capability.pid, intent) do
       {:match, _key, _entities} -> {:ok, capability}
@@ -247,10 +250,10 @@ defmodule Dobar.Dialog.Topic do
     |> Enum.map(fn(x) -> {elem(x, 0), Enum.into(elem(x, 1), %{})} end)
   end
 
-  defp validate_capabilities([], intent) do
+  defp build_state([], intent) do
     {:stop, {"cannot start topic without capabilities", intent}}
   end
-  defp validate_capabilities([h|t] = capabilities, intent) do
+  defp build_state([h|t] = capabilities, intent) do
     {:ok, %{intent: intent, capabilities: capabilities}}
   end
 end

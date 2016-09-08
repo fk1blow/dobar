@@ -26,20 +26,20 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
+  intention :switch_conversation do
+    relationship :meta
+    topic :approve, entity: [:confirm, :infirm]
+    topic :cancel_command, reference: :cancel_command
+  end
+
   intention :create_alarm do
     topic :time, prio: 1, entity: "datetime"
     topic :cancel_command, reference: :cancel_command
   end
 
   intention :purge_change_fields do
-    # this becomes mind blowing to understand...
+    # this becomes mind blowing to comprehend...
     # topic :change_field, reference: :change_field
-    topic :cancel_command, reference: :cancel_command
-  end
-
-  intention :switch_conversation do
-    relationship :meta
-    topic :approve, entity: [:confirm, :infirm]
     topic :cancel_command, reference: :cancel_command
   end
 

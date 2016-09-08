@@ -56,7 +56,7 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
 
   defp output(nil, _name, _prompt_message), do: nil
   defp output(msg, name, prompt_message) do
-    print [:yellow, msg, :default_color]
+    print [:green, msg, :default_color]
   end
 
   defp clear_screen do

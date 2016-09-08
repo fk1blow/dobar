@@ -11,21 +11,27 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
 
   use Dobar.Dialog.Species
 
-  def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
-    IO.puts "#{inspect self} begin topic for: change field dialog: #{inspect intent}"
+  def handle_intent(intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
+    GenEvent.notify(
+      Dobar.DialogEvents,
+      %ErrorReaction{about: :meta_as_root,
+                     text: "cannot start a dialog with a 'change field' command",
+                     input_intent: intent})
+    {:error, :meta_as_root}
+  end
 
+  def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
     {:ok, topic} = Topic.start_link(intent)
 
     case Topic.react(topic) do
       %Reaction{type: :question} = reaction ->
-        IO.puts "reaction type: #{inspect reaction.type}"
-        IO.puts "reaction features: #{inspect reaction.features}"
-        IO.puts "________________________________________________"
+        GenEvent.notify(Dobar.DialogEvents,
+          %TextReaction{about: :question, topic_reaction: reaction})
         {:topic_output, {reaction, %{topic: topic}}}
 
       %Reaction{type: :completed} = reaction ->
-        IO.puts "reaction type: #{inspect reaction.type}"
-        IO.puts "reaction features: #{inspect reaction.features}"
+        GenEvent.notify(Dobar.DialogEvents, %TextReaction{
+          about: :completed, text: "ok", topic_reaction: reaction})
         unless root_dialog?(self) do
           GenServer.cast parent, {:meta, reaction}
         end
@@ -33,6 +39,5 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
     end
   end
 
-  def handle_intent(intent, state),
-    do: super(intent, state)
+  def handle_intent(intent, state), do: super(intent, state)
 end

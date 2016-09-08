@@ -9,13 +9,17 @@ defmodule Dobar.Dialog.Species.Router do
 
   defmacro __before_compile__(_env) do
     quote do
-      def specie(name) when is_bitstring(name), do: name |> String.to_existing_atom |> specie
-      def specie(name) when is_atom(name), do: name |> specie
-      def specie(name) do
+      def specie(name) when is_bitstring(name) do
+        name |> String.to_existing_atom |> specie
+      end
+      def specie(name) when is_atom(name) do
         case @dialog_species[name] do
           nil -> Dobar.Dialog.GenericDialog
           specie -> specie
         end
+      end
+      def specie(name) when is_atom(name) do
+        Dobar.Dialog.GenericDialog
       end
     end
   end
