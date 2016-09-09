@@ -47,8 +47,6 @@ defmodule Dobar.Dialog.Species do
             GenEvent.notify(Dobar.DialogEvents,
               %LoggingReaction{about: :begin_topic, data: {intent}})
 
-            Process.flag(:trap_exit, true)
-
             {:ok, topic} = Topic.start_link intent
 
             case Topic.react(topic) do
@@ -70,6 +68,9 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
+        GenEvent.notify(Dobar.DialogEvents,
+          %LoggingReaction{about: :continue_topic, data: {topic}})
+
         case Topic.react(topic, intent) do
           %Reaction{type: :question} = reaction ->
             GenEvent.notify(Dobar.DialogEvents,
@@ -88,35 +89,38 @@ defmodule Dobar.Dialog.Species do
             {:topic_end, :completed}
 
           %Reaction{type: :nomatch} = reaction ->
-            IO.puts "cannot match"
-            IO.puts "will search for intent: #{inspect intent}"
-            IO.puts "reaction type: #{inspect reaction.type}"
-            IO.puts "reaction features: #{inspect reaction.features}"
+            GenEvent.notify(Dobar.DialogEvents,
+              %LoggingReaction{about: :intent_no_match, data: {topic}})
 
             topic_intent = Topic.intent(topic)
 
-            alternative = intent.name
+            alternative =
+              intent.name
               |> String.to_atom
-              |> find_alternative(String.to_atom(topic_intent.name))
-              |> validate_alternative(intent)
+              |> find_alternative(topic_intent)
+              |> validate_confidence(topic_intent)
+              |> validate_inception(topic_intent)
 
             case alternative do
-              {:reference, intention} ->
-                IO.puts "reference found: #{inspect intention}"
-                IO.puts "and reference intent: #{inspect intent}"
+              {:reference, intention_name} ->
+                GenEvent.notify(Dobar.DialogEvents,
+                  %LoggingReaction{about: :alternative_reference_found, data: {intent}})
 
-                dialog = Dobar.Dialog.Species.Routes.specie intent.name
-                IO.puts "new dialog: #{inspect dialog}"
+                dialog = Dobar.Dialog.Species.Routes.specie intention_name
+                GenEvent.notify(Dobar.DialogEvents,
+                  %LoggingReaction{about: :dialog_reference_found, data: {dialog}})
                 {:ok, pid} = dialog.start_link([parent: self])
                 dialog.evaluate(pid, intent)
 
                 {:topic_alternative, {reaction, %{meta: pid}}}
 
-              {:alternative, intention} ->
-                IO.puts "alternative dialog: #{inspect intention}"
+              {:alternative, intention_name} ->
+                GenEvent.notify(Dobar.DialogEvents,
+                  %LoggingReaction{about: :alternative_meta_found, data: {intent}})
 
-                dialog = Dobar.Dialog.Species.Routes.specie(intent.name)
-                IO.puts "new dialog: #{inspect dialog}"
+                dialog = Dobar.Dialog.Species.Routes.specie(intention_name)
+                GenEvent.notify(Dobar.DialogEvents,
+                  %LoggingReaction{about: :dialog_meta_found, data: {dialog}})
                 {:ok, pid} = dialog.start_link([parent: self, passthrough: intent])
 
                 switch_intent = %Intent{name: "switch_conversation",
@@ -126,9 +130,15 @@ defmodule Dobar.Dialog.Species do
 
                 {:topic_alternative, {reaction, %{meta: pid}}}
 
-              {:noalternative, intention} ->
-                IO.puts "no alternative found: #{inspect intention}"
-                {:topic_nomatch, intention}
+              {:noalternative, intention_name} ->
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :no_alternative_found, topic_reaction: reaction})
+                {:topic_nomatch, intention_name}
+
+              {:samealternative, intention_name} ->
+                GenEvent.notify(Dobar.DialogEvents,
+                  %TextReaction{about: :no_alternative_found, topic_reaction: reaction})
+                {:topic_nomatch, intention_name}
             end
         end
       end
@@ -136,10 +146,10 @@ defmodule Dobar.Dialog.Species do
       def handle_meta(%Meta{reaction: %{intent: %{name: "cancel_command"}}} = meta, state) do
         case meta.reaction.features do
           [{:approve, %{entity: :confirm}, "yes"}] ->
+            GenEvent.notify(Dobar.DialogEvents,
+              %LoggingReaction{about: :dialog_canceled, topic_reaction: meta.reaction})
+
             if meta_dialog?(self) do
-              # there exists the `:completed` message for wich a meta dies
-              # and sends a list of capabilities values, that the parent
-              # should add to its own capabilities
               GenServer.cast(state.parent, {:meta, :canceled})
             end
             {:topic_end, :completed}
@@ -324,24 +334,14 @@ defmodule Dobar.Dialog.Species do
         end
       end
 
-      def handle_info({:EXIT, _from, reason}, state) do
-        IO.puts "EXIIIIIIIIIIIIIIIIT: #{inspect reason}"
-        {:noreply, state}
-      end
-
       # private
 
       defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
       defp meta_dialog?(pid), do: !root_dialog?(pid)
 
-      # TODO: find if theres a need for this alternative match
-      # TODO: the alternative is not handling undefined modules fetch error!!!
-      defp find_alternative(intent_name, nil) do
-        {:noalternative, nil}
-      end
-      defp find_alternative(intent_name, topic_intent_name) do
-        capability_name = intent_name
-        topic_intent_name = topic_intent_name
+      defp find_alternative(intention_name, dialog_intent) do
+        capability_name = intention_name
+        topic_intent_name = dialog_intent.name |> String.to_atom
 
         # extract the intention for the current topic
         {:ok, intention} = IntentionProvider.intention(topic_intent_name)
@@ -360,7 +360,7 @@ defmodule Dobar.Dialog.Species do
         # returns a {:noalternative, intention}
         case topic_capabilities do
           [_head|_tail] ->
-            {:reference, intention}
+            {:reference, intention_name}
           nil ->
             {:ok, intention} = IntentionProvider.intention(capability_name)
             topic_capabilities = intention[capability_name]
@@ -368,32 +368,42 @@ defmodule Dobar.Dialog.Species do
             # if the capability is contextual and applies only for meta, stop
             # searching the global registry - no intention capability found!
             if topic_capabilities[:relationship] == :meta do
-              {:noalternative, intention}
+              {:noalternative, intention_name}
             else
-              {:alternative, intention}
+              {:alternative, intention_name}
             end
         end
       end
 
-      defp validate_alternative({:reference, intention}, %Intent{} = input_intent) do
+      defp validate_confidence({:reference, intention_name}, input_intent) do
         case input_intent do
           %{confidence: conf} when conf > @confidence_treshold ->
-            {:reference, intention}
+            {:reference, intention_name}
           _ ->
-            {:noalternative, intention}
+            {:noalternative, intention_name}
         end
       end
-      defp validate_alternative({:alternative, intention}, %Intent{} = input_intent) do
+      defp validate_confidence({:alternative, intention_name}, input_intent) do
         case input_intent do
           %{confidence: conf} when conf > @confidence_treshold ->
-            {:alternative, intention}
+            {:alternative, intention_name}
           _ ->
-            {:noalternative, intention}
+            {:noalternative, intention_name}
         end
       end
-      defp validate_alternative({:noalternative, intention}, _) do
-        {:noalternative, intention}
+      defp validate_confidence({:noalternative, intention_name}, _) do
+        {:noalternative, intention_name}
       end
+
+      defp validate_inception({:alternative, intention_name}, input_intent) do
+        cond do
+          intention_name == String.to_existing_atom(input_intent.name) ->
+            {:samealternative, intention_name}
+          true ->
+            {:alternative, intention_name}
+        end
+      end
+      defp validate_inception(current, _input_intent), do: current
 
       defp compare_capabilities(capabilities, entities) do
         capabilities = capabilities
