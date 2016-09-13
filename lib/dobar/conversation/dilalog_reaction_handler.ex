@@ -2,30 +2,34 @@ defmodule Dobar.Conversation.ReactionHandler do
   use GenEvent
   require Logger
 
-  alias Dobar.Model.Reaction.Text, as: TextReaction
-  alias Dobar.Model.Reaction.Error, as: ErrorReaction
-  alias Dobar.Model.Reaction.Need, as: NeedReaction
-  alias Dobar.Model.Reaction.Passthrough, as: PassthroughReaction
-  alias Dobar.Model.Reaction.Logging, as: LoggingReaction
+  alias Dobar.Reaction.Question, as: QuestionReaction
+  alias Dobar.Reaction, as: Reaction
+
+  alias Dobar.Reaction.Text, as: TextReaction
+  alias Dobar.Reaction.Error, as: ErrorReaction
+  alias Dobar.Reaction.Need, as: NeedReaction
+  alias Dobar.Reaction.Passthrough, as: PassthroughReaction
+  alias Dobar.Reaction.Logging, as: LoggingReaction
   alias Dobar.Dialog.GenericDialog
 
   # events triggered for :dialog_events_manager, in response
   # to Dialog System reactions
 
-  def handle_event(%TextReaction{about: :question} = reaction, _) do
+  def handle_event(%Reaction{about: :question} = reaction, _) do
     Logger.info "text reaction - dialog question"
-    message = reaction.topic_reaction.features.question
+    message = reaction.text
     Dobar.Interface.output(:text, message)
     {:ok, nil}
   end
 
-  def handle_event(%TextReaction{about: :completed} = reaction, _) do
+  def handle_event(%Reaction{about: :completed, data: data} = reaction, _) do
     Logger.info "text reaction - dialog completed"
-    features = reaction.topic_reaction.features
+    features = data.features
     case features do
       [h|t] ->
-        Logger.info "completed reaction data: #{inspect reaction.topic_reaction}"
+        Logger.info "completed reaction data: #{inspect data.features}, and intent: #{inspect data.intent}"
         Dobar.Interface.output(:text, reaction.text)
+      # shouldn't this be a {:statement, statement} instead of :question?
       %{question: question} ->
         Dobar.Interface.output :text, question
     end
@@ -56,8 +60,8 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%LoggingReaction{about: :intent_no_match} = reaction, _) do
-    IO.puts "loggingreaction - intent no match"
+  def handle_event(%Reaction{about: :intent_no_match} = reaction, _) do
+    IO.puts "loggingreaction - intent no match; to be outputted to the interface"
     {:ok, nil}
   end
 
@@ -68,6 +72,11 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   def handle_event(%LoggingReaction{about: :alternative_meta_found} = reaction, _) do
     Logger.info "alternative_meta_found"
+    {:ok, nil}
+  end
+
+  def handle_event(%LoggingReaction{about: :continue_topic} = reaction, _) do
+    Logger.info "continue topic"
     {:ok, nil}
   end
 
@@ -84,11 +93,11 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%ErrorReaction{about: :undefined_intention} = error, _state) do
-    Logger.info "errorreaction - undefined intention has been evaluated"
-    Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
-    {:ok, nil}
-  end
+  # def handle_event(%Reaction{about: :undefined_intention} = error, _state) do
+  #   Logger.info "errorreaction - undefined intention has been evaluated"
+  #   Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
+  #   {:ok, nil}
+  # end
 
   def handle_event(%ErrorReaction{about: :meta_as_root} = error, _state) do
     Logger.info "errorreaction - cannot start a dialog with a meta intention"

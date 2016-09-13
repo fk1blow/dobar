@@ -14,14 +14,6 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
-  # not shure if this is supposed to work or has been suppressed by the
-  # :change_field intention
-  # intention :change_recipient do
-  #   relationship :meta
-  #   topic :message_recipient, prio: 2, entity: "contact"
-  #   topic :cancel_command, reference: :cancel_command
-  # end
-
   intention :confirmation do
     relationship :meta
     topic :approve, entity: [:confirm, :infirm]
@@ -34,7 +26,7 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
-  intention :create_alarm do
+  intention :create_alarmx do
     topic :time, prio: 1, entity: "datetime"
     topic :cancel_command, reference: :cancel_command
   end

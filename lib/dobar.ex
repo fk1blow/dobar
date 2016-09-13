@@ -8,14 +8,11 @@ defmodule Dobar do
 
     children = [
       # Start the interface events manager used by interface and Conversation api
-      # worker(Dobar.GenericEventManager, [[name: :interface_events]])
       worker(GenEvent, [[name: Dobar.InterfaceEvents]], id: :interface_events),
 
       # Start the dialog events manager used by the dialog and conversation api
-      # worker(Dobar.GenericEventManager, [[name: :dialog_events]])
       worker(GenEvent, [[name: Dobar.DialogEvents]], id: :dialog_events),
 
-      # TEMPORARELY DISABLED FOR TESTING PURPOSE ONLY
       # Start the interface of the dialog system
       worker(Dobar.Interface, [[
         event_manager: Dobar.InterfaceEvents,

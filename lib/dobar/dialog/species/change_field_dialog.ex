@@ -24,16 +24,20 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
     {:ok, topic} = Topic.start_link(intent)
 
     case Topic.react(topic) do
-      %Reaction{type: :question} = reaction ->
-        GenEvent.notify(Dobar.DialogEvents,
-          %TextReaction{about: :question, topic_reaction: reaction})
-        {:topic_output, {reaction, %{topic: topic}}}
+      # %Reaction{type: :question} = reaction ->
+        {:question, question} ->
+          GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
+        {:topic_output, %{topic: topic}}
 
-      %Reaction{type: :completed} = reaction ->
-        GenEvent.notify(Dobar.DialogEvents, %TextReaction{
-          about: :completed, text: "ok", topic_reaction: reaction})
+      # %Reaction{type: :completed} = reaction ->
+      {:completed, features} ->
+        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
+        # GenEvent.notify(Dobar.DialogEvents, %TextReaction{
+        #   about: :completed, text: "ok", topic_reaction: reaction})
         unless root_dialog?(self) do
-          GenServer.cast parent, {:meta, reaction}
+          # GenServer.cast parent, {:meta, reaction}
+          GenServer.cast(parent,
+            {:meta, %Dobar.Model.Meta{intent: intent, passthrough: state.passthrough}})
         end
         {:topic_end, :completed}
     end

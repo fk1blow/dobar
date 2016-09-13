@@ -103,9 +103,6 @@ defmodule Dobar.Dialog.Topic do
   """
   def capabilities(pid), do: GenServer.call pid, :get_capabilities
 
-  # callbacks
-  # ---------
-
   def init(%Intent{} = intent) do
     capabilities =
       available_capabilities(intent)
@@ -123,13 +120,15 @@ defmodule Dobar.Dialog.Topic do
   def handle_call({:react, nil}, _from, state) do
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
-        %Reaction{type: :question,
-                  intent: state.intent,
-                  features: Capability.outcome(capability.pid)}
+        {:question, Capability.outcome(capability.pid)}
+        # %Reaction{type: :question,
+        #           intent: state.intent,
+        #           features: Capability.outcome(capability.pid)}
       {:completed, capabilities} ->
-        %Reaction{type: :completed,
-                  intent: state.intent,
-                  features: capabilities}
+        {:completed, capabilities}
+        # %Reaction{type: :completed,
+        #           intent: state.intent,
+        #           features: capabilities}
     end
 
     {:reply, answer, state}
@@ -147,13 +146,15 @@ defmodule Dobar.Dialog.Topic do
 
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
-        %Reaction{type: :question,
-                  intent: state.intent,
-                  features: Capability.outcome(capability.pid)}
+        {:question, Capability.outcome(capability.pid)}
+        # %Reaction{type: :question,
+        #           intent: state.intent,
+        #           features: Capability.outcome(capability.pid)}
       {:completed, capabilities} ->
-        %Reaction{type: :completed,
-                  intent: state.intent,
-                  features: capabilities}
+        {:completed, capabilities}
+        # %Reaction{type: :completed,
+        #           intent: state.intent,
+        #           features: capabilities}
     end
 
     {:reply, answer, state}
@@ -169,17 +170,20 @@ defmodule Dobar.Dialog.Topic do
 
     answer = case topic_status do
       {:ok, capability} ->
-        %Reaction{type: :question,
-                  intent: state.intent,
-                  features: Capability.outcome(capability.pid)}
+        {:question, Capability.outcome(capability.pid)}
+        # %Reaction{type: :question,
+        #           intent: state.intent,
+        #           features: Capability.outcome(capability.pid)}
       {:completed, topics} ->
-        %Reaction{type: :completed,
-                  intent: state.intent,
-                  features: topics}
-      {:nomatch, reason} ->
-        %Reaction{type: :nomatch,
-                  intent: state.intent,
-                  features: %{reason: reason}}
+        {:completed, state.intent, topics}
+        # %Reaction{type: :completed,
+        #           intent: state.intent,
+        #           features: topics}
+      {:nomatch, _reason} ->
+        {:nomatch, state.intent}
+        # %Reaction{type: :nomatch,
+        #           intent: state.intent,
+        #           features: %{reason: reason}}
     end
 
     {:reply, answer, state}
@@ -188,11 +192,7 @@ defmodule Dobar.Dialog.Topic do
     {:reply, state.intent, state}
   end
   def handle_call(:get_capabilities, _from, state) do
-    capabilities =
-      state.capabilities
-      |> Enum.map(&(Capability.structure &1.pid))
-      |> Enum.map(&(elem &1, 1))
-    {:reply, capabilities, state}
+    {:reply, topic_features(state.capabilities), state}
   end
 
   # private
@@ -225,10 +225,7 @@ defmodule Dobar.Dialog.Topic do
   defp next_capability(capabilities) do
     case capabilities |> incompleted_topics |> List.first do
       nil ->
-        completed = capabilities
-        |> Enum.map(&(Capability.structure &1.pid))
-        |> Enum.map(&(elem &1, 1))
-        {:completed, completed}
+        {:completed, topic_features(capabilities)}
       capability ->
         {:ok, capability}
     end
@@ -251,9 +248,13 @@ defmodule Dobar.Dialog.Topic do
   end
 
   defp build_state([], intent) do
-    {:stop, {"cannot start topic without capabilities", intent}}
+    {:stop, :empty_topic_capabilities}
   end
   defp build_state([h|t] = capabilities, intent) do
     {:ok, %{intent: intent, capabilities: capabilities}}
+  end
+
+  defp topic_features(capabilities) do
+    capabilities |> Enum.map(&(Capability.structure &1.pid)) |> Enum.map(&(elem &1, 1))
   end
 end

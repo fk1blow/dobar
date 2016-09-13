@@ -21,18 +21,18 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     {:ok, topic} = Topic.start_link(intent, matches)
 
     case Topic.react(topic) do
-      %Reaction{type: :question} = reaction ->
-        IO.puts "reaction type: #{inspect reaction.type}"
-        IO.puts "reaction features: #{inspect reaction.features}"
-        IO.puts "________________________________________________"
-        {:topic_output, {reaction, %{topic: topic}}}
+      # %Reaction{type: :question} = reaction ->
+      {:question, question} ->
+        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
+        {:topic_output, %{topic: topic}}
 
-      %Reaction{type: :completed} = reaction ->
-        IO.puts "reaction type: #{inspect reaction.type}"
-        IO.puts "reaction features: #{inspect reaction.features}"
+      # %Reaction{type: :completed} = reaction ->
+      {:completed, features} ->
+        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
         unless root_dialog?(self) do
           GenServer.cast(state.parent,
-            {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
+            # {:meta, %Meta{reaction: reaction, passthrough: state.passthrough}})
+            {:meta, %Dobar.Model.Meta{intent: intent, passthrough: state.passthrough}})
         end
         {:topic_end, :completed}
     end

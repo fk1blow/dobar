@@ -119,7 +119,8 @@ defmodule Dobar.Dialog.Capability do
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
     question = "please provide a value for: #{inspect state.capability.entity}"
-    {:reply, %{question: question}, state}
+    # {:reply, %{question: question}, state}
+    {:reply, question, state}
   end
 
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
