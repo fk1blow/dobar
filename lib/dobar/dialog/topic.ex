@@ -112,8 +112,6 @@ defmodule Dobar.Dialog.Topic do
       |> build_state(intent)
   end
   def init([intent: %Intent{} = intent, capabilities: capabilities] = args) do
-    IO.puts "topic start_link capabilities: #{inspect capabilities}"
-
     capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
@@ -181,9 +179,8 @@ defmodule Dobar.Dialog.Topic do
       state.capabilities
       |> Enum.map(&(Capability.structure(&1.pid)))
       |> List.foldl(%{}, fn item, acc ->
-        Map.put(acc, item.name, %{entity: item.entity, value: item.value})
+        Map.put(acc, item.name, %{entity: item.entity, value: item.value, capability: item.capability})
       end)
-      # |> Enum.map(&(elem &1, 1))
     {:reply, capabilities, state}
   end
 

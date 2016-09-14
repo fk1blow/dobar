@@ -150,8 +150,11 @@ defmodule Dobar.Dialog.Capability do
   end
 
   def handle_call(:structure, _from, state) do
-    # {:reply, {:ok, {state.name, state.capability, state.value}}, state}
-    {:reply, %{name: state.name, entity: state.pseudo, value: state.value}, state}
+    answer = %{name: state.name,
+               entity: state.pseudo,
+               capability: state.capability,
+               value: state.value}
+    {:reply, answer, state}
   end
 
   # private

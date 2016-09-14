@@ -148,7 +148,7 @@ defmodule Dobar.Dialog.Species do
 
               {:samealternative, intention_name} ->
                 GenEvent.notify(Dobar.DialogEvents,
-                  %Reaction{about: :no_alternative_found, data: %{intent: intent}})
+                  %Reaction{about: :same_alternative_found, data: %{intent: intent}})
                 {:topic_nomatch, intention_name}
             end
         end
@@ -200,8 +200,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent: %{name: "change_field"}} = meta, state) do
-        IO.puts "---------change_field"
-
         case meta.features do
           %{approve: %{entity: :confirm}} ->
             intent = %Intent{name: "purge_change_fields",
@@ -226,8 +224,8 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_meta(%Meta{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        IO.puts "purge_change_fields: #{inspect meta}"
+      def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
+        IO.puts "----purge_change_fields: #{inspect meta}"
 
         case Topic.react(state.topic, carrier_bearer(meta.features)) do
           {:question, question} ->
@@ -335,7 +333,7 @@ defmodule Dobar.Dialog.Species do
         # extract the capabilities of the current topic
         topic_capabilities = intention[topic_intent_name][capability_name]
 
-        # tl;dr it searches first inside the current topic's capabilities and if
+        # it searches first inside the current topic's capabilities and if
         # nothing found, search for an alternative in the global registery.
         #
         # if there's a list expressed in the `topic_capabilities`, it means the topic's
@@ -384,6 +382,7 @@ defmodule Dobar.Dialog.Species do
         {:noalternative, intention_name}
       end
 
+      # tests whether the input intent is the same as the current intent
       defp validate_inception({:alternative, intention_name}, input_intent) do
         cond do
           intention_name == String.to_existing_atom(input_intent.name) ->
@@ -394,46 +393,18 @@ defmodule Dobar.Dialog.Species do
       end
       defp validate_inception(current, _input_intent), do: current
 
-      # Function used when trying to compare between the capabilities of
-      # a dialog specie and the received intent entities.
-      # It first intersects the entities with the capabilities and after that
-      # it tries to check if the intersection is a subset of the entities
-      # Note that this function will/should be mostly used for change/purge fields.
-      defp compare_capabilities(capabilities, entities) do
-        capabilities =
-          capabilities
-          |> Enum.map(&(elem(&1, 1).entity))
-          |> List.flatten
-          |> MapSet.new
-
-        entities =
-          entities
-          |> Enum.map(&(String.to_atom &1.value))
-          |> MapSet.new
-
-        intersection = MapSet.intersection entities, capabilities
-
-        case MapSet.subset?(intersection, entities) do
-          true -> {:ok, entities}
-          false -> {:error, "entities provided not a subset of the capabilities"}
-        end
-      end
-
-      defp entities_matches([h|t] = entity, capabilities) do
-        MapSet.new(entity) |> MapSet.intersection(capabilities) |> MapSet.size > 0
-      end
-      defp entities_matches(entity, capabilities) do
-        Enum.any?(capabilities, fn x -> x == entity end)
-      end
-
       defp carrier_bearer(features) do
-        entities = features
-        |> List.foldl(%{}, fn feature, acc ->
-          field_name = elem(feature, 1).entity
-          entity = [%{confidence: 1, type: "value", value: elem(feature, 2)}]
-          field_map = Map.put(%{}, field_name, entity)
-          Map.merge(acc, field_map)
-        end)
+        entities =
+          features
+          |> Map.keys
+          |> Enum.map(fn x ->
+            field_name = Map.get(features, x).entity
+            {field_name, %{confidence: 1, type: "value", value: Map.get(features, x).value}}
+          end)
+          |> List.foldl(%{}, fn x, acc ->
+            field_map = Map.put(%{}, elem(x, 0), [elem(x, 1)])
+            Map.merge(acc, field_map)
+          end)
 
         %Intent{name: "carrier_bearer", entities: entities}
       end

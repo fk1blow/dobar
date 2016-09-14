@@ -42,7 +42,6 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "evaluate dialog for intent: #{intent.name}, confidence: #{intent.confidence}"
     case Process.whereis(:root_dialog) do
       nil ->
-        IO.puts "______________________________________________"
         dialog = Dobar.Dialog.Species.Routes.specie intent.name
         Logger.info "will evaluate dialog: #{inspect dialog}"
         {:ok, pid} = dialog.start_link(:root_dialog)
