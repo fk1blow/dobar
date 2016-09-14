@@ -14,9 +14,9 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
   def handle_intent(intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
     GenEvent.notify(
       Dobar.DialogEvents,
-      %ErrorReaction{about: :meta_as_root,
-                     text: "cannot start a dialog with a 'change field' command",
-                     input_intent: intent})
+      %Reaction{about: :meta_as_root,
+                text: "cannot start a dialog with a 'change field' command",
+                data: %{intent: intent}})
     {:error, :meta_as_root}
   end
 

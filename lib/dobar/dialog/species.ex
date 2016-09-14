@@ -4,15 +4,7 @@ defmodule Dobar.Dialog.Species do
       use GenServer
 
       alias Dobar.Reaction, as: Reaction
-      # alias Dobar.Reaction.Topic, as: Reaction
-      alias Dobar.Reaction.Text, as: TextReaction
-      alias Dobar.Reaction.Need, as: NeedReaction
-      alias Dobar.Reaction.Error, as: ErrorReaction
-      alias Dobar.Reaction.Logging, as: LoggingReaction
-      alias Dobar.Reaction.Passthrough, as: PassthroughReaction
-
       alias Dobar.Model.Intent
-      alias Dobar.Model.Meta
       alias Dobar.Dialog.Topic
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
@@ -43,7 +35,7 @@ defmodule Dobar.Dialog.Species do
         case IntentionProvider.intention(String.to_atom intent.name) do
           {:error, reason} ->
             GenEvent.notify(Dobar.DialogEvents,
-              %ErrorReaction{about: :undefined_intention, input_intent: intent})
+              %Reaction{about: :undefined_intention, data: %{intent: intent}})
             {:error, :no_intention}
 
           {:ok, intention} ->
@@ -80,7 +72,7 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
         GenEvent.notify(Dobar.DialogEvents,
-          %LoggingReaction{about: :continue_topic, data: %{topic: topic, intent: intent}})
+          %Reaction{about: :continue_topic, data: %{topic: topic, intent: intent}})
 
         case Topic.react(topic, intent) do
           {:question, question} ->
@@ -118,11 +110,10 @@ defmodule Dobar.Dialog.Species do
                 Process.flag(:trap_exit, true)
 
                 GenEvent.notify(Dobar.DialogEvents,
-                  %LoggingReaction{about: :alternative_reference_found, data: {intent}})
+                  %Reaction{about: :alternative_reference_found, data: %{intent: intent}})
 
                 dialog = Dobar.Dialog.Species.Routes.specie intention_name
-                GenEvent.notify(Dobar.DialogEvents,
-                  %LoggingReaction{about: :dialog_reference_found, data: {dialog}})
+
                 {:ok, pid} = dialog.start_link([parent: self, name: intention_name])
                 dialog.evaluate(pid, intent)
 
@@ -132,7 +123,7 @@ defmodule Dobar.Dialog.Species do
                 Process.flag(:trap_exit, true)
 
                 GenEvent.notify(Dobar.DialogEvents,
-                  %LoggingReaction{about: :alternative_meta_found, data: {intent}})
+                  %Reaction{about: :alternative_meta_found, data: %{intent: intent}})
 
                 switch_intent = %Intent{name: "switch_conversation",
                                         confidence: 1,

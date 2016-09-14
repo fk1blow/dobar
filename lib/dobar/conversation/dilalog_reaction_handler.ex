@@ -65,17 +65,17 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%LoggingReaction{about: :alternative_reference_found} = reaction, _) do
-    Logger.info "alternative_reference_found"
+  def handle_event(%Reaction{about: :alternative_reference_found} = reaction, _) do
+    Logger.info "alternative reference dialog found for intent: #{inspect reaction.data.intent}"
     {:ok, nil}
   end
 
-  def handle_event(%LoggingReaction{about: :alternative_meta_found} = reaction, _) do
-    Logger.info "alternative_meta_found"
+  def handle_event(%Reaction{about: :alternative_meta_found} = reaction, _) do
+    Logger.info "alternative dialog found for intent: #{inspect reaction.data.intent}"
     {:ok, nil}
   end
 
-  def handle_event(%LoggingReaction{about: :continue_topic} = reaction, _) do
+  def handle_event(%Reaction{about: :continue_topic} = reaction, _) do
     Logger.info "continue topic with intent: #{inspect reaction.data.intent}"
     {:ok, nil}
   end
@@ -93,11 +93,11 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  # def handle_event(%Reaction{about: :undefined_intention} = error, _state) do
-  #   Logger.info "errorreaction - undefined intention has been evaluated"
-  #   Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
-  #   {:ok, nil}
-  # end
+  def handle_event(%Reaction{about: :undefined_intention} = error, _state) do
+    Logger.info "undefined intention has been evaluated"
+    Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
+    {:ok, nil}
+  end
 
   def handle_event(%ErrorReaction{about: :meta_as_root} = error, _state) do
     Logger.info "errorreaction - cannot start a dialog with a meta intention"

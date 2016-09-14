@@ -4,9 +4,9 @@ defmodule Dobar.Dialog.CancelCommandDialog do
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
     GenEvent.notify(
       Dobar.DialogEvents,
-      %ErrorReaction{about: :meta_as_root,
-                     text: "cannot start a dialog with a 'cancel' command",
-                     input_intent: intent})
+      %Reaction{about: :meta_as_root,
+                text: "cannot start a dialog with a 'cancel' command",
+                data: %{intent: intent}})
     {:error, :meta_as_root}
   end
 
