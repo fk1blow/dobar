@@ -3,7 +3,7 @@ defmodule Dobar.Dialog.Species do
     quote do
       use GenServer
 
-      alias Dobar.Reaction, as: Reaction
+      alias Dobar.Reaction
       alias Dobar.Model.Intent
       alias Dobar.Dialog.Topic
       alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
@@ -46,7 +46,7 @@ defmodule Dobar.Dialog.Species do
 
             {:ok, topic} = Topic.start_link intent
 
-            case Topic.react(topic) do
+            case Topic.forward(topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{topic: topic}}
@@ -69,35 +69,35 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
+      def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
         GenEvent.notify(Dobar.DialogEvents,
-          %Reaction{about: :continue_topic, data: %{topic: topic, intent: intent}})
+          %Reaction{about: :continue_topic, data: %{intent: intent}})
 
-        case Topic.react(topic, intent) do
+        case Topic.forward(state.topic, intent) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, nil}
 
           {:completed, features} ->
-            intent = Topic.intent(topic)
-
+            topic_intent = Topic.intent(state.topic)
             if root_dialog?(self) do
               GenEvent.notify(DialogEvents,
                 %Reaction{about: :completed,
                           text: "dialog completed!",
-                          data: %{intent: intent, features: features}})
+                          data: %{intent: topic_intent, features: features}})
             end
-
             if meta_dialog?(self) do
+              IO.puts "inside the meta: #{inspect state.name}"
               GenServer.cast(state.parent,
-                {:meta, %{intent: intent,
+                {:meta, %{intent: topic_intent,
                           features: features,
                           passthrough: state.passthrough}})
             end
             {:topic_end, :completed}
 
           {:nomatch, topic_intent} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :intent_no_match, data: {topic}})
+            GenEvent.notify(DialogEvents,
+              %Reaction{about: :intent_no_match, data: {state.topic}})
 
             alternative =
               intent.name
@@ -155,12 +155,18 @@ defmodule Dobar.Dialog.Species do
       def handle_meta(%{intent: %{name: "cancel_command"}} = meta, state) do
         case meta.features do
           %{approve: %{entity: :confirm}} ->
-            if meta_dialog?(self) do
-              GenServer.cast(state.parent, {:meta, :canceled})
-            end
+            if meta_dialog?(self),
+              do: GenServer.cast(state.parent, {:meta, :canceled})
+
+            if root_dialog?(self),
+              do: GenEvent.notify(DialogEvents,
+                    %Reaction{about: :completed,
+                              text: "dialog completed!",
+                              data: %{intent: meta.intent, features: meta.features}})
             {:topic_end, :completed}
+
           %{approve: %{entity: :infirm}} ->
-            case Topic.react(state.topic) do
+            case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
@@ -184,7 +190,7 @@ defmodule Dobar.Dialog.Species do
             {:topic_end, :completed}
 
           %{approve: %{entity: :infirm}} ->
-            case Topic.react(state.topic) do
+            case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
@@ -213,7 +219,7 @@ defmodule Dobar.Dialog.Species do
             {:topic_output, %{meta: pid}}
 
           %{approve: %{entity: :infirm}} ->
-            case Topic.react(state.topic) do
+            case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
@@ -225,7 +231,7 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        case Topic.react(state.topic, carrier_bearer(meta.features)) do
+        case Topic.forward(state.topic, carrier_bearer(meta.features)) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}
@@ -236,7 +242,7 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(:canceled, state) do
-        case Topic.react(state.topic) do
+        case Topic.forward(state.topic) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}

@@ -10,15 +10,14 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   def handle_event(%Reaction{about: :question} = reaction, _) do
     Logger.info "text reaction - dialog question"
-    message = reaction.text
-    Dobar.Interface.output(:text, message)
+    Dobar.Interface.output(:text, reaction.text)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :completed, data: data} = reaction, _) do
-    Logger.info "text reaction - dialog completed"
-    features = data.features
-    Logger.info "completed features: #{inspect data.features}, and intent: #{inspect data.intent.name}"
+    Logger.info "dialog completed"
+    Logger.info "completed features: #{inspect data.features}"
+    Logger.info "completed intent: #{inspect data.intent}"
     Dobar.Interface.output(:text, reaction.text)
     {:ok, nil}
   end

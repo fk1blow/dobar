@@ -11,9 +11,9 @@ defmodule Dobar.Dialog.Topic do
   ## lifecycle
 
   Its lifecycle is modeled just by reacting to the Dialog
-  (calling `Topic.react/1` or `Topic.react/2`).
-  Reacting to no Intent(`Topic.react/1`), the Topic doesn't change its state.
-  Calling with an Intent using `Topic.react/2` function, it feeds the intent to
+  (calling `Topic.forward/1` or `Topic.forward/2`).
+  Reacting to no Intent(`Topic.forward/1`), the Topic doesn't change its state.
+  Calling with an Intent using `Topic.forward/2` function, it feeds the intent to
   all its capabilities, make them react in turn.
 
   Note that it should be protected of infinite topics that never end; it needs
@@ -23,14 +23,16 @@ defmodule Dobar.Dialog.Topic do
 
   `start_link/1`
 
-  `react/1`
+  `forward/1`
 
-  `react/2`
+  `forward/2`
+
+  `intent/0`
 
   ## Separation refactor
 
   By removing the `alternate/2` and `fill_topics` and replacing them with the generic
-  `react/1` or `react/2`, you get the benefit of consistency, better separation
+  `forward/1` or `forward/2`, you get the benefit of consistency, better separation
   and encapsulation.
 
   #### better separation
@@ -41,13 +43,13 @@ defmodule Dobar.Dialog.Topic do
   #### encapsulation
 
   You don't really (need to) know how the Topic does its job, other than a standard
-  generic contract - it reacts(using `react/1`, `react/2`) to the Dialog and to
+  generic contract - it reacts(using `forward/1`, `forward/2`) to the Dialog and to
   intentions, advancing in its state as it uses differrent capabilities and filling
   their needs for input(slots).
 
   ## topic reaction
 
-  The reaction of a topic(calling `Topic.react/1` or `Topic.react/2`) is the
+  The reaction of a topic(calling `Topic.forward/1` or `Topic.forward/2`) is the
   side-effect that the topic is expressing. It modified its internal state and
   always gives a reaction when invoked.
 
@@ -58,7 +60,6 @@ defmodule Dobar.Dialog.Topic do
 
   use GenServer
 
-  alias Dobar.Model.Topic.Reaction, as: Reaction
   alias Dobar.Model.Intent
   alias Dobar.Dialog.Capability
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
@@ -89,10 +90,10 @@ defmodule Dobar.Dialog.Topic do
 
   # TODO: rename to Topic.advance/1 and Topic.advance/2
 
-  def react(pid), do: GenServer.call pid, {:react, nil}
-  def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
+  def forward(pid), do: GenServer.call pid, {:forward, nil}
+  def forward(pid, %Intent{} = intent), do: GenServer.call pid, {:forward, intent}
   # TODO: find if this is really used
-  def react(pid, %{} = entities), do: GenServer.call pid, {:react, entities}
+  def forward(pid, %{} = entities), do: GenServer.call pid, {:forward, entities}
 
   @doc """
   Will return the Topic's current intent
@@ -118,7 +119,7 @@ defmodule Dobar.Dialog.Topic do
     |> build_state(intent)
   end
 
-  def handle_call({:react, nil}, _from, state) do
+  def handle_call({:forward, nil}, _from, state) do
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
@@ -129,7 +130,7 @@ defmodule Dobar.Dialog.Topic do
 
     {:reply, answer, state}
   end
-  def handle_call({:react, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
+  def handle_call({:forward, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
     # ones and completes them by calling `Capability.complete/2`
@@ -150,7 +151,7 @@ defmodule Dobar.Dialog.Topic do
 
     {:reply, answer, state}
   end
-  def handle_call({:react, %Intent{} = intent}, _from, state) do
+  def handle_call({:forward, %Intent{} = intent}, _from, state) do
     # takes the next capability, tests it for compability match and if compatible,
     # completes it with the intent and asks for the next capability of the topic
     topic_status =

@@ -32,7 +32,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     intent = %Intent{name: "purge_change_fields", confidence: 1}
     {:ok, topic} = Topic.start_link(intent, matches)
 
-    case Topic.react(topic) do
+    case Topic.forward(topic) do
       {:question, question} ->
         GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
         {:topic_output, %{topic: topic}}

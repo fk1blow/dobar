@@ -11,6 +11,8 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
 
   use Dobar.Dialog.Species
 
+  alias Dobar.Reaction
+
   def handle_intent(intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
     GenEvent.notify(
       Dobar.DialogEvents,
@@ -23,7 +25,7 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
   def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
     {:ok, topic} = Topic.start_link(intent)
 
-    case Topic.react(topic) do
+    case Topic.forward(topic) do
       # %Reaction{type: :question} = reaction ->
       {:question, question} ->
           GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
