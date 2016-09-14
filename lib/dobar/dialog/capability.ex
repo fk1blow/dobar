@@ -104,7 +104,7 @@ defmodule Dobar.Dialog.Capability do
     {:ok, %{name: elem(capability, 0),
             capability: elem(capability, 1),
             value: prefill_value(args[:prefill], elem(capability, 1)),
-            created_on: nil}}
+            pseudo: elem(capability, 1)}}
   end
 
   def handle_call(:is_completed, _from, state) do
@@ -119,12 +119,12 @@ defmodule Dobar.Dialog.Capability do
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
     question = "please provide a value for: #{inspect state.capability.entity}"
-    # {:reply, %{question: question}, state}
     {:reply, question, state}
   end
 
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
     capability_entities = state.capability.entity
+
     match = case match_entity(capability_entities, intent) do
       nil   -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
@@ -134,6 +134,7 @@ defmodule Dobar.Dialog.Capability do
 
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
+
     capability_value = case match_entity(capability_entities, intent) do
       nil   -> nil
       [h|t] -> h.value
@@ -143,12 +144,15 @@ defmodule Dobar.Dialog.Capability do
       %{entity: capability_slot_key(state.capability, intent)})
 
     new_state = Map.merge(state,
-      %{value: capability_value, capability: new_capability})
+      %{value: capability_value, pseudo: new_capability.entity})
+
     {:reply, {:ok, capability_value}, new_state}
   end
 
-  def handle_call(:structure, _from, state),
-    do: {:reply, {:ok, {state.name, state.capability, state.value}}, state}
+  def handle_call(:structure, _from, state) do
+    # {:reply, {:ok, {state.name, state.capability, state.value}}, state}
+    {:reply, %{name: state.name, entity: state.pseudo, value: state.value}, state}
+  end
 
   # private
   #

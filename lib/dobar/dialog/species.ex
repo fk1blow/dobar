@@ -34,7 +34,7 @@ defmodule Dobar.Dialog.Species do
       end
 
       def evaluate(pid, %Intent{} = intent) do
-        GenServer.cast pid, {:evaluate, intent}
+        GenServer.cast(pid, {:evaluate, intent})
       end
 
       # overridable delegates
@@ -48,23 +48,29 @@ defmodule Dobar.Dialog.Species do
 
           {:ok, intention} ->
             GenEvent.notify(Dobar.DialogEvents,
-              %LoggingReaction{about: :begin_topic, data: {intent}})
+              %Reaction{about: :begin_topic, data: %{intent: intent}})
 
             {:ok, topic} = Topic.start_link intent
 
             case Topic.react(topic) do
-              # %Reaction{type: :question} = reaction ->
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{topic: topic}}
 
-              # %Reaction{type: :completed} = reaction ->
+              # {:completed, intent, features} ->
               {:completed, features} ->
-                if root_dialog?(self) do
-                  GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
-                else
+                intent = Topic.intent(topic)
+
+                if meta_dialog?(self) do
                   GenServer.cast(state.parent,
-                    {:meta, %Meta{intent: intent, passthrough: state.passthrough}})
+                    {:meta, %{intent: intent,
+                              features: features,
+                              passthrough: state.passthrough}})
+                else
+                  GenEvent.notify(DialogEvents,
+                    %Reaction{about: :completed,
+                              text: "root dialog completed!",
+                              data: %{intent: intent, features: features}})
                 end
                 {:topic_end, :completed}
             end
@@ -72,29 +78,29 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_intent(%Intent{} = intent, %{topic: topic, meta: nil} = state) do
         GenEvent.notify(Dobar.DialogEvents,
-          %LoggingReaction{about: :continue_topic, data: {topic}})
+          %LoggingReaction{about: :continue_topic, data: %{topic: topic, intent: intent}})
 
         case Topic.react(topic, intent) do
-          # %Reaction{type: :question} = reaction ->
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, nil}
 
-          # %Reaction{type: :completed} = reaction ->
-          {:completed, intent, features} ->
+          {:completed, features} ->
+            intent = Topic.intent(topic)
+
             GenEvent.notify(DialogEvents,
               %Reaction{about: :completed,
-                        text: "ok",
+                        text: "dialog completed!",
                         data: %{intent: intent, features: features}})
 
             if meta_dialog?(self) do
-              GenServer.cast(state.parent,{:meta,
-                %Meta{features: features, intent: intent, passthrough: state.passthrough}})
+              GenServer.cast(state.parent,
+                {:meta, %{intent: intent,
+                          features: features,
+                          passthrough: state.passthrough}})
             end
-
             {:topic_end, :completed}
 
-          # %Reaction{type: :nomatch} = reaction ->
           {:nomatch, topic_intent} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :intent_no_match, data: {topic}})
 
@@ -122,16 +128,15 @@ defmodule Dobar.Dialog.Species do
                 GenEvent.notify(Dobar.DialogEvents,
                   %LoggingReaction{about: :alternative_meta_found, data: {intent}})
 
-                dialog = Dobar.Dialog.Species.Routes.specie(intention_name)
-                GenEvent.notify(Dobar.DialogEvents,
-                  %LoggingReaction{about: :dialog_meta_found, data: {dialog}})
-                {:ok, pid} = dialog.start_link([name: intention_name,
-                                                parent: self,
-                                                passthrough: intent])
-
                 switch_intent = %Intent{name: "switch_conversation",
                                         confidence: 1,
                                         input: "confirm your shit"}
+
+                dialog = Dobar.Dialog.Species.Routes.specie(intention_name)
+                {:ok, pid} = dialog.start_link([name: String.to_existing_atom(switch_intent.name),
+                                                parent: self,
+                                                passthrough: intent])
+
                 dialog.evaluate(pid, switch_intent)
 
                 {:topic_alternative, %{meta: pid}}
@@ -142,60 +147,46 @@ defmodule Dobar.Dialog.Species do
                 {:topic_nomatch, intention_name}
 
               {:samealternative, intention_name} ->
-                # GenEvent.notify(Dobar.DialogEvents,
-                #   %TextReaction{about: :no_alternative_found, topic_reaction: reaction})
+                GenEvent.notify(Dobar.DialogEvents,
+                  %Reaction{about: :no_alternative_found, data: %{intent: intent}})
                 {:topic_nomatch, intention_name}
             end
         end
       end
 
-      def handle_meta(%Meta{intent: %{name: "cancel_command"}} = meta, state) do
+      def handle_meta(%{intent: %{name: "cancel_command"}} = meta, state) do
         case meta.features do
-          [{:approve, %{entity: :confirm}, "yes"}] ->
-            # GenEvent.notify(Dobar.DialogEvents,
-            #   %LoggingReaction{about: :dialog_canceled, topic_reaction: meta.reaction})
-
+          %{approve: %{entity: :confirm}} ->
             if meta_dialog?(self) do
               GenServer.cast(state.parent, {:meta, :canceled})
             end
             {:topic_end, :completed}
-
-          [{:approve, %{entity: :infirm}, "no"}] ->
+          %{approve: %{entity: :infirm}} ->
             case Topic.react(state.topic) do
-              # %Reaction{type: :question} = reaction ->
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
-
-              # %Reaction{type: :completed} = reaction ->
               {:completed, features} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
             end
         end
       end
-      def handle_meta(%Meta{intent: %{name: "switch_conversation"}} = meta, state) do
+      def handle_meta(%{intent: %{name: "switch_conversation"}} = meta, state) do
         case meta.features do
-          [{:approve, %{entity: :confirm}, "yes"}] ->
-            if root_dialog?(self) do
-              GenEvent.notify(Dobar.DialogEvents,
-                %PassthroughReaction{about: :switch_conversation,
-                                     text: 'switch the conversation',
-                                     intent: meta.passthrough})
+          %{approve: %{entity: :confirm}} ->
+            if meta_dialog?(self) do
+              GenServer.cast(state.parent, {:meta, meta})
             else
-              GenServer.cast(state.parent, {:meta,
-                # %Meta{reaction: meta.reaction, passthrough: state.passthrough}})
-                %Meta{intent: meta.intent, passthrough: state.passthrough}})
+              GenEvent.notify(DialogEvents,
+                %Reaction{about: :switch_conversation, text: "switch the conversation"})
             end
             {:topic_end, :completed}
 
-          [{:approve, %{entity: :infirm}, "no"}] ->
+          %{approve: %{entity: :infirm}} ->
             case Topic.react(state.topic) do
-              # %Reaction{type: :question} = reaction ->
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
-                # GenEvent.notify(Dobar.DialogEvents,
-                #   %TextReaction{about: :question, topic_reaction: reaction})
                 {:topic_output, %{meta: nil}}
 
               # It could be a bug if this will ever match, because it should be
@@ -208,33 +199,22 @@ defmodule Dobar.Dialog.Species do
             end
         end
       end
-      def handle_meta(%Meta{intent: %{name: "change_field"}} = meta, state) do
+      def handle_meta(%{intent: %{name: "change_field"}} = meta, state) do
+        IO.puts "---------change_field"
+
         case meta.features do
-          [{:approve, %{entity: :confirm}, "yes"}] ->
-            # NOT USED ATM
-            # topic_capabilities = Topic.capabilities(state.topic)
-            # entities = reaction.intent.entities.field_type
-
-            # capabilities = case compare_capabilities(topic_capabilities, entities) do
-            #   {:ok, capabilities} -> capabilities
-            #   {:error, reason} -> raise "cannot match capabilities against intent entities"
-            # end
-
-            # matches = topic_capabilities
-            # |> Enum.filter(&(entities_matches(elem(&1, 1).entity, capabilities)))
-
+          %{approve: %{entity: :confirm}} ->
             intent = %Intent{name: "purge_change_fields",
                              entities: meta.intent.entities,
                              confidence: 1}
 
-            dialog = Dobar.Dialog.Species.Routes.specie intent.name
+            dialog = Dobar.Dialog.Species.Routes.specie(intent.name)
             {:ok, pid} = dialog.start_link([name: intent.name, parent: self])
             dialog.evaluate(pid, intent)
 
-            IO.puts "________here be removed %Reaction from :topic_output"
-            {:topic_output, {%Reaction{}, %{meta: pid}}}
+            {:topic_output, %{meta: pid}}
 
-          [{:approve, %{entity: :infirm}, "no"}] ->
+          %{approve: %{entity: :infirm}} ->
             case Topic.react(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -247,6 +227,8 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%Meta{intent:  %{name: "purge_change_fields"}} = meta, state) do
+        IO.puts "purge_change_fields: #{inspect meta}"
+
         case Topic.react(state.topic, carrier_bearer(meta.features)) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -318,10 +300,10 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
         # the dialog has a meta chain so proxy the call until the last meta-dialog
-        GenServer.cast meta, {:evaluate, intent}
+        GenServer.cast(meta, {:evaluate, intent})
         {:noreply, state}
       end
-      def handle_cast({:meta, %Meta{} = meta}, state) do
+      def handle_cast({:meta, %{} = meta}, state) do
         case handle_meta(meta, state) do
           {:topic_output, some_state} ->
             {:noreply, Map.merge(state, some_state)}
@@ -412,20 +394,25 @@ defmodule Dobar.Dialog.Species do
       end
       defp validate_inception(current, _input_intent), do: current
 
+      # Function used when trying to compare between the capabilities of
+      # a dialog specie and the received intent entities.
+      # It first intersects the entities with the capabilities and after that
+      # it tries to check if the intersection is a subset of the entities
+      # Note that this function will/should be mostly used for change/purge fields.
       defp compare_capabilities(capabilities, entities) do
-        capabilities = capabilities
-        |> Enum.map(&(elem(&1, 1).entity))
-        |> List.flatten
-        |> MapSet.new
+        capabilities =
+          capabilities
+          |> Enum.map(&(elem(&1, 1).entity))
+          |> List.flatten
+          |> MapSet.new
 
-        entities = entities
-        |> Enum.map(&(String.to_atom &1.value))
-        |> MapSet.new
+        entities =
+          entities
+          |> Enum.map(&(String.to_atom &1.value))
+          |> MapSet.new
 
         intersection = MapSet.intersection entities, capabilities
 
-        # send the compared entities for the case when you start to notify
-        # the user that he didn't pick all the right fields to "change"
         case MapSet.subset?(intersection, entities) do
           true -> {:ok, entities}
           false -> {:error, "entities provided not a subset of the capabilities"}

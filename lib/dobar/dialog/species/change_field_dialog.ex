@@ -25,12 +25,12 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
 
     case Topic.react(topic) do
       # %Reaction{type: :question} = reaction ->
-        {:question, question} ->
+      {:question, question} ->
           GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
         {:topic_output, %{topic: topic}}
 
       # %Reaction{type: :completed} = reaction ->
-      {:completed, features} ->
+      {:completed, intent, features} ->
         GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
         # GenEvent.notify(Dobar.DialogEvents, %TextReaction{
         #   about: :completed, text: "ok", topic_reaction: reaction})

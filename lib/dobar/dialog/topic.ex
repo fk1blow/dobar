@@ -91,6 +91,7 @@ defmodule Dobar.Dialog.Topic do
 
   def react(pid), do: GenServer.call pid, {:react, nil}
   def react(pid, %Intent{} = intent), do: GenServer.call pid, {:react, intent}
+  # TODO: find if this is really used
   def react(pid, %{} = entities), do: GenServer.call pid, {:react, entities}
 
   @doc """
@@ -110,7 +111,9 @@ defmodule Dobar.Dialog.Topic do
       |> Enum.map(&(create_capability(&1, intent)))
       |> build_state(intent)
   end
-  def init([intent: %Intent{} = intent, capabilities: capabilities]) do
+  def init([intent: %Intent{} = intent, capabilities: capabilities] = args) do
+    IO.puts "topic start_link capabilities: #{inspect capabilities}"
+
     capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
@@ -121,14 +124,9 @@ defmodule Dobar.Dialog.Topic do
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
-        # %Reaction{type: :question,
-        #           intent: state.intent,
-        #           features: Capability.outcome(capability.pid)}
-      {:completed, capabilities} ->
-        {:completed, capabilities}
-        # %Reaction{type: :completed,
-        #           intent: state.intent,
-        #           features: capabilities}
+      {:completed, topics} ->
+        # {:completed, state.intent, topics}
+        {:completed, topics}
     end
 
     {:reply, answer, state}
@@ -136,7 +134,7 @@ defmodule Dobar.Dialog.Topic do
   def handle_call({:react, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
-    # ones and compleste them
+    # ones and completes them by calling `Capability.complete/2`
     state.capabilities
     |> Stream.map(&(%{cpid: &1.pid, compat: Capability.compatibility(&1.pid, intent)}))
     |> Stream.filter(&(elem(&1.compat, 1) != :input))
@@ -147,14 +145,9 @@ defmodule Dobar.Dialog.Topic do
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
-        # %Reaction{type: :question,
-        #           intent: state.intent,
-        #           features: Capability.outcome(capability.pid)}
-      {:completed, capabilities} ->
-        {:completed, capabilities}
-        # %Reaction{type: :completed,
-        #           intent: state.intent,
-        #           features: capabilities}
+      {:completed, topics} ->
+        # {:completed, state.intent, topics}
+        {:completed, topics}
     end
 
     {:reply, answer, state}
@@ -171,19 +164,11 @@ defmodule Dobar.Dialog.Topic do
     answer = case topic_status do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
-        # %Reaction{type: :question,
-        #           intent: state.intent,
-        #           features: Capability.outcome(capability.pid)}
       {:completed, topics} ->
-        {:completed, state.intent, topics}
-        # %Reaction{type: :completed,
-        #           intent: state.intent,
-        #           features: topics}
+        # {:completed, state.intent, topics}
+        {:completed, topics}
       {:nomatch, _reason} ->
         {:nomatch, state.intent}
-        # %Reaction{type: :nomatch,
-        #           intent: state.intent,
-        #           features: %{reason: reason}}
     end
 
     {:reply, answer, state}
@@ -192,7 +177,14 @@ defmodule Dobar.Dialog.Topic do
     {:reply, state.intent, state}
   end
   def handle_call(:get_capabilities, _from, state) do
-    {:reply, topic_features(state.capabilities), state}
+    capabilities =
+      state.capabilities
+      |> Enum.map(&(Capability.structure(&1.pid)))
+      |> List.foldl(%{}, fn item, acc ->
+        Map.put(acc, item.name, %{entity: item.entity, value: item.value})
+      end)
+      # |> Enum.map(&(elem &1, 1))
+    {:reply, capabilities, state}
   end
 
   # private
@@ -225,7 +217,13 @@ defmodule Dobar.Dialog.Topic do
   defp next_capability(capabilities) do
     case capabilities |> incompleted_topics |> List.first do
       nil ->
-        {:completed, topic_features(capabilities)}
+        capabilities = capabilities
+        |> Enum.map(&(Capability.structure(&1.pid)))
+        |> List.foldl(%{}, fn item, acc ->
+          Map.put(acc, item.name, %{entity: item.entity, value: item.value})
+        end)
+        # |> Enum.map(&(elem &1, 1))
+        {:completed, capabilities}
       capability ->
         {:ok, capability}
     end
@@ -252,9 +250,5 @@ defmodule Dobar.Dialog.Topic do
   end
   defp build_state([h|t] = capabilities, intent) do
     {:ok, %{intent: intent, capabilities: capabilities}}
-  end
-
-  defp topic_features(capabilities) do
-    capabilities |> Enum.map(&(Capability.structure &1.pid)) |> Enum.map(&(elem &1, 1))
   end
 end

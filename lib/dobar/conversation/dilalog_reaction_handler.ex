@@ -25,14 +25,15 @@ defmodule Dobar.Conversation.ReactionHandler do
   def handle_event(%Reaction{about: :completed, data: data} = reaction, _) do
     Logger.info "text reaction - dialog completed"
     features = data.features
-    case features do
-      [h|t] ->
-        Logger.info "completed reaction data: #{inspect data.features}, and intent: #{inspect data.intent}"
+    # case features do
+    #   [h|t] ->
+        # Logger.info "completed reaction data: #{inspect data.features}, and intent: #{inspect data.intent}"
+        Logger.info "completed features: #{inspect data.features}, and intent: #{inspect data.intent.name}"
         Dobar.Interface.output(:text, reaction.text)
       # shouldn't this be a {:statement, statement} instead of :question?
-      %{question: question} ->
-        Dobar.Interface.output :text, question
-    end
+      # %{question: question} ->
+      #   Dobar.Interface.output :text, question
+    # end
     {:ok, nil}
   end
 
@@ -41,6 +42,7 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "evaluate dialog for intent: #{intent.name}, confidence: #{intent.confidence}"
     case Process.whereis(:root_dialog) do
       nil ->
+        IO.puts "______________________________________________"
         dialog = Dobar.Dialog.Species.Routes.specie intent.name
         Logger.info "will evaluate dialog: #{inspect dialog}"
         {:ok, pid} = dialog.start_link(:root_dialog)
@@ -65,8 +67,13 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
+  def handle_event(%Reaction{about: :begin_topic} = reaction, _) do
+    Logger.info "begin topic with intent: #{inspect reaction.data.intent}"
+    {:ok, nil}
+  end
+
   def handle_event(%LoggingReaction{about: :alternative_reference_found} = reaction, _) do
-    IO.puts "alternative_reference_found"
+    Logger.info "alternative_reference_found"
     {:ok, nil}
   end
 
@@ -76,7 +83,7 @@ defmodule Dobar.Conversation.ReactionHandler do
   end
 
   def handle_event(%LoggingReaction{about: :continue_topic} = reaction, _) do
-    Logger.info "continue topic"
+    Logger.info "continue topic with intent: #{inspect reaction.data.intent}"
     {:ok, nil}
   end
 

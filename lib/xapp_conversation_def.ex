@@ -26,7 +26,7 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
-  intention :create_alarmx do
+  intention :create_alarm do
     topic :time, prio: 1, entity: "datetime"
     topic :cancel_command, reference: :cancel_command
   end
@@ -38,7 +38,7 @@ defmodule Dobar.Xapp.Definition do
   end
 
   intention :send_message do
-    topic :message_app, prio: 1, entity: [:application, :app, :app_name]
+    # topic :message_app, prio: 1, entity: [:application, :app, :app_name]
     topic :message_recipient, prio: 2, entity: [:contact, :receiver, :recipient]
     topic :message_body, prio: 3, entity: :input
     topic :approve, prio: 4, entity: [:confirm, :infirm]
