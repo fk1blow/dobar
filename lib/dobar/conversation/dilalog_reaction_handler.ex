@@ -25,19 +25,13 @@ defmodule Dobar.Conversation.ReactionHandler do
   def handle_event(%Reaction{about: :completed, data: data} = reaction, _) do
     Logger.info "text reaction - dialog completed"
     features = data.features
-    # case features do
-    #   [h|t] ->
-        # Logger.info "completed reaction data: #{inspect data.features}, and intent: #{inspect data.intent}"
-        Logger.info "completed features: #{inspect data.features}, and intent: #{inspect data.intent.name}"
-        Dobar.Interface.output(:text, reaction.text)
-      # shouldn't this be a {:statement, statement} instead of :question?
-      # %{question: question} ->
-      #   Dobar.Interface.output :text, question
-    # end
+    Logger.info "completed features: #{inspect data.features}, and intent: #{inspect data.intent.name}"
+    Dobar.Interface.output(:text, reaction.text)
     {:ok, nil}
   end
 
-  def handle_event(%PassthroughReaction{about: :switch_conversation, intent: intent} = reaction, _) do
+  def handle_event(%Reaction{about: :switch_conversation} = reaction, _) do
+    intent = reaction.data.passthrough
     Logger.info "passthroughreaction - switch conversation"
     Logger.info "evaluate dialog for intent: #{intent.name}, confidence: #{intent.confidence}"
     case Process.whereis(:root_dialog) do

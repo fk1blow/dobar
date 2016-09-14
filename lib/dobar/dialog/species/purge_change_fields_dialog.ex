@@ -1,6 +1,8 @@
 defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   use Dobar.Dialog.Species
 
+  # this basically tries to match the incoming fields the user wants to change,
+  # agains the fields of the parent dialog(the actual target).
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
     Process.flag(:trap_exit, true)
 

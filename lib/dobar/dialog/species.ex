@@ -50,6 +50,8 @@ defmodule Dobar.Dialog.Species do
             GenEvent.notify(Dobar.DialogEvents,
               %Reaction{about: :begin_topic, data: %{intent: intent}})
 
+            Process.flag(:trap_exit, true)
+
             {:ok, topic} = Topic.start_link intent
 
             case Topic.react(topic) do
@@ -113,6 +115,8 @@ defmodule Dobar.Dialog.Species do
 
             case alternative do
               {:reference, intention_name} ->
+                Process.flag(:trap_exit, true)
+
                 GenEvent.notify(Dobar.DialogEvents,
                   %LoggingReaction{about: :alternative_reference_found, data: {intent}})
 
@@ -125,6 +129,8 @@ defmodule Dobar.Dialog.Species do
                 {:topic_alternative, %{meta: pid}}
 
               {:alternative, intention_name} ->
+                Process.flag(:trap_exit, true)
+
                 GenEvent.notify(Dobar.DialogEvents,
                   %LoggingReaction{about: :alternative_meta_found, data: {intent}})
 
@@ -179,7 +185,9 @@ defmodule Dobar.Dialog.Species do
               GenServer.cast(state.parent, {:meta, meta})
             else
               GenEvent.notify(DialogEvents,
-                %Reaction{about: :switch_conversation, text: "switch the conversation"})
+                %Reaction{about: :switch_conversation,
+                          text: "switch the conversation",
+                          data: %{passthrough: meta.passthrough}})
             end
             {:topic_end, :completed}
 
@@ -225,8 +233,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        IO.puts "----purge_change_fields: #{inspect meta}"
-
         case Topic.react(state.topic, carrier_bearer(meta.features)) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
