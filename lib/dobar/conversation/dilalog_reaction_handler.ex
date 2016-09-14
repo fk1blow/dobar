@@ -2,14 +2,7 @@ defmodule Dobar.Conversation.ReactionHandler do
   use GenEvent
   require Logger
 
-  alias Dobar.Reaction.Question, as: QuestionReaction
   alias Dobar.Reaction, as: Reaction
-
-  alias Dobar.Reaction.Text, as: TextReaction
-  alias Dobar.Reaction.Error, as: ErrorReaction
-  alias Dobar.Reaction.Need, as: NeedReaction
-  alias Dobar.Reaction.Passthrough, as: PassthroughReaction
-  alias Dobar.Reaction.Logging, as: LoggingReaction
   alias Dobar.Dialog.GenericDialog
 
   # events triggered for :dialog_events_manager, in response
@@ -47,8 +40,8 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%TextReaction{about: :no_alternative_found} = reaction, _) do
-    intent_name = reaction.topic_reaction.intent.name
+  def handle_event(%Reaction{about: :no_alternative_found} = reaction, _) do
+    intent_name = reaction.data.intent.name
     Logger.info "textreaction - no alternative found"
     Logger.info "current dialog intention: #{intent_name}"
     Dobar.Interface.output :text, "no alternative found for current intent #{inspect intent_name}"
@@ -80,13 +73,12 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%LoggingReaction{about: :dialog_canceled} = reaction, _) do
+  def handle_event(%Reaction{about: :dialog_canceled} = reaction, _) do
     Logger.info "loggingreaction - dialog canceled"
-    # Logger.info "cancelling dialog: #{reaction.topic_reaction.intent.name}"
     {:ok, nil}
   end
 
-  def handle_event(%ErrorReaction{about: :low_confidence_intent} = error, _) do
+  def handle_event(%Reaction{about: :low_confidence_intent} = error, _) do
     Logger.info "errorreaction - low confidence intent"
     Logger.info "i'm do not know how to interpret that input"
     Logger.info "intent: #{inspect error.input_intent.name}"
@@ -99,14 +91,9 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%ErrorReaction{about: :meta_as_root} = error, _state) do
+  def handle_event(%Reaction{about: :meta_as_root} = error, _state) do
     Logger.info "errorreaction - cannot start a dialog with a meta intention"
     Dobar.Interface.output :text, error.text
-    {:ok, nil}
-  end
-
-  def handle_event(%NeedReaction{} = reaction, _) do
-    Logger.info "DoBar needs something - add description of the need reaction"
     {:ok, nil}
   end
 

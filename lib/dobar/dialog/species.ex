@@ -51,7 +51,6 @@ defmodule Dobar.Dialog.Species do
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
                 {:topic_output, %{topic: topic}}
 
-              # {:completed, intent, features} ->
               {:completed, features} ->
                 intent = Topic.intent(topic)
 
@@ -82,10 +81,12 @@ defmodule Dobar.Dialog.Species do
           {:completed, features} ->
             intent = Topic.intent(topic)
 
-            GenEvent.notify(DialogEvents,
-              %Reaction{about: :completed,
-                        text: "dialog completed!",
-                        data: %{intent: intent, features: features}})
+            if root_dialog?(self) do
+              GenEvent.notify(DialogEvents,
+                %Reaction{about: :completed,
+                          text: "dialog completed!",
+                          data: %{intent: intent, features: features}})
+            end
 
             if meta_dialog?(self) do
               GenServer.cast(state.parent,
