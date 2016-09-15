@@ -1,4 +1,3 @@
-# TODO: must be renamed to InterfaceInputHandler
 defmodule Dobar.Conversation.TextInputHandler do
   use GenEvent
   require Logger

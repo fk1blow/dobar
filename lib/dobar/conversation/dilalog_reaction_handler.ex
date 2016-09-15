@@ -41,14 +41,9 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   def handle_event(%Reaction{about: :no_alternative_found} = reaction, _) do
     intent_name = reaction.data.intent.name
-    Logger.info "textreaction - no alternative found"
+    Logger.info "no alternative found"
     Logger.info "current dialog intention: #{intent_name}"
     Dobar.Interface.output :text, "no alternative found for current intent #{inspect intent_name}"
-    {:ok, nil}
-  end
-
-  def handle_event(%Reaction{about: :intent_no_match} = reaction, _) do
-    IO.puts "loggingreaction - intent no match; to be outputted to the interface"
     {:ok, nil}
   end
 

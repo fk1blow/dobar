@@ -103,7 +103,7 @@ defmodule Dobar.Dialog.Species do
               intent.name
               |> String.to_atom
               |> find_alternative(topic_intent)
-              |> validate_confidence(topic_intent)
+              |> validate_confidence(intent)
               |> validate_inception(topic_intent)
 
             case alternative do

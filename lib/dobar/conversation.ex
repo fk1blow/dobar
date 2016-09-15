@@ -22,8 +22,6 @@ defmodule Dobar.Conversation do
         {:ok, state}
       end
 
-      # Private
-
       defp start_children(definitions) do
         import Supervisor.Spec
         children = [
@@ -35,6 +33,7 @@ defmodule Dobar.Conversation do
       defp start_event_handlers do
         GenEvent.add_mon_handler(@input_events_manager, Dobar.Conversation.TextInputHandler, nil)
         GenEvent.add_mon_handler(@dialog_events_manager, Dobar.Conversation.ReactionHandler, nil)
+        GenEvent.add_mon_handler(@dialog_events_manager, Dobar.Conversation.TimelineHandler, nil)
       end
     end
   end
