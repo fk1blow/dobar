@@ -17,3 +17,15 @@ Ready to run in production? Please [check our deployment guides](http://www.phoe
   * Docs: http://hexdocs.pm/phoenix
   * Mailing list: http://groups.google.com/group/phoenix-talk
   * Source: https://github.com/phoenixframework/phoenix
+
+## todos
+
+- when a dialog that ends with a confirmation, how do i handle this kind of reaction?  
+- add confidence validation at root dialog start
+- fix validation for unknown intents - when starting a new topic and alternative dialog
+- validate intention confidence validation when creating a new Dialog
+- don't start new conversation if the intent already exists in the conversation chain
+- see if taking the first item inside the `entities` list is ok(Topic :complete)
+- don't let the "approvde" intention to be started(like cancel, change, etc)
+- add a supervisor to the dialog species and make it the interface
+- issues when using 'String.to_existing_atom` for undefined intention definition
