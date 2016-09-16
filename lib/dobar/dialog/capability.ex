@@ -125,6 +125,11 @@ defmodule Dobar.Dialog.Capability do
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
     capability_entities = state.capability.entity
 
+    x = match_entity(capability_entities, intent)
+
+    IO.puts "xxxxxxxxxxxxx: #{inspect state.capability}"
+    IO.puts "xxxxxxxxxxxxx: #{inspect x}"
+
     match = case match_entity(capability_entities, intent) do
       nil   -> {:nomatch, capability_entities, intent}
       [h|t] -> {:match, capability_entities, h}
@@ -160,7 +165,12 @@ defmodule Dobar.Dialog.Capability do
   # private
   #
 
+  defp prefill_value(%Intent{} = prefill, %{entity: {:input, entities}}) when is_list entities do
+    prefill_value(prefill, %{entity: entities})
+  end
   defp prefill_value(%Intent{} = prefill, %{entity: entities}) when is_list entities do
+    IO.puts "prefill_____: #{inspect prefill}"
+    IO.puts "prefill_____: #{inspect entities}"
     case match_entity(entities, prefill) do
       nil    -> nil
       entity -> List.first(entity).value
@@ -180,6 +190,11 @@ defmodule Dobar.Dialog.Capability do
     end
   end
 
+  defp match_entity({:input, entities}, %Intent{} = intent_target) do
+    [%{confidence: 1, type: "value", value: intent_target |> Map.get(:input)}]
+    # IO.puts "match_entity entities: #{inspect entities}"
+    # IO.puts "match_entity intent: #{inspect intent_target}"
+  end
   defp match_entity(:input, %Intent{} = intent_target) do
     [%{confidence: 1, type: "value", value: intent_target |> Map.get(:input)}]
   end
