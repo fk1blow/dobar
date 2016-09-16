@@ -26,14 +26,14 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
-  intention :create_alarm do
-    topic :time, prio: 1, entity: "datetime"
-    topic :cancel_command, reference: :cancel_command
-  end
-
   intention :purge_change_fields do
     # this becomes mind blowing to comprehend...
     # topic :change_field, reference: :change_field
+    topic :cancel_command, reference: :cancel_command
+  end
+
+  intention :create_alarm do
+    topic :time, prio: 1, entity: "datetime"
     topic :cancel_command, reference: :cancel_command
   end
 
@@ -45,5 +45,9 @@ defmodule Dobar.Xapp.Definition do
 
     topic :change_field, reference: :change_field
     topic :cancel_command, reference: :cancel_command
+  end
+
+  intention :say_time do
+    topic :where, entity: [:location], inert: true
   end
 end

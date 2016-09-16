@@ -220,7 +220,6 @@ defmodule Dobar.Dialog.Topic do
         |> List.foldl(%{}, fn item, acc ->
           Map.put(acc, item.name, %{entity: item.entity, value: item.value})
         end)
-        # |> Enum.map(&(elem &1, 1))
         {:completed, capabilities}
       capability ->
         {:ok, capability}

@@ -107,21 +107,23 @@ defmodule Dobar.Dialog.Capability do
             pseudo: elem(capability, 1)}}
   end
 
-  def handle_call(:is_completed, _from, state) do
-    is_completed = is_nil(state.value) == false
-    {:reply, is_completed, state}
+  def handle_call(:is_completed, _from, %{capability: %{inert: true}, value: nil} = state) do
+    {:reply, true, state}
   end
-
+  def handle_call(:is_completed, _from, %{capability: %{inert: true}, value: value} = state) do
+    {:reply, true, state}
+  end
+  def handle_call(:is_completed, _from, %{value: value} = state) do
+    {:reply, is_nil(value) == false, state}
+  end
   def handle_call(:get_priority, _from, state) do
     {:reply, state.capability.prio, state}
   end
-
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
     question = "please provide a value for: #{inspect state.capability.entity}"
     {:reply, question, state}
   end
-
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
     capability_entities = state.capability.entity
 
@@ -131,7 +133,6 @@ defmodule Dobar.Dialog.Capability do
     end
     {:reply, match, state}
   end
-
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
     capability_entities = state.capability.entity
 
@@ -148,7 +149,6 @@ defmodule Dobar.Dialog.Capability do
 
     {:reply, {:ok, capability_value}, new_state}
   end
-
   def handle_call(:structure, _from, state) do
     answer = %{name: state.name,
                entity: state.pseudo,
