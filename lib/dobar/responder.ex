@@ -23,14 +23,14 @@ defmodule Dobar.Responder do
       @before_compile Dobar.Responder
 
       def start_link(opts) do
-        GenServer.start_link __MODULE__, [], name: __MODULE__
+        GenServer.start_link __MODULE__, []
       end
     end
   end
 
+  # add the "catch all" handler before adding the users responders handlers
   defmacro __before_compile__(_env) do
     quote do
-      # add the "catch all" handler before adding the users responders handlers
       def handle_cast(message, state), do: {:noreply, state}
     end
   end

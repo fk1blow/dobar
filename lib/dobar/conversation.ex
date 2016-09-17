@@ -19,7 +19,7 @@ defmodule Dobar.Conversation do
 
       def handle_info({:gen_event_EXIT, _handler, _reason}, state) do
         start_event_handlers()
-        {:ok, state}
+        {:noreply, state}
       end
 
       defp start_children(definitions) do
