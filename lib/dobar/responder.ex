@@ -25,6 +25,10 @@ defmodule Dobar.Responder do
       def start_link(opts) do
         GenServer.start_link __MODULE__, []
       end
+
+      def handle_cast(message, state), do: {:noreply, state}
+
+      defoverridable [handle_cast: 2]
     end
   end
 
