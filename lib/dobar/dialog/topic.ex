@@ -1,8 +1,6 @@
 defmodule Dobar.Dialog.Topic do
   @moduledoc """
-
-  Conversation Topic
-  ==================
+  Dobar Dialog Topic
 
   It represents the (main)Topic of a dialog/conversation. It has a dynamic state
   that is modeled through time, defined by the Capabilities it ownes and their need
@@ -56,6 +54,16 @@ defmodule Dobar.Dialog.Topic do
   The reaction makes the case of a simpler Dialog, where you have multiple
   paths/routes where a Dialog might chose. The chosing strategy is by pattern
   matching and then delegating to every reaction used by the Dialog.
+
+  ## carrier bearer
+
+  This is a special kind of intent which carries entities which will be used
+  to complete the capabilities that respond to them and it is used when
+  calling `Topic.forward/2`:
+
+    "takes each capability, test it for compability againts the intent,
+    filters out `:input` capabilities and `:nomatches` then takes the compatible
+    ones and completes them by calling `Capability.complete/2`"
   """
 
   use GenServer
@@ -87,16 +95,13 @@ defmodule Dobar.Dialog.Topic do
   Will complete for each and every entity inside the entities list and return the
   next subject capability if any left.
   """
-
-  # TODO: rename to Topic.advance/1 and Topic.advance/2
-
   def forward(pid), do: GenServer.call pid, {:forward, nil}
   def forward(pid, %Intent{} = intent), do: GenServer.call pid, {:forward, intent}
-  # TODO: find if this is really used
+  # TODO: find if this is really used and in which cases(describe them)
   def forward(pid, %{} = entities), do: GenServer.call pid, {:forward, entities}
 
   @doc """
-  Will return the Topic's current intent
+  Topic's intent stored in the state of the server
   """
   def intent(pid), do: GenServer.call pid, :get_intent
 
