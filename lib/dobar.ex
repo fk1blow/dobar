@@ -1,12 +1,13 @@
 defmodule Dobar do
   use Application
 
-  # See http://elixir-lang.org/docs/stable/elixir/Application.html
-  # for more information on OTP Applications
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
     children = [
+      # Start the Responder
+      supervisor(Dobar.Responder.Supervisor, []),
+
       # Start the interface events manager used by interface and Conversation api
       worker(GenEvent, [[name: Dobar.InterfaceEvents]], id: :interface_events),
 

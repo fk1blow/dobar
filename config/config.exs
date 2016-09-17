@@ -22,7 +22,9 @@ config :logger, :console,
 # Configures Dobar's conversation interface
 config :dobar, Dobar.Conversation,
   adapter: Dobar.Interface.Adapter.Console,
-  responders: nil,
+  responders: [
+    {Dobar.Xapp.GenericResponder, []}
+  ],
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
