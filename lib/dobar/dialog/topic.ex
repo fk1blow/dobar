@@ -134,17 +134,23 @@ defmodule Dobar.Dialog.Topic do
     {:reply, answer, state}
   end
   def handle_call({:forward, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
-    IO.puts "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    IO.puts "_________carrier, intent: #{inspect intent}"
+
+    state.capabilities |> Enum.each(fn x ->
+      IO.puts "xxxxx: #{inspect Capability.compatibility(x.pid, intent)}"
+    end)
+
+
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
     # ones and completes them by calling `Capability.complete/2`
+    # note that it can't be used for :message_body because shit!
     state.capabilities
     |> Stream.map(&(%{cpid: &1.pid, compat: Capability.compatibility(&1.pid, intent)}))
-    |> Stream.filter(&(elem(&1.compat, 1) != :input))
+    |> Stream.filter(&(elem(&1.compat, 1) != :raw_input))
     |> Stream.filter(&(elem(&1.compat, 0) != :nomatch))
     |> Stream.each(&(Capability.complete(&1.cpid, intent)))
     |> Stream.run
-
 
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
@@ -156,8 +162,6 @@ defmodule Dobar.Dialog.Topic do
     {:reply, answer, state}
   end
   def handle_call({:forward, %Intent{} = intent}, _from, state) do
-    IO.puts "______xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
     # takes the next capability, tests it for compability match and if compatible,
     # completes it with the intent and asks for the next capability of the topic
     topic_status =
@@ -184,15 +188,6 @@ defmodule Dobar.Dialog.Topic do
     capabilities =
       state.capabilities
       |> Enum.map(&(Capability.structure(&1.pid)))
-      # |> List.foldl(%{}, fn item, acc ->
-      #   Map.put(
-      #     acc,
-      #     item.name,
-      #     %{entity: item.entity,
-      #       value: item.value,
-      #       capability: item.capability,
-      #       pseudo: item.pseudo})
-      # end)
     {:reply, capabilities, state}
   end
 
@@ -224,6 +219,9 @@ defmodule Dobar.Dialog.Topic do
   end
 
   defp next_capability(capabilities) do
+    IO.puts "___________________________"
+    IO.puts "c: #{inspect capabilities |> incompleted_topics}"
+
     case capabilities |> incompleted_topics |> List.first do
       nil ->
         capabilities = capabilities
@@ -241,8 +239,6 @@ defmodule Dobar.Dialog.Topic do
   # inside the intent
   defp capability_match(capability, intent) do
     case Capability.compatibility(capability.pid, intent) do
-      # {:match, _key, _entities} -> {:ok, capability}
-      # {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
       {:match, _key} -> {:ok, capability}
       {:nomatch, key} -> {:nomatch, "no match for key #{inspect key}"}
     end

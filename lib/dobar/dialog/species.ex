@@ -26,6 +26,7 @@ defmodule Dobar.Dialog.Species do
       end
 
       def evaluate(pid, %Intent{} = intent) do
+        IO.puts "evaluate: #{inspect intent}"
         GenServer.cast(pid, {:evaluate, intent})
       end
 
@@ -70,9 +71,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
-        IO.puts "continue : #{inspect state.name}"
-        IO.puts "continue : #{inspect intent}"
-
         GenEvent.notify(Dobar.DialogEvents,
           %Reaction{about: :continue_topic, data: %{intent: intent}})
 
@@ -99,7 +97,9 @@ defmodule Dobar.Dialog.Species do
 
           {:nomatch, topic_intent} ->
             GenEvent.notify(DialogEvents,
-              %Reaction{about: :intent_no_match, data: {state.topic}})
+              %Reaction{
+                about: :intent_no_match,
+                data: %{dialog_intent: intent, intent: topic_intent}})
 
             alternative =
               intent.name
@@ -107,6 +107,8 @@ defmodule Dobar.Dialog.Species do
               |> find_alternative(topic_intent)
               |> validate_confidence(intent)
               |> validate_inception(topic_intent)
+
+            IO.puts "__________ alternative: #{inspect alternative}"
 
             case alternative do
               {:reference, intention_name} ->
@@ -210,10 +212,7 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent: %{name: "change_field"}} = meta, state) do
-        IO.puts "meta________: change_field died: #{inspect meta}"
-
         case meta.features do
-          # %{approve: %{entity: :confirm}} ->
           %{ended: %{name: :approve, matched: :confirm}} ->
             intent = %Intent{name: "purge_change_fields",
                              entities: meta.intent.entities,
@@ -225,7 +224,6 @@ defmodule Dobar.Dialog.Species do
 
             {:topic_output, %{meta: pid}}
 
-          # %{approve: %{entity: :infirm}} ->
           %{ended: %{name: :approve, matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
@@ -239,10 +237,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        IO.puts "xxxxx aicisa xxxxxx: meta: #{inspect meta}"
-
-        IO.puts "xxxxxxx:::xxxxxx: #{inspect Topic.capabilities(state.topic)}"
-
         %Dobar.Model.Intent{
           confidence: 0.0,
           entities: %{
@@ -308,6 +302,9 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_cast({:evaluate, intent}, %{topic: topic, meta: nil} = state) do
+        IO.puts "++++++++: #{inspect intent}"
+        IO.puts "++++++++: #{inspect state}"
+
         case handle_intent(intent, state) do
           {:topic_output, nil} ->
             {:noreply, state}
@@ -331,10 +328,12 @@ defmodule Dobar.Dialog.Species do
             {:stop, :normal, nil}
 
           {:error, :purge_nomatches} ->
-            {:noreply, state}
+            IO.puts "puuuuuuuuuuuuuuurge"
+            {:stop, :normal, nil}
         end
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
+        IO.puts "xxxxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyy"
         # the dialog has a meta chain so proxy the call until the last meta-dialog
         GenServer.cast(meta, {:evaluate, intent})
         {:noreply, state}

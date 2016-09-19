@@ -8,17 +8,14 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
     Process.flag(:trap_exit, true)
 
-    IO.puts "xxxxxxrx: #{inspect intent}"
-    IO.puts "xxxxxxrx: #{inspect state.name}"
-
     parent_capabilities = GenServer.call(state.parent, :topic_capabilities)
     intent_entities = intent.entities.field_type
     capabilities = prefilled_capabilities(intent_entities, parent_capabilities)
 
-    IO.puts "xxxxxxrx: #{inspect capabilities}"
-
     if Enum.count(capabilities) == 0 do
       IO.puts "purge dialog cannot start: no matches with parent's capabilities"
+      if (meta_dialog?(self)),
+        do: GenServer.cast(state.parent, {:meta, :canceled})
       {:error, :purge_nomatches}
     else
       intent = %Intent{name: "purge_change_fields", confidence: 1}

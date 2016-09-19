@@ -101,14 +101,6 @@ defmodule Dobar.Dialog.Capability do
   #
 
   def init(args) do
-    # IO.puts "args:::::::::: #{inspect args}"
-    # {:ok, %{name: elem(capability, 0),
-    #         capability: elem(capability, 1),
-    #         # value: prefill_value(args[:prefill], elem(capability, 1)),
-    #         # value: capability_slot_key(nx, args[:prefill]),
-    #         value: capability_slot_key(elem(capability, 1), args[:prefill]),
-    #         pseudo: elem(capability, 1)}}
-
     {name, desc} = args[:capability]
 
     prefill = if is_nil(Map.get(desc, :prefill)), do: true, else: Map.get(desc, :prefill)
@@ -125,8 +117,6 @@ defmodule Dobar.Dialog.Capability do
       prio: prio,
       prefill: prefill
     }
-
-    # IO.puts "feature::::::: #{inspect feature}"
 
     {:ok, feature}
   end
@@ -171,12 +161,6 @@ defmodule Dobar.Dialog.Capability do
         end
       end
 
-    # capability_entities = state.capability.entity
-
-    # match = case match_entity(capability_entities, intent) do
-    #   nil   -> {:nomatch, capability_entities, intent}
-    #   [h|t] -> {:match, capability_entities, h}
-    # end
     {:reply, match, state}
   end
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
@@ -207,12 +191,6 @@ defmodule Dobar.Dialog.Capability do
     end
   end
   def handle_call(:structure, _from, state) do
-    # IO.puts "----------structure #{inspect state}"
-    # answer = %{name: state.name,
-    #            entity: state.pseudo,
-    #            capability: state.capability,
-    #            value: state.value,
-    #            pseudo: state.pseudo}
     {:reply, state, state}
   end
 

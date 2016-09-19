@@ -40,6 +40,19 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
+  def handle_event(%Reaction{about: :same_alternative_found} = reaction, _) do
+    Logger.info "same alternative found for intent: #{inspect reaction.data.intent}"
+    Dobar.Interface.output :text, "cannot start a dialog identical to the current one"
+    {:ok, nil}
+  end
+
+  def handle_event(%Reaction{about: :intent_no_match} = reaction, _) do
+    current_intent = reaction.data.dialog_intent.name
+    input_intent = reaction.data.intent.name
+    Logger.info "no topic match for intent: #{current_intent} and input intent: #{input_intent}"
+    {:ok, nil}
+  end
+
   def handle_event(%Reaction{about: :no_alternative_found} = reaction, _) do
     intent_name = reaction.data.intent.name
     Logger.info "no alternative found"
