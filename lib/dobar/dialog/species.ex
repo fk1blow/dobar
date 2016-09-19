@@ -70,6 +70,9 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
+        IO.puts "continue : #{inspect state.name}"
+        IO.puts "continue : #{inspect intent}"
+
         GenEvent.notify(Dobar.DialogEvents,
           %Reaction{about: :continue_topic, data: %{intent: intent}})
 
@@ -87,7 +90,6 @@ defmodule Dobar.Dialog.Species do
                           data: %{intent: topic_intent, features: features}})
             end
             if meta_dialog?(self) do
-              IO.puts "inside the meta: #{inspect state.name}"
               GenServer.cast(state.parent,
                 {:meta, %{intent: topic_intent,
                           features: features,
@@ -154,7 +156,7 @@ defmodule Dobar.Dialog.Species do
 
       def handle_meta(%{intent: %{name: "cancel_command"}} = meta, state) do
         case meta.features do
-          %{approve: %{entity: :confirm}} ->
+          %{ended: %{name: :approve, matched: :confirm}} ->
             if meta_dialog?(self),
               do: GenServer.cast(state.parent, {:meta, :canceled})
 
@@ -165,7 +167,7 @@ defmodule Dobar.Dialog.Species do
                               data: %{intent: meta.intent, features: meta.features}})
             {:topic_end, :completed}
 
-          %{approve: %{entity: :infirm}} ->
+          %{ended: %{name: :approve, matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -178,7 +180,8 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_meta(%{intent: %{name: "switch_conversation"}} = meta, state) do
         case meta.features do
-          %{approve: %{entity: :confirm}} ->
+          # %{approve: %{entity: :confirm}} ->
+          %{ended: %{name: :approve, matched: :confirm}} ->
             if meta_dialog?(self) do
               GenServer.cast(state.parent, {:meta, meta})
             else
@@ -189,7 +192,8 @@ defmodule Dobar.Dialog.Species do
             end
             {:topic_end, :completed}
 
-          %{approve: %{entity: :infirm}} ->
+          # %{approve: %{entity: :infirm}} ->
+          %{ended: %{name: :approve, matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -206,8 +210,11 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent: %{name: "change_field"}} = meta, state) do
+        IO.puts "meta________: change_field died: #{inspect meta}"
+
         case meta.features do
-          %{approve: %{entity: :confirm}} ->
+          # %{approve: %{entity: :confirm}} ->
+          %{ended: %{name: :approve, matched: :confirm}} ->
             intent = %Intent{name: "purge_change_fields",
                              entities: meta.intent.entities,
                              confidence: 1}
@@ -218,7 +225,8 @@ defmodule Dobar.Dialog.Species do
 
             {:topic_output, %{meta: pid}}
 
-          %{approve: %{entity: :infirm}} ->
+          # %{approve: %{entity: :infirm}} ->
+          %{ended: %{name: :approve, matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -231,11 +239,35 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        case Topic.forward(state.topic, carrier_bearer(meta.features)) do
+        IO.puts "xxxxx aicisa xxxxxx: meta: #{inspect meta}"
+
+        IO.puts "xxxxxxx:::xxxxxx: #{inspect Topic.capabilities(state.topic)}"
+
+        %Dobar.Model.Intent{
+          confidence: 0.0,
+          entities: %{
+            message_recipient: [%{confidence: 1, type: "value", value: "mona"}]
+          },
+          input: nil,
+          name: "carrier_bearer"
+        }
+
+        entities =
+          meta.features.capabilities
+          |> Enum.map(fn item ->
+            slots_values =
+              item.value
+              |> Enum.map(&(%{confidence: 1, type: "value", value: &1}))
+            entity = Map.put(%{}, List.first(item.slots), slots_values)
+          end)
+          |> List.foldl(%{}, fn item, acc -> Map.merge(acc, item) end)
+
+        carrier_intent = %Intent{name: "carrier_bearer", entities: entities}
+
+        case Topic.forward(state.topic, carrier_intent) do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}
-
           {:completed, features} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
             {:topic_end, :completed}
@@ -246,7 +278,6 @@ defmodule Dobar.Dialog.Species do
           {:question, question} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}
-
           {:completed, features} ->
             GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
             {:topic_end, :completed}
@@ -277,7 +308,7 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_cast({:evaluate, intent}, %{topic: topic, meta: nil} = state) do
-        case handle_intent intent, state do
+        case handle_intent(intent, state) do
           {:topic_output, nil} ->
             {:noreply, state}
 
@@ -298,6 +329,9 @@ defmodule Dobar.Dialog.Species do
 
           {:error, :meta_as_root} ->
             {:stop, :normal, nil}
+
+          {:error, :purge_nomatches} ->
+            {:noreply, state}
         end
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
@@ -396,22 +430,6 @@ defmodule Dobar.Dialog.Species do
         end
       end
       defp validate_inception(current, _input_intent), do: current
-
-      defp carrier_bearer(features) do
-        entities =
-          features
-          |> Map.keys
-          |> Enum.map(fn x ->
-            field_name = Map.get(features, x).entity
-            {field_name, %{confidence: 1, type: "value", value: Map.get(features, x).value}}
-          end)
-          |> List.foldl(%{}, fn x, acc ->
-            field_map = Map.put(%{}, elem(x, 0), [elem(x, 1)])
-            Map.merge(acc, field_map)
-          end)
-
-        %Intent{name: "carrier_bearer", entities: entities}
-      end
     end
   end
 end

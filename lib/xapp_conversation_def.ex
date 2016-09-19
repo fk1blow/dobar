@@ -3,6 +3,8 @@
 defmodule Dobar.Xapp.Definition do
   use Dobar.Conversation
 
+  # intention :approve ?????
+
   intention :cancel_command do
     relationship :meta
     topic :approve, entity: [:confirm, :infirm]
@@ -33,14 +35,14 @@ defmodule Dobar.Xapp.Definition do
   end
 
   intention :create_alarm do
-    topic :time, prio: 1, entity: "datetime"
+    topic :time, prio: 1, entity: [:datetime]
     topic :cancel_command, reference: :cancel_command
   end
 
   intention :send_message do
     topic :message_app, prio: 1, entity: [:application, :app, :app_name]
     topic :message_recipient, prio: 2, entity: [:contact, :receiver, :recipient]
-    topic :message_body, prio: 3, entity: :input
+    topic :message_body, prio: 3, entity: :raw_input, prefill: false
     topic :approve, prio: 4, entity: [:confirm, :infirm]
 
     topic :change_field, reference: :change_field

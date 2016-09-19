@@ -1,81 +1,101 @@
 defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   use Dobar.Dialog.Species
 
+  alias Dobar.Dialog.Capability.Feature
+
   # this basically tries to match the incoming fields the user wants to change,
   # agains the fields of the parent dialog(the actual target).
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
     Process.flag(:trap_exit, true)
 
+    IO.puts "xxxxxxrx: #{inspect intent}"
+    IO.puts "xxxxxxrx: #{inspect state.name}"
+
     parent_capabilities = GenServer.call(state.parent, :topic_capabilities)
-    entities = intent.entities.field_type
+    intent_entities = intent.entities.field_type
+    capabilities = prefilled_capabilities(intent_entities, parent_capabilities)
 
-    capabilities = case intersect_capabilities(parent_capabilities, entities) do
-      {:ok, capabilities} -> capabilities
-      {:error, reason} -> raise "cannot match capabilities against intent entities"
-    end
+    IO.puts "xxxxxxrx: #{inspect capabilities}"
 
-    # get only the capabilities that are common the both the input intent
-    # and the parent's capabilities
-    matches =
-      parent_capabilities
-      |> Map.keys
-      |> Enum.map(fn key ->
-        {key, Map.get(parent_capabilities, key).capability}
-      end)
-      |> Enum.filter(fn item ->
-        case elem(item, 1) do
-          %{} = element -> entities_matches(element.entity, capabilities)
-          element -> entities_matches(element, capabilities)
-        end
-      end)
+    if Enum.count(capabilities) == 0 do
+      IO.puts "purge dialog cannot start: no matches with parent's capabilities"
+      {:error, :purge_nomatches}
+    else
+      intent = %Intent{name: "purge_change_fields", confidence: 1}
+      {:ok, topic} = Topic.start_link(intent, capabilities)
 
-    intent = %Intent{name: "purge_change_fields", confidence: 1}
-    {:ok, topic} = Topic.start_link(intent, matches)
+      case Topic.forward(topic) do
+        {:question, question} ->
+          GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
+          {:topic_output, %{topic: topic}}
 
-    case Topic.forward(topic) do
-      {:question, question} ->
-        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
-        {:topic_output, %{topic: topic}}
-
-      {:completed, intent, features} ->
-        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
-        unless root_dialog?(self) do
-          GenServer.cast(state.parent,
-            {:meta, %Dobar.Model.Meta{intent: intent, passthrough: state.passthrough}})
-        end
-        {:topic_end, :completed}
+        {:completed, intent, features} ->
+          GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
+          unless root_dialog?(self) do
+            GenServer.cast(state.parent,
+              {:meta, %Dobar.Model.Meta{intent: intent, passthrough: state.passthrough}})
+          end
+          {:topic_end, :completed}
+      end
     end
   end
 
-  def handle_intent(intent, state),
-    do: super(intent, state)
+  def handle_intent(intent, state) do
+    super(intent, state)
+  end
 
-  # Used when trying to compare between the capabilities of a dialog specie
-  # and the received intent entities.
-  # It first intersects the entities with the capabilities and after that
-  # it tries to check if the intersection is a subset of the entities
-  # Note that this function will/should be mostly used for change/purge fields.
-  defp intersect_capabilities(%{} = capabilities, entities) do
-    capabilities =
-      for {key, value} <- capabilities do
-        case value.entity do
-          %{} = item -> item.entity
-          _          -> value.entity
-        end
-      end
+  # TODO: match for intents other than :purge_change_fields and return :halt
+  # def handle_intent(%Intent{, state) do
+  #   super(intent, state)
+  # end
+
+  defp prefilled_capabilities(entities, capabilities) do
+    capabilities_set =
+      capabilities
+      |> Enum.map(&(Map.get(&1, :slots)))
       |> List.flatten
       |> MapSet.new
 
-    entities =
+    entities_set =
       entities
-      |> Enum.map(&(String.to_atom &1.value))
+      |> Enum.map(&(Map.get(&1, :value) |> String.to_atom))
       |> MapSet.new
 
-    intersection = MapSet.intersection entities, capabilities
+    matching_capabilities = MapSet.intersection(capabilities_set, entities_set)
 
-    case MapSet.subset?(intersection, entities) do
-      true -> {:ok, entities}
-      false -> {:error, "entities provided not a subset of the capabilities"}
+    # take the matching capabilities
+    # filter the items which don't intersect with matching_capabilities
+    # take each remaining feature
+    # take the keys of the feature, filter them, and build a map with them
+    # take the map of the keys/feature and build a keyword that contains it
+    case MapSet.size(matching_capabilities) do
+      0 ->
+        []
+      n ->
+        capabilities
+        |> Enum.filter(fn capability ->
+          case capability.slots do
+            [h | t] = slots ->
+              MapSet.new(slots)
+              |> MapSet.intersection(matching_capabilities)
+              |> MapSet.size > 0
+            element when is_atom(element) ->
+              MapSet.member?(matching_capabilities, element)
+          end
+        end)
+        |> Enum.map(fn(%Feature{} = feature) ->
+          restricts = [:name, :matched, :value, :__struct__]
+          entity =
+            feature
+            |> Map.keys
+            |> Enum.reject(&(Enum.member? restricts, &1))
+            |> List.foldl(%{}, fn x, acc ->
+              if (x == :slots),
+                do: Map.put(acc, :entity, Map.get(feature, x)),
+                else: Map.put(acc, x, Map.get(feature, x))
+            end)
+          {feature.name, entity}
+        end)
     end
   end
 

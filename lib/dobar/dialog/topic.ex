@@ -129,13 +129,12 @@ defmodule Dobar.Dialog.Topic do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
       {:completed, topics} ->
-        # {:completed, state.intent, topics}
         {:completed, topics}
     end
-
     {:reply, answer, state}
   end
   def handle_call({:forward, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
+    IO.puts "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
     # ones and completes them by calling `Capability.complete/2`
@@ -146,30 +145,31 @@ defmodule Dobar.Dialog.Topic do
     |> Stream.each(&(Capability.complete(&1.cpid, intent)))
     |> Stream.run
 
+
     answer = case next_capability(state.capabilities) do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
       {:completed, topics} ->
-        # {:completed, state.intent, topics}
         {:completed, topics}
     end
 
     {:reply, answer, state}
   end
   def handle_call({:forward, %Intent{} = intent}, _from, state) do
+    IO.puts "______xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
     # takes the next capability, tests it for compability match and if compatible,
     # completes it with the intent and asks for the next capability of the topic
     topic_status =
       with {:ok, expected}   <- next_capability(state.capabilities),
            {:ok, capability} <- capability_match(expected, intent),
-           {:ok, value}      <- Capability.complete(capability.pid, intent),
+           :ok               <- Capability.complete(capability.pid, intent),
       do:  next_capability(state.capabilities)
 
     answer = case topic_status do
       {:ok, capability} ->
         {:question, Capability.outcome(capability.pid)}
       {:completed, topics} ->
-        # {:completed, state.intent, topics}
         {:completed, topics}
       {:nomatch, _reason} ->
         {:nomatch, state.intent}
@@ -184,9 +184,15 @@ defmodule Dobar.Dialog.Topic do
     capabilities =
       state.capabilities
       |> Enum.map(&(Capability.structure(&1.pid)))
-      |> List.foldl(%{}, fn item, acc ->
-        Map.put(acc, item.name, %{entity: item.entity, value: item.value, capability: item.capability})
-      end)
+      # |> List.foldl(%{}, fn item, acc ->
+      #   Map.put(
+      #     acc,
+      #     item.name,
+      #     %{entity: item.entity,
+      #       value: item.value,
+      #       capability: item.capability,
+      #       pseudo: item.pseudo})
+      # end)
     {:reply, capabilities, state}
   end
 
@@ -222,8 +228,8 @@ defmodule Dobar.Dialog.Topic do
       nil ->
         capabilities = capabilities
         |> Enum.map(&(Capability.structure(&1.pid)))
-        |> List.foldl(%{}, fn item, acc ->
-          Map.put(acc, item.name, %{entity: item.entity, value: item.value})
+        |> List.foldl(%{capabilities: [], ended: %{}}, fn item, acc ->
+          %{capabilities: [item | acc.capabilities], ended: item}
         end)
         {:completed, capabilities}
       capability ->
@@ -235,15 +241,19 @@ defmodule Dobar.Dialog.Topic do
   # inside the intent
   defp capability_match(capability, intent) do
     case Capability.compatibility(capability.pid, intent) do
-      {:match, _key, _entities} -> {:ok, capability}
-      {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
+      # {:match, _key, _entities} -> {:ok, capability}
+      # {:nomatch, key, entities} -> {:nomatch, "no match for key #{inspect key}"}
+      {:match, _key} -> {:ok, capability}
+      {:nomatch, key} -> {:nomatch, "no match for key #{inspect key}"}
     end
   end
 
   defp filter_capabilities(capabilities) do
     capabilities
-    |> Enum.filter(&(elem(&1, 0) != :relationship))
-    |> Enum.filter(&(is_nil(elem(&1, 1)[:entity]) == false))
+    |> Enum.filter(fn {name, desc} -> name != :relationship end)
+    |> Enum.filter(fn {name, desc} ->
+      is_nil(Keyword.get(desc, :reference)) == true
+    end)
     |> Enum.map(fn(x) -> {elem(x, 0), Enum.into(elem(x, 1), %{})} end)
   end
 

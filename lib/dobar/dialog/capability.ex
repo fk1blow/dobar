@@ -67,6 +67,7 @@ defmodule Dobar.Dialog.Capability do
   use GenServer
 
   alias Dobar.Model.Intent
+  alias Dobar.Dialog.Capability.Feature
 
   def start_link(capability, intent) do
     GenServer.start_link __MODULE__, [capability: capability, prefill: intent]
@@ -100,65 +101,151 @@ defmodule Dobar.Dialog.Capability do
   #
 
   def init(args) do
-    capability = args[:capability]
-    {:ok, %{name: elem(capability, 0),
-            capability: elem(capability, 1),
-            value: prefill_value(args[:prefill], elem(capability, 1)),
-            pseudo: elem(capability, 1)}}
+    # IO.puts "args:::::::::: #{inspect args}"
+    # {:ok, %{name: elem(capability, 0),
+    #         capability: elem(capability, 1),
+    #         # value: prefill_value(args[:prefill], elem(capability, 1)),
+    #         # value: capability_slot_key(nx, args[:prefill]),
+    #         value: capability_slot_key(elem(capability, 1), args[:prefill]),
+    #         pseudo: elem(capability, 1)}}
+
+    {name, desc} = args[:capability]
+
+    prefill = if is_nil(Map.get(desc, :prefill)), do: true, else: Map.get(desc, :prefill)
+    slots = desc.entity || []
+    value = prefill_slots_values(desc, name, args[:prefill])
+    matched = prefill_matched_values(desc, args[:prefill])
+    prio = Map.get(desc, :prio) || 0
+
+    feature = %Feature{
+      name: name,
+      slots: slots,
+      value: value,
+      matched: matched,
+      prio: prio,
+      prefill: prefill
+    }
+
+    # IO.puts "feature::::::: #{inspect feature}"
+
+    {:ok, feature}
   end
 
-  def handle_call(:is_completed, _from, %{capability: %{inert: true}, value: nil} = state) do
+  def handle_call(:is_completed, _from, %{inert: true, value: nil} = state) do
+    # IO.puts "iz 1"
     {:reply, true, state}
   end
-  def handle_call(:is_completed, _from, %{capability: %{inert: true}, value: value} = state) do
+  def handle_call(:is_completed, _from, %{inert: true, value: value} = state) do
+    # IO.puts "iz 2"
     {:reply, true, state}
   end
   def handle_call(:is_completed, _from, %{value: value} = state) do
+    # IO.puts "iz 3: #{inspect state}"
     {:reply, is_nil(value) == false, state}
   end
   def handle_call(:get_priority, _from, state) do
-    {:reply, state.capability.prio, state}
+    {:reply, state.prio, state}
   end
   def handle_call(:get_outcome, _from, state) do
     # TODO: in the (not so) near future, change this hardcoded question
-    question = "please provide a value for: #{inspect state.capability.entity}"
+    question = "please provide a value for: #{inspect state.slots}"
     {:reply, question, state}
   end
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
-    capability_entities = state.capability.entity
+    # if the slots are :raw_input, it matches
+    # else intersect the slots with intent entities and if non-empty list,
+    # it is :match, otherwise :nomatch
+    match =
+      if state.slots == :raw_input do
+        {:match, :raw_input}
+      else
+        matches =
+          state.slots
+          |> MapSet.new
+          |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+          |> MapSet.to_list
 
-    match = case match_entity(capability_entities, intent) do
-      nil   -> {:nomatch, capability_entities, intent}
-      [h|t] -> {:match, capability_entities, h}
-    end
+        case matches do
+          [] -> {:nomatch, state.slots}
+          [h | t] -> {:match, matches}
+        end
+      end
+
+    # capability_entities = state.capability.entity
+
+    # match = case match_entity(capability_entities, intent) do
+    #   nil   -> {:nomatch, capability_entities, intent}
+    #   [h|t] -> {:match, capability_entities, h}
+    # end
     {:reply, match, state}
   end
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
-    capability_entities = state.capability.entity
+    if state.slots == :raw_input do
+      state = Map.put(state, :value, intent.input)
+      {:reply, :ok, state}
+    else
+      matched_slots =
+        state.slots
+        |> MapSet.new
+        |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+        |> MapSet.to_list
 
-    capability_value = case match_entity(capability_entities, intent) do
-      nil   -> nil
-      [h|t] -> h.value
+      slots_values =
+        matched_slots
+        |> Enum.map(fn item ->
+          Map.get(intent.entities, item) |> Enum.map(&(Map.get(&1, :value)))
+        end)
+        |> List.flatten
+
+      state = case slots_values do
+        [h | t] ->
+          Map.put(state, :value, slots_values) |> Map.put(:matched, hd(matched_slots))
+        [] ->
+          state
+      end
+      {:reply, :ok, state}
     end
-
-    new_capability = Map.merge(state.capability,
-      %{entity: capability_slot_key(state.capability, intent)})
-
-    new_state = Map.merge(state,
-      %{value: capability_value, pseudo: new_capability.entity})
-
-    {:reply, {:ok, capability_value}, new_state}
   end
   def handle_call(:structure, _from, state) do
-    answer = %{name: state.name,
-               entity: state.pseudo,
-               capability: state.capability,
-               value: state.value}
-    {:reply, answer, state}
+    # IO.puts "----------structure #{inspect state}"
+    # answer = %{name: state.name,
+    #            entity: state.pseudo,
+    #            capability: state.capability,
+    #            value: state.value,
+    #            pseudo: state.pseudo}
+    {:reply, state, state}
   end
 
   # private
-  #
+
+  defp prefill_slots_values(%{entity: :raw_input, prefill: true}, _, intent) do
+    if (intent.input), do: List.wrap(intent.input), else: nil
+  end
+  defp prefill_slots_values(%{entity: :raw_input, prefill: false}, _, _) do
+    nil
+  end
+  defp prefill_slots_values(%{entity: [h | t]} = desc, name, intent) do
+    slots_values =
+      MapSet.new(desc.entity)
+      |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+      |> MapSet.to_list
+      |> Enum.map(fn item ->
+        Map.get(intent.entities, item) |> Enum.map(&(Map.get(&1, :value)))
+      end)
+      |> List.flatten
+    case slots_values do
+      [h | t] -> slots_values
+      [] -> nil
+    end
+  end
+
+  defp prefill_matched_values(%{entity: :raw_input}, intent), do: :raw_input
+  defp prefill_matched_values(desc, intent) do
+    MapSet.new(desc.entity)
+    |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+    |> MapSet.to_list
+    |> List.first
+  end
 
   defp prefill_value(%Intent{} = prefill, %{entity: entities}) when is_list entities do
     case match_entity(entities, prefill) do
@@ -167,12 +254,14 @@ defmodule Dobar.Dialog.Capability do
     end
   end
   defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_atom entity do
+    # IO.puts "......p2 #{inspect prefill}"
     case prefill.entities[entity] do
       nil    -> nil
       entity -> List.first(entity).value
     end
   end
   defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_bitstring entity do
+    # IO.puts "......p3 #{inspect prefill}"
     entity = entity |> String.to_atom
     case prefill.entities[entity] do
       nil    -> nil

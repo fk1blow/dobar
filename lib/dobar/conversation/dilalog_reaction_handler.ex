@@ -18,14 +18,14 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "dialog completed"
     Logger.info "completed features: #{inspect data.features}"
     Logger.info "completed intent: #{inspect data.intent}"
-    Dobar.Responder.Supervisor.respond(String.to_atom(data.intent.name), data)
+    # Dobar.Responder.Supervisor.respond(String.to_atom(data.intent.name), data)
     Dobar.Interface.output(:text, reaction.text)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :switch_conversation} = reaction, _) do
     intent = reaction.data.passthrough
-    Logger.info "passthroughreaction - switch conversation"
+    Logger.info "switch conversation"
     Logger.info "evaluate dialog for intent: #{intent.name}, confidence: #{intent.confidence}"
     case Process.whereis(:root_dialog) do
       nil ->

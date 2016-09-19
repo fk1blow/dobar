@@ -22,13 +22,31 @@ defmodule Dobar.Responder do
 
       @before_compile Dobar.Responder
 
+      var!(reply) = &__MODULE__.output/2
+
       def start_link(opts) do
-        GenServer.start_link __MODULE__, []
+        GenServer.start_link __MODULE__, [interface: opts[:interface]]
       end
 
-      def handle_cast(message, state), do: {:noreply, state}
+      def init(args) do
+        {:ok, %{interface: args[:interface]}}
+      end
 
-      defoverridable [handle_cast: 2]
+      def handle_cast(message, state) do
+        respond_to(message, state.interface)
+        {:noreply, state}
+      end
+
+      def respond_to(_, _), do: :ok
+
+      defoverridable [respond_to: 2]
+
+      @doc """
+      Will output the message to the inter
+      """
+      def reply(interface, {type, message}) do
+        apply interface, :output, [type, message]
+      end
     end
   end
 
@@ -36,6 +54,8 @@ defmodule Dobar.Responder do
   defmacro __before_compile__(_env) do
     quote do
       def handle_cast(message, state), do: {:noreply, state}
+
+      def respond_to(_, _), do: :ok
     end
   end
 
@@ -44,9 +64,8 @@ defmodule Dobar.Responder do
   """
   defmacro on(about, data_block, do: do_block) do
     quote do
-      def handle_cast({unquote(about), unquote(data_block[:data])}, _state) do
+      def respond_to({unquote(about), unquote(data_block[:data])}, var!(interface)) do
         unquote(do_block)
-        {:noreply, nil}
       end
     end
   end

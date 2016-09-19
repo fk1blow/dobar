@@ -3,5 +3,8 @@ defmodule Dobar.Xapp.AnotherGenericResponder do
 
   on :send_message, data: %{features: features} do
     IO.puts "send message matched...: #{inspect features}"
+    recipient = features.message_recipient.value
+    message = "pffff, never gonna give... the message back to #{recipient}"
+    reply(interface, {:text, message})
   end
 end

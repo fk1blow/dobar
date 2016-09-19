@@ -3,6 +3,7 @@ defmodule Dobar.Conversation.Definition do
     quote do
       import Dobar.Conversation.Definition
 
+      # why not???          carrier_bearer: [relationship: :meta, ...]
       @default_intentions %{carrier_bearer: [meta: []]}
       @intentions Map.merge(%{}, @default_intentions)
       @topic_list []
