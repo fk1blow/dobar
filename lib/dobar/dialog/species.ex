@@ -26,7 +26,6 @@ defmodule Dobar.Dialog.Species do
       end
 
       def evaluate(pid, %Intent{} = intent) do
-        IO.puts "evaluate: #{inspect intent}"
         GenServer.cast(pid, {:evaluate, intent})
       end
 
@@ -107,8 +106,6 @@ defmodule Dobar.Dialog.Species do
               |> find_alternative(topic_intent)
               |> validate_confidence(intent)
               |> validate_inception(topic_intent)
-
-            IO.puts "__________ alternative: #{inspect alternative}"
 
             case alternative do
               {:reference, intention_name} ->
@@ -302,9 +299,6 @@ defmodule Dobar.Dialog.Species do
       end
 
       def handle_cast({:evaluate, intent}, %{topic: topic, meta: nil} = state) do
-        IO.puts "++++++++: #{inspect intent}"
-        IO.puts "++++++++: #{inspect state}"
-
         case handle_intent(intent, state) do
           {:topic_output, nil} ->
             {:noreply, state}
@@ -328,12 +322,10 @@ defmodule Dobar.Dialog.Species do
             {:stop, :normal, nil}
 
           {:error, :purge_nomatches} ->
-            IO.puts "puuuuuuuuuuuuuuurge"
             {:stop, :normal, nil}
         end
       end
       def handle_cast({:evaluate, intent}, %{meta: meta, parent: parent} = state) do
-        IO.puts "xxxxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyy"
         # the dialog has a meta chain so proxy the call until the last meta-dialog
         GenServer.cast(meta, {:evaluate, intent})
         {:noreply, state}

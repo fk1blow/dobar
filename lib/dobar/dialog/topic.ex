@@ -134,20 +134,12 @@ defmodule Dobar.Dialog.Topic do
     {:reply, answer, state}
   end
   def handle_call({:forward, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
-    IO.puts "_________carrier, intent: #{inspect intent}"
-
-    state.capabilities |> Enum.each(fn x ->
-      IO.puts "xxxxx: #{inspect Capability.compatibility(x.pid, intent)}"
-    end)
-
-
     # takes each capability, test it for compability againts the intent,
     # filters out `:input` capabilities and `:nomatches` then takes the compatible
     # ones and completes them by calling `Capability.complete/2`
     # note that it can't be used for :message_body because shit!
     state.capabilities
     |> Stream.map(&(%{cpid: &1.pid, compat: Capability.compatibility(&1.pid, intent)}))
-    |> Stream.filter(&(elem(&1.compat, 1) != :raw_input))
     |> Stream.filter(&(elem(&1.compat, 0) != :nomatch))
     |> Stream.each(&(Capability.complete(&1.cpid, intent)))
     |> Stream.run
@@ -219,9 +211,6 @@ defmodule Dobar.Dialog.Topic do
   end
 
   defp next_capability(capabilities) do
-    IO.puts "___________________________"
-    IO.puts "c: #{inspect capabilities |> incompleted_topics}"
-
     case capabilities |> incompleted_topics |> List.first do
       nil ->
         capabilities = capabilities

@@ -46,6 +46,14 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
+  def handle_event(%Reaction{about: :purge_nomatches} = reaction, _) do
+    Logger.info "cannot purge fields that don't match with parent's capabilities"
+    Logger.info "purge nomatches intent: #{inspect reaction.data.intent.name}"
+    Dobar.Interface.output :text, "cannot change the fields that dont' appear in the parent"
+    Dobar.Interface.output :text, "continuing the dialog"
+    {:ok, nil}
+  end
+
   def handle_event(%Reaction{about: :intent_no_match} = reaction, _) do
     current_intent = reaction.data.dialog_intent.name
     input_intent = reaction.data.intent.name

@@ -40,9 +40,9 @@ defmodule Dobar.Xapp.Definition do
   end
 
   intention :send_message do
-    topic :message_app, prio: 1, entity: [:application, :app, :app_name]
-    # topic :message_recipient, prio: 2, entity: [:contact, :receiver, :recipient]
-    topic :message_body, prio: 3, entity: :raw_input, prefill: false
+    # topic :message_app, prio: 1, entity: [:application, :app, :app_name]
+    # topic :message_recipient, prio: 2, entity: [:contact, :receiver, :recipient, :dobar_contact]
+    topic :message_body, prio: 3, entity: [:raw_input, :message, :message_body], prefill: false
     topic :approve, prio: 4, entity: [:confirm, :infirm]
 
     topic :change_field, reference: :change_field

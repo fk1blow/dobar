@@ -122,15 +122,12 @@ defmodule Dobar.Dialog.Capability do
   end
 
   def handle_call(:is_completed, _from, %{inert: true, value: nil} = state) do
-    # IO.puts "iz 1"
     {:reply, true, state}
   end
   def handle_call(:is_completed, _from, %{inert: true, value: value} = state) do
-    # IO.puts "iz 2"
     {:reply, true, state}
   end
   def handle_call(:is_completed, _from, %{value: value} = state) do
-    # IO.puts "iz 3: #{inspect state}"
     {:reply, is_nil(value) == false, state}
   end
   def handle_call(:get_priority, _from, state) do
@@ -146,7 +143,10 @@ defmodule Dobar.Dialog.Capability do
     # else intersect the slots with intent entities and if non-empty list,
     # it is :match, otherwise :nomatch
     match =
-      if state.slots == :raw_input do
+      # if state.slots == :raw_input do
+      #   {:match, :raw_input}
+      # else
+      if Enum.find_value(state.slots, &(&1 == :raw_input)) do
         {:match, :raw_input}
       else
         matches =
@@ -164,12 +164,9 @@ defmodule Dobar.Dialog.Capability do
     {:reply, match, state}
   end
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
-    if state.slots == :raw_input do
-      state = Map.put(state, :value, intent.input)
-      {:reply, :ok, state}
-    else
+    slots_matches = fn(intent, slots) ->
       matched_slots =
-        state.slots
+        slots
         |> MapSet.new
         |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
         |> MapSet.to_list
@@ -181,6 +178,14 @@ defmodule Dobar.Dialog.Capability do
         end)
         |> List.flatten
 
+      %{matched: matched_slots, values: slots_values}
+    end
+
+    if Enum.find_value(state.slots, &(&1 == :raw_input)) do
+      %{values: slots_values} = slots_matches.(intent, state.slots)
+      {:reply, :ok, Map.put(state, :value, [slots_values])}
+    else
+      %{matched: matched_slots, values: slots_values} = slots_matches.(intent, state.slots)
       state = case slots_values do
         [h | t] ->
           Map.put(state, :value, slots_values) |> Map.put(:matched, hd(matched_slots))
@@ -196,12 +201,12 @@ defmodule Dobar.Dialog.Capability do
 
   # private
 
-  defp prefill_slots_values(%{entity: :raw_input, prefill: true}, _, intent) do
-    if (intent.input), do: List.wrap(intent.input), else: nil
-  end
-  defp prefill_slots_values(%{entity: :raw_input, prefill: false}, _, _) do
-    nil
-  end
+  # defp prefill_slots_values(%{entity: :raw_input, prefill: true}, _, intent) do
+  #   if (intent.input), do: List.wrap(intent.input), else: nil
+  # end
+  # defp prefill_slots_values(%{entity: :raw_input, prefill: false}, _, _) do
+  #   nil
+  # end
   defp prefill_slots_values(%{entity: [h | t]} = desc, name, intent) do
     slots_values =
       MapSet.new(desc.entity)
@@ -217,34 +222,12 @@ defmodule Dobar.Dialog.Capability do
     end
   end
 
-  defp prefill_matched_values(%{entity: :raw_input}, intent), do: :raw_input
+  # defp prefill_matched_values(%{entity: :raw_input}, intent), do: :raw_input
   defp prefill_matched_values(desc, intent) do
     MapSet.new(desc.entity)
     |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
     |> MapSet.to_list
     |> List.first
-  end
-
-  defp prefill_value(%Intent{} = prefill, %{entity: entities}) when is_list entities do
-    case match_entity(entities, prefill) do
-      nil    -> nil
-      entity -> List.first(entity).value
-    end
-  end
-  defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_atom entity do
-    # IO.puts "......p2 #{inspect prefill}"
-    case prefill.entities[entity] do
-      nil    -> nil
-      entity -> List.first(entity).value
-    end
-  end
-  defp prefill_value(%Intent{} = prefill, %{entity: entity}) when is_bitstring entity do
-    # IO.puts "......p3 #{inspect prefill}"
-    entity = entity |> String.to_atom
-    case prefill.entities[entity] do
-      nil    -> nil
-      entity -> List.first(entity).value
-    end
   end
 
   defp match_entity(:input, %Intent{} = intent_target) do

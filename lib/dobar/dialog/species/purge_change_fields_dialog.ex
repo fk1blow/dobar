@@ -2,6 +2,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   use Dobar.Dialog.Species
 
   alias Dobar.Dialog.Capability.Feature
+  alias Dobar.DialogEvents
 
   # this basically tries to match the incoming fields the user wants to change,
   # agains the fields of the parent dialog(the actual target).
@@ -12,8 +13,11 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     intent_entities = intent.entities.field_type
     capabilities = prefilled_capabilities(intent_entities, parent_capabilities)
 
+    IO.puts "parent_capabilities: #{inspect parent_capabilities}"
+
     if Enum.count(capabilities) == 0 do
-      IO.puts "purge dialog cannot start: no matches with parent's capabilities"
+      GenEvent.notify(Dobar.DialogEvents,
+        %Reaction{about: :purge_nomatches, data: %{intent: intent}})
       if (meta_dialog?(self)),
         do: GenServer.cast(state.parent, {:meta, :canceled})
       {:error, :purge_nomatches}
