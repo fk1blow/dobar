@@ -6,6 +6,7 @@ defmodule Dobar.Xapp.GenericResponder do
 
   @default_where "Bucharest"
   @location_api "http://maps.googleapis.com/maps/api/geocode/json?sensor=false"
+  @timezone_api "http://api.timezonedb.com/v2/get-time-zone?key=MWTIKWN1FRYX&by=position&format=json"
 
   on :say_time, data: %{features: %{where: %{value: nil}}} do
     display_time(interface, @default_where)
@@ -48,7 +49,6 @@ defmodule Dobar.Xapp.GenericResponder do
   end
 
   defp fetch_timezone(%{"lat" => lat, "lng" => lng}) do
-    url = "http://api.timezonedb.com/v2/get-time-zone?key=MWTIKWN1FRYX&by=position&format=json"
-    HTTPoison.get(url <> "&lat=#{lat}&lng=#{lng}")
+    HTTPoison.get(@timezone_api <> "&lat=#{lat}&lng=#{lng}")
   end
 end
