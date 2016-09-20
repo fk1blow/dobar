@@ -211,9 +211,7 @@ defmodule Dobar.Dialog.Topic do
       nil ->
         capabilities = capabilities
         |> Enum.map(&(Capability.structure(&1.pid)))
-        |> List.foldl(%{capabilities: [], ended: %{}}, fn item, acc ->
-          %{capabilities: [item | acc.capabilities], ended: item}
-        end)
+        |> List.foldl(%{}, &(Map.put(&2, Map.get(&1, :name), &1)))
         {:completed, capabilities}
       capability ->
         {:ok, capability}

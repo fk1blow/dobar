@@ -155,7 +155,7 @@ defmodule Dobar.Dialog.Species do
 
       def handle_meta(%{intent: %{name: "cancel_command"}} = meta, state) do
         case meta.features do
-          %{ended: %{name: :approve, matched: :confirm}} ->
+          %{approve: %{matched: :confirm}} ->
             if meta_dialog?(self),
               do: GenServer.cast(state.parent, {:meta, :canceled})
 
@@ -166,7 +166,7 @@ defmodule Dobar.Dialog.Species do
                               data: %{intent: meta.intent, features: meta.features}})
             {:topic_end, :completed}
 
-          %{ended: %{name: :approve, matched: :infirm}} ->
+          %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -179,7 +179,7 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_meta(%{intent: %{name: "switch_conversation"}} = meta, state) do
         case meta.features do
-          %{ended: %{name: :approve, matched: :confirm}} ->
+          %{approve: %{matched: :confirm}} ->
             if meta_dialog?(self) do
               GenServer.cast(state.parent, {:meta, meta})
             else
@@ -190,7 +190,7 @@ defmodule Dobar.Dialog.Species do
             end
             {:topic_end, :completed}
 
-          %{ended: %{name: :approve, matched: :infirm}} ->
+          %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -199,7 +199,6 @@ defmodule Dobar.Dialog.Species do
               # It could be a bug if this will ever match, because it should be
               # impossible to try to switch to a new conversation while the
               # dialog has already been completed(or the state is broken!)
-              # %Reaction{type: :completed} = reaction ->
               {:completed, features} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
@@ -208,7 +207,7 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_meta(%{intent: %{name: "change_field"}} = meta, state) do
         case meta.features do
-          %{ended: %{name: :approve, matched: :confirm}} ->
+          %{approve: %{matched: :confirm}} ->
             intent = %Intent{name: "purge_change_fields",
                              entities: meta.intent.entities,
                              confidence: 1}
@@ -219,7 +218,7 @@ defmodule Dobar.Dialog.Species do
 
             {:topic_output, %{meta: pid}}
 
-          %{ended: %{name: :approve, matched: :infirm}} ->
+          %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
                 GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
@@ -233,7 +232,8 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
         carried_entities =
-          meta.features.capabilities
+          meta.features
+          |> Map.values
           |> Enum.map(fn item ->
             slots_values =
               item.value

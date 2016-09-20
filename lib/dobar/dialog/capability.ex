@@ -140,7 +140,6 @@ defmodule Dobar.Dialog.Capability do
     {:reply, question, state}
   end
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
-    IO.puts ":compatibility: #{inspect state}"
     match =
       if Enum.find_value(state.slots, &(&1 == :raw_input)) do
         {:match, :raw_input}
@@ -174,7 +173,13 @@ defmodule Dobar.Dialog.Capability do
       |> List.flatten
 
     if Enum.find_value(state.slots, &(&1 == :raw_input)) do
-      value = if Enum.empty?(slots_values), do: [intent.input], else: slots_values
+      # check if the slots are emtpy then check if the intent.input is empty, or nil
+      value = if Enum.empty?(slots_values) do
+        if is_nil(intent.input), do: nil, else: [intent.input]
+      else
+        slots_values
+      end
+
       {:reply, :ok, Map.put(state, :value, value)}
     else
       state = case slots_values do
