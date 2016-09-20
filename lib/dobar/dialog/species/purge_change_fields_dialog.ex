@@ -13,8 +13,6 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     intent_entities = intent.entities.field_type
     capabilities = prefilled_capabilities(intent_entities, parent_capabilities)
 
-    IO.puts "parent_capabilities: #{inspect parent_capabilities}"
-
     if Enum.count(capabilities) == 0 do
       GenEvent.notify(Dobar.DialogEvents,
         %Reaction{about: :purge_nomatches, data: %{intent: intent}})
@@ -44,11 +42,6 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   def handle_intent(intent, state) do
     super(intent, state)
   end
-
-  # TODO: match for intents other than :purge_change_fields and return :halt
-  # def handle_intent(%Intent{, state) do
-  #   super(intent, state)
-  # end
 
   defp prefilled_capabilities(entities, capabilities) do
     capabilities_set =
