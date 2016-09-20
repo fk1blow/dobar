@@ -16,7 +16,7 @@ defmodule Dobar.Dialog.Capability.Feature do
 
   @type     name :: atom
   @type     value :: nil | [<<>>]
-  @type     slots :: atom | [...]
+  @type     slots :: [...]
   @type     matched :: nil | atom
   @type     prio :: number
   @type     inert :: bool

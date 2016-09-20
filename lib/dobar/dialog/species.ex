@@ -179,7 +179,6 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_meta(%{intent: %{name: "switch_conversation"}} = meta, state) do
         case meta.features do
-          # %{approve: %{entity: :confirm}} ->
           %{ended: %{name: :approve, matched: :confirm}} ->
             if meta_dialog?(self) do
               GenServer.cast(state.parent, {:meta, meta})
@@ -191,7 +190,6 @@ defmodule Dobar.Dialog.Species do
             end
             {:topic_end, :completed}
 
-          # %{approve: %{entity: :infirm}} ->
           %{ended: %{name: :approve, matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
@@ -234,16 +232,7 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_meta(%{intent:  %{name: "purge_change_fields"}} = meta, state) do
-        %Dobar.Model.Intent{
-          confidence: 0.0,
-          entities: %{
-            message_recipient: [%{confidence: 1, type: "value", value: "mona"}]
-          },
-          input: nil,
-          name: "carrier_bearer"
-        }
-
-        entities =
+        carried_entities =
           meta.features.capabilities
           |> Enum.map(fn item ->
             slots_values =
@@ -253,7 +242,7 @@ defmodule Dobar.Dialog.Species do
           end)
           |> List.foldl(%{}, fn item, acc -> Map.merge(acc, item) end)
 
-        carrier_intent = %Intent{name: "carrier_bearer", entities: entities}
+        carrier_intent = %Intent{name: "carrier_bearer", entities: carried_entities}
 
         case Topic.forward(state.topic, carrier_intent) do
           {:question, question} ->

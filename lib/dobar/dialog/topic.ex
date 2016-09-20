@@ -97,8 +97,6 @@ defmodule Dobar.Dialog.Topic do
   """
   def forward(pid), do: GenServer.call pid, {:forward, nil}
   def forward(pid, %Intent{} = intent), do: GenServer.call pid, {:forward, intent}
-  # TODO: find if this is really used and in which cases(describe them)
-  def forward(pid, %{} = entities), do: GenServer.call pid, {:forward, entities}
 
   @doc """
   Topic's intent stored in the state of the server
@@ -184,7 +182,6 @@ defmodule Dobar.Dialog.Topic do
   end
 
   # private
-  #
 
   defp incompleted_topics(capabilities) do
     capabilities
@@ -195,7 +192,6 @@ defmodule Dobar.Dialog.Topic do
     |> Enum.map(&(&1.capability))
   end
 
-  # TODO: watch out for when there is no intention defined for the input intent
   defp available_capabilities(%Intent{} = intent) do
     intent_name = String.to_atom(intent.name)
     intention = IntentionProvider.intention(intent_name)
