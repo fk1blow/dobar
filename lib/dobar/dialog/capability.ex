@@ -115,7 +115,8 @@ defmodule Dobar.Dialog.Capability do
       value: value,
       matched: matched,
       prio: prio,
-      prefill: prefill
+      prefill: prefill,
+      inert: desc[:inert] || false
     }
 
     {:ok, feature}
@@ -139,6 +140,7 @@ defmodule Dobar.Dialog.Capability do
     {:reply, question, state}
   end
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
+    IO.puts ":compatibility: #{inspect state}"
     match =
       if Enum.find_value(state.slots, &(&1 == :raw_input)) do
         {:match, :raw_input}
