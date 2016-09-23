@@ -1,24 +1,47 @@
-# Dobar
+Dobar - Conversation capability
+===============================
 
-To start your Phoenix app:
+Dobar is a bot that has many capabilities to respond when given an intention.
+It will understand predefined topics within a conversation and react with 
+a response, through its interface(and adapters).
 
-  * Install dependencies with `mix deps.get`
-  * Create and migrate your database with `mix ecto.create && mix ecto.migrate`
-  * Start Phoenix endpoint with `mix phoenix.server`
+## Interface
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+_and more possible ways to interact, through different adapters/interfaces_
 
-Ready to run in production? Please [check our deployment guides](http://www.phoenixframework.org/docs/deployment).
+Dobar's interface is how user interacts with it, how it gives input or how it 
+receives it. It is the only way for the outside world, to interact with Dobar,
+no matter if there are conversations or not!
 
-## Learn more
+#### Interface Adapters
 
-  * Official website: http://www.phoenixframework.org/
-  * Guides: http://phoenixframework.org/docs/overview
-  * Docs: http://hexdocs.pm/phoenix
-  * Mailing list: http://groups.google.com/group/phoenix-talk
-  * Source: https://github.com/phoenixframework/phoenix
+Adapters are what they are - adapt an api to dobar's conversation and provide the way to interact and dialog with it.
 
-## todos
+Adapters default:
+  1. console or terminal adapter
+  2. another adapter....
+
+## Conversation definition
+
+tbd
+
+## Dialog and Dialog species
+
+tbd
+
+## Topics
+
+tbd
+
+## Capabilities
+
+_are slots that can react to input - reactive or proactive - or that have to be 
+filled - inert or alert attribute_
+
+tbd
+
+Todos
+-----
 
 - after `{:error, :purge_nomatches}` the dialog doesn't work anymore
 - when a dialog that ends with a confirmation, how do i handle this kind of reaction?  
