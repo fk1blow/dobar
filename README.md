@@ -1,7 +1,8 @@
 Dobar - Conversation capability
 ===============================
 
-Dobar is a bot that has many capabilities to respond when given an intention.
+Dobar is a bot that has many capabilities to respond on user input, by evaluating it
+in order to detect user's actual intention(in doing stuff).
 It will understand predefined topics within a conversation and react with 
 a response, through its interface(and adapters).
 
