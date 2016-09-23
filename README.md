@@ -20,6 +20,7 @@ Ready to run in production? Please [check our deployment guides](http://www.phoe
 
 ## todos
 
+- after `{:error, :purge_nomatches}` the dialog doesn't work anymore
 - when a dialog that ends with a confirmation, how do i handle this kind of reaction?  
 - add confidence validation at root dialog start
 - fix validation for unknown intents - when starting a new topic and alternative dialog
@@ -29,3 +30,5 @@ Ready to run in production? Please [check our deployment guides](http://www.phoe
 - don't let the "approvde" intention to be started(like cancel, change, etc)
 - add a supervisor to the dialog species and make it the interface
 - issues when using 'String.to_existing_atom` for undefined intention definition
+- dialog errors if the "purge_change_fields" intent doesn't contain the ":field_type" entity
+- make the `Conversation.Definition` fill all the available fields ("inert", "prefill", etc)
