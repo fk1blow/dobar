@@ -3,20 +3,22 @@ Dobar - Conversation capability
 
 Dobar is a bot that has many capabilities to respond on user input, by evaluating it
 in order to detect user's actual intention(in doing stuff).
-It will understand predefined topics within a conversation and react with 
+It will understand predefined topics within a conversation and react with
 a response, through its interface(and adapters).
+
+tl;dr - slot based conversations provided by a (sort of) simple api
 
 ## Interface
 
 _and more possible ways to interact, through different adapters/interfaces_
 
-Dobar's interface is how user interacts with it, how it gives input or how it 
-receives it. It is the only way for the outside world, to interact with Dobar,
-no matter if there are conversations or not!
+Dobar's interface is how user interacts with it, how it gives input or how it
+receives it, the only way for the outside world to interact with Dobar.
 
 #### Interface Adapters
 
-Adapters are what they are - adapt an api to dobar's conversation and provide the way to interact and dialog with it.
+Adapters are what they are - adapt an api to dobar's conversation and provide
+the way to interact(and dialog) with it.
 
 Adapters default:
   1. console or terminal adapter
@@ -36,7 +38,7 @@ tbd
 
 ## Capabilities
 
-_are slots that can react to input - reactive or proactive - or that have to be 
+_are slots that can react to input - reactive or proactive(tbd) - or that have to be
 filled - inert or alert attribute_
 
 tbd
@@ -45,7 +47,7 @@ Todos
 -----
 
 - after `{:error, :purge_nomatches}` the dialog doesn't work anymore
-- when a dialog that ends with a confirmation, how do i handle this kind of reaction?  
+- when a dialog that ends with a confirmation, how do i handle this kind of reaction?
 - add confidence validation at root dialog start
 - fix validation for unknown intents - when starting a new topic and alternative dialog
 - validate intention confidence validation when creating a new Dialog
