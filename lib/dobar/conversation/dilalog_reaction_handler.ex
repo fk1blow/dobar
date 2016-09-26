@@ -2,7 +2,7 @@ defmodule Dobar.Conversation.ReactionHandler do
   use GenEvent
   require Logger
 
-  alias Dobar.Reaction, as: Reaction
+  alias Dobar.Reaction
   alias Dobar.Dialog.GenericDialog
 
   # events triggered for :dialog_events_manager, in response
@@ -18,8 +18,12 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "dialog completed"
     Logger.info "completed features: #{inspect data.features}"
     Logger.info "completed intent: #{inspect data.intent}"
-    Dobar.Responder.Supervisor.respond(String.to_atom(data.intent.name), data)
+
+    # Dobar.Responder.Supervisor.respond(String.to_atom(data.intent.name), data)
+    # Dobar.Responder.Supervisor.respond({String.to_atom(data.intent.name), data})
+    Dobar.Responder.Supervisor.respond(reaction)
     Dobar.Interface.output(:text, reaction.text)
+
     {:ok, nil}
   end
 

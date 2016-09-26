@@ -15,6 +15,8 @@ defmodule Dobar.Responder do
   usually features and the intent itself.
   """
 
+  alias Dobar.Reaction
+
   defmacro __using__(_opts) do
     quote do
       use GenServer
@@ -22,7 +24,10 @@ defmodule Dobar.Responder do
 
       @before_compile Dobar.Responder
 
-      var!(reply) = &__MODULE__.output/2
+
+
+      # not shure if this has any impact, here
+      # var!(reply) = &__MODULE__.output/2
 
       def start_link(opts) do
         GenServer.start_link __MODULE__, [interface: opts[:interface]]
@@ -33,6 +38,8 @@ defmodule Dobar.Responder do
       end
 
       def handle_cast(message, state) do
+        IO.puts ":message: #{inspect message}"
+        # IO.inspect Module.__info__ :module
         respond_to(message, state.interface)
         {:noreply, state}
       end
@@ -54,7 +61,6 @@ defmodule Dobar.Responder do
   defmacro __before_compile__(_env) do
     quote do
       def handle_cast(message, state), do: {:noreply, state}
-
       def respond_to(_, _), do: :ok
     end
   end
@@ -62,11 +68,20 @@ defmodule Dobar.Responder do
   @doc """
   Will add an action withing responder's chain. The action is a `[do: block]`
   """
-  defmacro on(about, data_block, do: do_block) do
+  defmacro on(about, data, do: do_block) do
+    IO.puts "ondatablock______ : #{inspect data}"
     quote do
-      def respond_to({unquote(about), unquote(data_block[:data])}, var!(interface)) do
-        unquote(do_block)
-      end
+      def respond_to({unquote(about), unquote(data)}, var!(interface)),
+        do: unquote(do_block)
+    end
+  end
+  # defmacro hear(%Reaction{} = reaction, do: block) do
+  # defmacro about(%Reaction{} = reaction, do: block) do
+  defmacro on(reaction, do: block) do
+    IO.puts "reactionblock______ : #{inspect reaction}"
+    quote do
+      def respond_to(unquote(reaction), var!(interface)),
+        do: unquote(block)
     end
   end
 end

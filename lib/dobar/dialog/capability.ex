@@ -173,13 +173,13 @@ defmodule Dobar.Dialog.Capability do
       |> List.flatten
 
     if Enum.find_value(state.slots, &(&1 == :raw_input)) do
-      # check if the slots are emtpy then check if the intent.input is empty, or nil
+      # check if the slots are empty and if the intent's input is nil then nil,
+      # otherwise return the intent's input
       value = if Enum.empty?(slots_values) do
         if is_nil(intent.input), do: nil, else: [intent.input]
       else
         slots_values
       end
-
       {:reply, :ok, Map.put(state, :value, value)}
     else
       state = case slots_values do

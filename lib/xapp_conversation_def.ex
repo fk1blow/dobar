@@ -49,6 +49,20 @@ defmodule Dobar.Xapp.Definition do
     topic :cancel_command, reference: :cancel_command
   end
 
+  intention :find_stuff do
+    topic :subject, entity: [:pics], inert: true
+
+    topic :change_field, reference: :change_field
+    topic :cancel_command, reference: :cancel_command
+  end
+
+  intention :test_request_time do
+    topic :url, entity: [:url]
+    topic :times, entity: [:quantity], inert: true
+
+    topic :cancel_command, reference: :cancel_command
+  end
+
   intention :say_time do
     topic :where, entity: [:location], inert: true
   end

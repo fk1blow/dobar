@@ -1,14 +1,16 @@
 defmodule Dobar.Responder.Supervisor do
   use Supervisor
 
+  @sup_name Dobar.Responder.Supervisor
+
   def start_link(opts) do
-    Supervisor.start_link __MODULE__, opts, name: __MODULE__
+    Supervisor.start_link @sup_name, opts, name: @sup_name
   end
 
-  def respond(about, data) do
-    Dobar.Responder.Supervisor
+  def respond(message) do
+    @sup_name
     |> Supervisor.which_children
-    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast pid, {about, data} end)
+    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast pid, message end)
   end
 
   def init(args) do
@@ -17,6 +19,6 @@ defmodule Dobar.Responder.Supervisor do
   end
 
   defp responders do
-    Application.get_env(:dobar, Dobar.Conversation) |> Keyword.get(:responders)
+    :dobar |> Application.get_env(Dobar.Conversation) |> Keyword.get(:responders)
   end
 end
