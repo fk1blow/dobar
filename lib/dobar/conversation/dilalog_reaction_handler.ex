@@ -5,9 +5,6 @@ defmodule Dobar.Conversation.ReactionHandler do
   alias Dobar.Reaction
   alias Dobar.Dialog.GenericDialog
 
-  # events triggered for :dialog_events_manager, in response
-  # to Dialog System reactions
-
   def handle_event(%Reaction{about: :question} = reaction, _) do
     Logger.info "text reaction - dialog question"
     Dobar.Interface.output(:text, reaction.text)

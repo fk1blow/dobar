@@ -22,6 +22,7 @@ config :logger, :console,
 # Configures Dobar's conversation interface
 config :dobar, Dobar.Conversation,
   adapter: Dobar.Interface.Adapter.Console,
+  definition: Dobar.Xapp.Definition,
   responders: [
     {Dobar.Xapp.GenericResponder, []},
     {Dobar.Xapp.AnotherGenericResponder, []}
