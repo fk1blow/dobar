@@ -14,7 +14,13 @@ defmodule Dobar.Responder.Supervisor do
   end
 
   def init(args) do
-    children = responders |> Enum.map(fn {name, opts} -> worker(name, [args]) end)
+    children = case responders do
+      [h | t] ->
+        responders
+        |> Enum.filter(fn {module, opts} -> Code.ensure_loaded?(module) end)
+        |> Enum.map(fn {name, opts} -> worker(name, [args]) end)
+      _ -> []
+    end
     supervise(children, strategy: :one_for_one)
   end
 
