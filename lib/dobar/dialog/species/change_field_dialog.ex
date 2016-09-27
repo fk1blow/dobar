@@ -18,7 +18,7 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
       Dobar.DialogEvents,
       %Reaction{about: :meta_as_root,
                 text: "cannot start a dialog with a 'change field' command",
-                data: %{intent: intent}})
+                trigger: intent})
     {:error, :meta_as_root}
   end
 

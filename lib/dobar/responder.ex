@@ -13,6 +13,24 @@ defmodule Dobar.Responder do
   intent that has been evaluated(eg: :send_message, :say_time, :create_alarm),
   and the second is the `data` map which carries various data about the intent,
   usually features and the intent itself.
+
+  ## future improvements
+
+  In the near future, if the `on` macro/handler won't suffice, you can add more
+  granular handler for different types of behaviours like when dobar asks a
+  question, it canceled a dialog or couldn't find an intention.
+
+    hear ~r"kaboom" do
+      IO.puts "dobar heared this type of message from the user so you can..."
+    end
+
+    respond topic: :time do
+      IO.puts "dobar just asked you about this topic - `:time`"
+    end
+
+    react :dialog_cancel, data: %{} do
+      IO.puts "dobar has canceled the dialog so you can to whatever you want"
+    end
   """
 
   alias Dobar.Reaction
@@ -24,11 +42,6 @@ defmodule Dobar.Responder do
 
       @before_compile Dobar.Responder
 
-
-
-      # not shure if this has any impact, here
-      # var!(reply) = &__MODULE__.output/2
-
       def start_link(opts) do
         GenServer.start_link __MODULE__, [interface: opts[:interface]]
       end
@@ -38,8 +51,6 @@ defmodule Dobar.Responder do
       end
 
       def handle_cast(message, state) do
-        IO.puts ":message: #{inspect message}"
-        # IO.inspect Module.__info__ :module
         respond_to(message, state.interface)
         {:noreply, state}
       end
@@ -57,10 +68,9 @@ defmodule Dobar.Responder do
     end
   end
 
-  # add the "catch all" handler before adding the users responders handlers
   defmacro __before_compile__(_env) do
     quote do
-      def handle_cast(message, state), do: {:noreply, state}
+      # catch all `respond_to` s that don't match
       def respond_to(_, _), do: :ok
     end
   end
@@ -68,17 +78,7 @@ defmodule Dobar.Responder do
   @doc """
   Will add an action withing responder's chain. The action is a `[do: block]`
   """
-  defmacro on(about, data, do: do_block) do
-    IO.puts "ondatablock______ : #{inspect data}"
-    quote do
-      def respond_to({unquote(about), unquote(data)}, var!(interface)),
-        do: unquote(do_block)
-    end
-  end
-  # defmacro hear(%Reaction{} = reaction, do: block) do
-  # defmacro about(%Reaction{} = reaction, do: block) do
   defmacro on(reaction, do: block) do
-    IO.puts "reactionblock______ : #{inspect reaction}"
     quote do
       def respond_to(unquote(reaction), var!(interface)),
         do: unquote(block)

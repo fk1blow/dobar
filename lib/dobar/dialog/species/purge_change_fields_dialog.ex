@@ -15,7 +15,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
 
     if Enum.count(capabilities) == 0 do
       GenEvent.notify(Dobar.DialogEvents,
-        %Reaction{about: :purge_nomatches, data: %{intent: intent}})
+        %Reaction{about: :purge_nomatches, trigger: intent})
       if (meta_dialog?(self)),
         do: GenServer.cast(state.parent, {:meta, :canceled})
       {:error, :purge_nomatches}

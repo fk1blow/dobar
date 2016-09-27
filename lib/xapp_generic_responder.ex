@@ -1,23 +1,23 @@
 defmodule Dobar.Xapp.GenericResponder do
-  # use Dobar.Responder
+  use Dobar.Responder
 
   alias HTTPoison.Response
   alias HTTPoison.Error
+  alias Dobar.Reaction
 
   @default_where "Bucharest"
   @location_api "http://maps.googleapis.com/maps/api/geocode/json?sensor=false"
   @timezone_api "http://api.timezonedb.com/v2/get-time-zone?key=MWTIKWN1FRYX&by=position&format=json"
 
-  # on :say_time, data: %{features: %{where: %{value: nil}}} do
-  #   display_time(interface, @default_where)
-  # end
+  on %Reaction{trigger: %{name: "say_time"}, features: %{where: %{value: nil}}} do
+    display_time(interface, @default_where)
+  end
 
-  # on :say_time, data: %{features: %{where: %{value: [head | _] = cities}}} do
-  #   # IO.puts "cities: #{inspect cities}"
-  #   # should actually get the time for each of the cities in the `value` but for
-  #   # the time being, take just the first
-  #   display_time(interface, head)
-  # end
+  on %Reaction{trigger: %{name: "say_time"}, features: %{where: %{value: [head | _] = cities}}} do
+    # should actually get the time for each of the cities in the `value` but for
+    # the time being, take just the first
+    display_time(interface, head)
+  end
 
   defp display_time(interface, location) do
     location

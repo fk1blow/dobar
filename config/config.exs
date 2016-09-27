@@ -23,7 +23,7 @@ config :logger, :console,
 config :dobar, Dobar.Conversation,
   adapter: Dobar.Interface.Adapter.Console,
   responders: [
-    # {Dobar.Xapp.GenericResponder, []},
+    {Dobar.Xapp.GenericResponder, []},
     {Dobar.Xapp.AnotherGenericResponder, []}
   ],
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,

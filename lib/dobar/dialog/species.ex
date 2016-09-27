@@ -35,12 +35,12 @@ defmodule Dobar.Dialog.Species do
         case IntentionProvider.intention(String.to_atom intent.name) do
           {:error, reason} ->
             GenEvent.notify(Dobar.DialogEvents,
-              %Reaction{about: :undefined_intention, data: %{intent: intent}})
+              %Reaction{about: :undefined_intention, trigger: intent})
             {:error, :no_intention}
 
           {:ok, intention} ->
             GenEvent.notify(Dobar.DialogEvents,
-              %Reaction{about: :begin_topic, data: %{intent: intent}})
+              %Reaction{about: :begin_topic, trigger: intent})
 
             Process.flag(:trap_exit, true)
 
@@ -63,7 +63,7 @@ defmodule Dobar.Dialog.Species do
                   GenEvent.notify(DialogEvents,
                     %Reaction{about: :completed,
                               text: "root dialog completed!",
-                              data: %{intent: intent, features: features}})
+                              trigger: intent, features: features})
                 end
                 {:topic_end, :completed}
             end
@@ -71,7 +71,7 @@ defmodule Dobar.Dialog.Species do
       end
       def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
         GenEvent.notify(Dobar.DialogEvents,
-          %Reaction{about: :continue_topic, data: %{intent: intent}})
+          %Reaction{about: :continue_topic, trigger: intent})
 
         case Topic.forward(state.topic, intent) do
           {:question, question} ->
@@ -84,7 +84,7 @@ defmodule Dobar.Dialog.Species do
               GenEvent.notify(DialogEvents,
                 %Reaction{about: :completed,
                           text: "dialog completed!",
-                          data: %{intent: topic_intent, features: features}})
+                          trigger: topic_intent, features: features})
             end
             if meta_dialog?(self) do
               GenServer.cast(state.parent,
@@ -96,9 +96,9 @@ defmodule Dobar.Dialog.Species do
 
           {:nomatch, topic_intent} ->
             GenEvent.notify(DialogEvents,
-              %Reaction{
-                about: :intent_no_match,
-                data: %{dialog_intent: intent, intent: topic_intent}})
+              %Reaction{about: :intent_no_match,
+                        trigger: intent,
+                        other: %{dialog_intent: topic_intent}})
 
             alternative =
               intent.name
@@ -112,7 +112,7 @@ defmodule Dobar.Dialog.Species do
                 Process.flag(:trap_exit, true)
 
                 GenEvent.notify(Dobar.DialogEvents,
-                  %Reaction{about: :alternative_reference_found, data: %{intent: intent}})
+                  %Reaction{about: :alternative_reference_found, trigger: intent})
 
                 dialog = Dobar.Dialog.Species.Routes.specie intention_name
 
@@ -125,7 +125,7 @@ defmodule Dobar.Dialog.Species do
                 Process.flag(:trap_exit, true)
 
                 GenEvent.notify(Dobar.DialogEvents,
-                  %Reaction{about: :alternative_meta_found, data: %{intent: intent}})
+                  %Reaction{about: :alternative_meta_found, trigger: intent})
 
                 switch_intent = %Intent{name: "switch_conversation",
                                         confidence: 1,
@@ -142,12 +142,12 @@ defmodule Dobar.Dialog.Species do
 
               {:noalternative, intention_name} ->
                 GenEvent.notify(DialogEvents,
-                  %Reaction{about: :no_alternative_found, data: %{intent: intent}})
+                  %Reaction{about: :no_alternative_found, trigger: intent})
                 {:topic_nomatch, intention_name}
 
               {:samealternative, intention_name} ->
                 GenEvent.notify(Dobar.DialogEvents,
-                  %Reaction{about: :same_alternative_found, data: %{intent: intent}})
+                  %Reaction{about: :same_alternative_found, trigger: intent})
                 {:topic_nomatch, intention_name}
             end
         end
@@ -163,7 +163,7 @@ defmodule Dobar.Dialog.Species do
               do: GenEvent.notify(DialogEvents,
                     %Reaction{about: :completed,
                               text: "dialog completed!",
-                              data: %{intent: meta.intent, features: meta.features}})
+                              trigger: meta.intent, features: meta.features})
             {:topic_end, :completed}
 
           %{approve: %{matched: :infirm}} ->
@@ -186,7 +186,7 @@ defmodule Dobar.Dialog.Species do
               GenEvent.notify(DialogEvents,
                 %Reaction{about: :switch_conversation,
                           text: "switch the conversation",
-                          data: %{passthrough: meta.passthrough}})
+                          trigger: meta.passthrough})
             end
             {:topic_end, :completed}
 
@@ -339,6 +339,7 @@ defmodule Dobar.Dialog.Species do
       # private
 
       defp root_dialog?(pid), do: pid == Process.whereis :root_dialog
+
       defp meta_dialog?(pid), do: !root_dialog?(pid)
 
       defp find_alternative(intention_name, dialog_intent) do
