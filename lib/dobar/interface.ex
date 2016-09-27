@@ -40,11 +40,8 @@ defmodule Dobar.Interface do
 
   def start_adapter(adapter, interface, event_manager) do
     case Adapter.start_adapter(adapter, interface) do
-      {:ok, pid} ->
-        Kernel.send pid, {:connect, []}
-        {:ok, %{adapter: pid, event_manager: event_manager}}
-      {:error, reason} ->
-        {:stop, reason}
+      {:ok, pid} -> {:ok, %{adapter: pid, event_manager: event_manager}}
+      {:error, reason} -> {:stop, reason}
     end
   end
 end

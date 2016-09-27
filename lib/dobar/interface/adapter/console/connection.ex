@@ -16,10 +16,9 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     clear_screen()
     show_banner()
     prompt_message = prompt_message(@prompt_messages)
-    GenServer.start_link __MODULE__,
-      [String.strip(user),
-       opts[:adapter],
-       prompt_message]
+    GenServer.start_link(
+      __MODULE__,
+      [String.strip(user), opts[:adapter], prompt_message])
   end
 
   def init([user, adapter, prompt]) do
