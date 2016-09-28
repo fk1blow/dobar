@@ -16,7 +16,7 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "completed features: #{inspect reaction.features}"
     Logger.info "completed intent: #{inspect reaction.trigger}"
     Dobar.Responder.Supervisor.respond(reaction)
-    Dobar.Interface.output(:text, reaction.text)
+    Dobar.Interface.output(:text, "ok.")
     {:ok, nil}
   end
 
