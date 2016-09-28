@@ -109,13 +109,12 @@ defmodule Dobar.Dialog.Topic do
   def capabilities(pid), do: GenServer.call pid, :get_capabilities
 
   def init(%Intent{} = intent) do
-    capabilities =
-      available_capabilities(intent)
-      |> Enum.filter(&(is_tuple(&1)))
-      |> Enum.map(&(create_capability(&1, intent)))
-      |> build_state(intent)
+    available_capabilities(intent)
+    |> Enum.filter(&(is_tuple(&1)))
+    |> Enum.map(&(create_capability(&1, intent)))
+    |> build_state(intent)
   end
-  def init([intent: %Intent{} = intent, capabilities: capabilities] = args) do
+  def init([intent: %Intent{} = intent, capabilities: capabilities]) do
     capabilities
     |> Enum.map(&({elem(&1, 0), elem(&1, 1)}))
     |> Enum.map(&(create_capability(&1, intent)))
@@ -237,9 +236,9 @@ defmodule Dobar.Dialog.Topic do
   end
 
   defp build_state([], intent) do
-    {:stop, :empty_topic_capabilities}
+    {:ok, %{intent: intent, capabilities: []}}
   end
-  defp build_state([h|t] = capabilities, intent) do
+  defp build_state([_h | _t] = capabilities, intent) do
     {:ok, %{intent: intent, capabilities: capabilities}}
   end
 end

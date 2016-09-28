@@ -66,4 +66,9 @@ defmodule Dobar.Xapp.Definition do
   intention :say_time do
     topic :where, entity: [:location], inert: true
   end
+
+  intention :quote_of_the_day
+
+  # IO.inspect @intentions
+  # IO.puts "quote_of_the_day: #{inspect @intentions[:quote_of_the_day]}"
 end

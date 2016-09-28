@@ -15,6 +15,12 @@ defmodule Dobar.Conversation.Definition do
     end
   end
 
+  defmacro intention(name) do
+    quote do
+      @intentions Map.put(@intentions, unquote(name), [])
+    end
+  end
+
   defmacro intention(name, do: block) do
     extract_topic = fn(topic) ->
       {hd(topic), Enum.flat_map(tl(topic), fn(x) -> x end)}
