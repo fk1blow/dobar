@@ -16,7 +16,6 @@ defmodule Dobar.Conversation.ReactionHandler do
     Logger.info "completed features: #{inspect reaction.features}"
     Logger.info "completed intent: #{inspect reaction.trigger}"
     Dobar.Responder.Supervisor.respond(reaction)
-    Dobar.Interface.output(:text, "ok.")
     {:ok, nil}
   end
 
@@ -39,15 +38,17 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   def handle_event(%Reaction{about: :same_alternative_found} = reaction, _) do
     Logger.info "same alternative found for intent: #{inspect reaction.trigger}"
-    Dobar.Interface.output :text, "cannot start a dialog identical to the current one"
+    # Dobar.Interface.output :text, "cannot start a dialog identical to the current one"
+    Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :purge_nomatches} = reaction, _) do
     Logger.info "cannot purge fields that don't match with parent's capabilities"
     Logger.info "purge nomatches intent: #{inspect reaction.trigger.name}"
-    Dobar.Interface.output :text, "cannot change the fields that dont' appear in the parent"
-    Dobar.Interface.output :text, "continuing the dialog"
+    Dobar.Responder.Supervisor.respond(reaction)
+    # Dobar.Interface.output :text, "cannot change the fields that dont' appear in the parent"
+    # Dobar.Interface.output :text, "continuing the dialog"
     {:ok, nil}
   end
 
@@ -55,6 +56,7 @@ defmodule Dobar.Conversation.ReactionHandler do
     current_intent = reaction.other.dialog_intent.name
     input_intent = reaction.trigger.name
     Logger.info "no topic match for intent: #{current_intent} and input intent: #{input_intent}"
+    Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -62,7 +64,8 @@ defmodule Dobar.Conversation.ReactionHandler do
     intent_name = reaction.trigger.name
     Logger.info "no alternative found"
     Logger.info "current dialog intention: #{intent_name}"
-    Dobar.Interface.output :text, "no alternative found for current intent #{reaction.trigger.name}"
+    # Dobar.Interface.output :text, "no alternative found for current intent #{reaction.trigger.name}"
+    Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -91,22 +94,24 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%Reaction{about: :low_confidence_intent} = error, _) do
+  def handle_event(%Reaction{about: :low_confidence_intent} = reaction, _) do
     Logger.info "errorreaction - low confidence intent"
-    Logger.info "i'm do not know how to interpret that input"
-    Logger.info "intent: #{inspect error.input_intent.name}"
+    Logger.info "i'm do not know how to interpret input for intent"
+    Logger.info "TODO# reaction: #{inspect reaction}"
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :undefined_intention} = error, _state) do
     Logger.info "undefined intention has been evaluated"
-    Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
+    # Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
+    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :meta_as_root} = error, _state) do
     Logger.info "errorreaction - cannot start a dialog with a meta intention"
-    Dobar.Interface.output :text, error.text
+    # Dobar.Interface.output :text, error.text
+    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 

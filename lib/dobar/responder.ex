@@ -39,6 +39,7 @@ defmodule Dobar.Responder do
     quote do
       use GenServer
       import Dobar.Responder
+      alias Dobar.Reaction
 
       @before_compile Dobar.Responder
 
