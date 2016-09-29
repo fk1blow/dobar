@@ -91,6 +91,7 @@ defmodule Dobar.Conversation.ReactionHandler do
 
   def handle_event(%Reaction{about: :dialog_canceled} = reaction, _) do
     Logger.info "loggingreaction - dialog canceled"
+    Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
