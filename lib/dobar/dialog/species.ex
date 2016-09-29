@@ -161,10 +161,9 @@ defmodule Dobar.Dialog.Species do
 
             if root_dialog?(self),
               do: GenEvent.notify(DialogEvents,
-                    %Reaction{about: :canceled,
+                    %Reaction{about: :completed,
                               text: "dialog completed!",
-                              trigger: meta.intent,
-                              features: meta.features})
+                              trigger: meta.intent, features: meta.features})
             {:topic_end, :completed}
 
           %{approve: %{matched: :infirm}} ->
