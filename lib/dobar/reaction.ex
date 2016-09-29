@@ -6,12 +6,12 @@ defmodule Dobar.Reaction do
     text: binary,
     features: map,
     trigger: Intent.t,
-    other: map
+    other: any
   }
 
   defstruct about: nil,
             text: nil,
             features: %{},
             trigger: %Intent{},
-            other: %{}
+            other: nil
 end

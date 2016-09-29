@@ -110,10 +110,9 @@ defmodule Dobar.Conversation.ReactionHandler do
     {:ok, nil}
   end
 
-  def handle_event(%Reaction{about: :meta_as_root} = error, _state) do
-    Logger.info "errorreaction - cannot start a dialog with a meta intention"
-    # Dobar.Interface.output :text, error.text
-    # Dobar.Responder.Supervisor.respond(reaction)
+  def handle_event(%Reaction{about: :meta_as_root} = reaction, _state) do
+    Logger.info ":meta_as_root"
+    Logger.info reaction.text
     {:ok, nil}
   end
 
