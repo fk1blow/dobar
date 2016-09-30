@@ -141,6 +141,43 @@ defmodule Dobar.Dialog.Capability do
     question = "please provide a value for: #{inspect state.slots}"
     {:reply, question, state}
   end
+  def handle_call({:compatibility, %Intent{name: "carrier_bearer"} = intent}, _from, state) do
+    match =
+      if Enum.find_value(state.slots, &(&1 == :raw_input)) do
+        matched_slots =
+          state.slots
+          |> MapSet.new
+          |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+          |> MapSet.to_list
+
+        slots_values =
+          matched_slots
+          |> Enum.map(fn item ->
+            Map.get(intent.entities, item) |> Enum.map(&(Map.get(&1, :value)))
+          end)
+          |> List.flatten
+
+        case slots_values do
+          [_h | _t] ->
+            {:match, :raw_input}
+          _ ->
+            {:nomatch, state.slots}
+        end
+      else
+        matches =
+          state.slots
+          |> MapSet.new
+          |> MapSet.intersection(intent |> exclude_inconfident |> MapSet.new)
+          |> MapSet.to_list
+
+        case matches do
+          [] -> {:nomatch, state.slots}
+          [h | t] -> {:match, matches}
+        end
+      end
+
+    {:reply, match, state}
+  end
   def handle_call({:compatibility, %Intent{} = intent}, _from, state) do
     match =
       if Enum.find_value(state.slots, &(&1 == :raw_input)) do
@@ -161,6 +198,8 @@ defmodule Dobar.Dialog.Capability do
     {:reply, match, state}
   end
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
+    IO.puts "++++++++ will complete: #{state.name} with: #{inspect intent}"
+
     matched_slots =
       state.slots
       |> MapSet.new
