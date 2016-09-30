@@ -69,6 +69,8 @@ defmodule Dobar.Dialog.Capability do
   alias Dobar.Model.Intent
   alias Dobar.Dialog.Capability.Feature
 
+  @confidence_treshold 0.8
+
   def start_link(capability, intent) do
     GenServer.start_link __MODULE__, [capability: capability, prefill: intent]
   end
@@ -147,7 +149,7 @@ defmodule Dobar.Dialog.Capability do
         matches =
           state.slots
           |> MapSet.new
-          |> MapSet.intersection(Map.keys(intent.entities) |> MapSet.new)
+          |> MapSet.intersection(intent |> exclude_inconfident |> MapSet.new)
           |> MapSet.to_list
 
         case matches do
@@ -237,5 +239,15 @@ defmodule Dobar.Dialog.Capability do
       [h|t] -> capability.entity |> Enum.find(&(entities[&1]))
       _     -> capability.entity
     end
+  end
+
+  defp exclude_inconfident(%Intent{} = intent) do
+    intent.entities
+    |> Map.keys
+    |> Enum.filter(fn x ->
+      intent.entities[x]
+      |> Enum.filter(fn k -> k.confidence > @confidence_treshold end)
+      |> Enum.count > 0
+    end)
   end
 end
