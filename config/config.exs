@@ -30,10 +30,15 @@ config :dobar, Dobar.Conversation,
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
-# Configure the intentions definitions
-# These config should be defined inside the host app, not inside Dobar itself!!!
-# config :dobar, Intentions.Definitions,
-#   intentions: Dobar.Intentions
+config :dobar, Robot.Waka,
+  adapter: Dobar.Interface.Adapter.Console,
+  definition: Dobar.Xapp.Definition,
+  responders: [
+    {Dobar.Xapp.GenericResponder, []},
+    {Dobar.Xapp.AnotherGenericResponder, []}
+  ],
+  evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
+              token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
