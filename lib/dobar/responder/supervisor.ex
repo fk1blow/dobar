@@ -3,8 +3,8 @@ defmodule Dobar.Responder.Supervisor do
 
   @sup_name Dobar.Responder.Supervisor
 
-  def start_link(opts) do
-    Supervisor.start_link @sup_name, opts, name: @sup_name
+  def start_link do
+    Supervisor.start_link @sup_name, [], name: @sup_name
   end
 
   def respond(message) do

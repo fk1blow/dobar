@@ -1,13 +1,22 @@
-defmodule Dobar.Conversation.ReactionHandler do
+defmodule Dobar.Conversation.DialogHandler do
   use GenEvent
   require Logger
 
   alias Dobar.Reaction
   alias Dobar.Dialog.GenericDialog
 
-  def handle_event(%Reaction{about: :question} = reaction, _) do
-    Logger.info "text reaction - dialog question"
-    Dobar.Interface.output(:text, reaction.text)
+  def init(args) do
+    case args[:conversation] do
+      pid when is_pid(pid) -> {:ok, %{callback: pid}}
+      name when is_atom(name) -> {:ok, %{callback: name}}
+      _ -> {:error, "cannot start dialog handler without callback module"}
+    end
+  end
+
+  def handle_event(%Reaction{about: :question} = reaction, state) do
+    # Logger.info "text reaction - dialog question"
+    # Dobar.Interface.output(:text, reaction.text)
+    send state.callback, "hauuuuuukaaaaaaaarrrrrr"
     {:ok, nil}
   end
 

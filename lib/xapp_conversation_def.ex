@@ -1,7 +1,8 @@
 # this module should be the user's own intentions definitions but for the time being,
 # it can be declared here inside Dobar's Conversation app
 defmodule Dobar.Xapp.Definition do
-  use Dobar.Conversation
+  # use Dobar.Conversation
+  use Dobar.Conversation.Definition
 
   # intention :approve ?????
 

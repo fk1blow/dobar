@@ -32,11 +32,12 @@ config :dobar, Dobar.Conversation,
 
 config :dobar, Robot.Waka,
   adapter: Dobar.Interface.Adapter.Console,
-  definition: Dobar.Xapp.Definition,
+  conversation: Dobar.Xapp.Definition,
   responders: [
     {Dobar.Xapp.GenericResponder, []},
     {Dobar.Xapp.AnotherGenericResponder, []}
   ],
+  # the service module should be shorter and not necessary included inside the intention
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 

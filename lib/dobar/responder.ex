@@ -61,7 +61,7 @@ defmodule Dobar.Responder do
       defoverridable [respond_to: 2]
 
       @doc """
-      Will output the message to the inter
+      Will output the message to the interface
       """
       def reply(interface, {type, message}) do
         apply interface, :output, [type, message]

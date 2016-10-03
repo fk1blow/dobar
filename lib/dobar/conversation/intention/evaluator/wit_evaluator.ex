@@ -9,8 +9,8 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
 
   @request_timeout 5000
 
-  def text_query(message, context) do
-    case generate_request(message, context) do
+  def text_query(message, conf) do
+    case generate_request(message, conf) do
       {:ok, request} ->
         HTTPoison.get(request[:url], request[:headers], [timeout: @request_timeout])
         |> handle_response
@@ -19,31 +19,32 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
     end
   end
 
-  def handle_response({:ok, %Response{status_code: 200, body: body}}) do
+  defp handle_response({:ok, %Response{status_code: 200, body: body}}) do
     {:ok, body}
   end
-  def handle_response({:error, %Error{reason: reason}}) do
+  defp handle_response({:error, %Error{reason: reason}}) do
     {:error, reason}
   end
 
-  def parse_response({:ok, body}) do
+  defp parse_response({:ok, body}) do
     case Poison.decode(body, keys: :atoms) do
       {:ok, value} -> {:ok, value}
       error -> {:error, "unable to parse wit response"}
     end
   end
-  def parse_response({:error, body}) do
+  defp parse_response({:error, body}) do
     {:error, body}
   end
 
-  def generate_request(message, context) when is_bitstring message do
-    URI.encode(message) |> build_request
+  defp generate_request(message, conf) when is_bitstring message do
+    URI.encode(message) |> build_request(conf)
   end
-  def generate_request(_, _), do: {:error, "the message must be a string"}
+  defp generate_request(_, _), do: {:error, "the message must be a string"}
 
-  defp build_request(message) do
+  defp build_request(message, opts \\ []) do
     url = "https://api.wit.ai/message?v=20160516&q=#{message}"
-    headers = %{"Authorization" => "Bearer #{service_token}"}
+    # headers = %{"Authorization" => "Bearer #{service_token}"}
+    headers = %{"Authorization" => "Bearer #{opts[:token]}"}
     {:ok, %{url: url, headers: headers}}
   end
 
