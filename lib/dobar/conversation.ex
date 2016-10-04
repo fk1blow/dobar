@@ -42,7 +42,7 @@ defmodule Dobar.Conversation do
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
-  def handle_info({:EXIT, _, :normal}, state) do
+  def handle_info({:EXIT, pid, :normal}, state) do
     {:noreply, Map.merge(state, %{dialog: nil})}
   end
   def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
@@ -53,6 +53,11 @@ defmodule Dobar.Conversation do
     send(state.robot, {:dialog_reaction, reaction})
     {:noreply, state}
   end
+  def handle_info({:switch_dialog, %Reaction{trigger: %Intent{} = intent}}, state) do
+    dialog = create_dialog(intent, state.event_manager, state.definitions)
+    GenericDialog.evaluate(dialog, intent)
+    {:noreply, Map.merge(state, %{dialog: dialog})}
+  end
 
   defp start_event_handlers(manager) do
     GenEvent.add_mon_handler(manager, Conversation.DialogHandler, [conversation: self])
@@ -60,8 +65,8 @@ defmodule Dobar.Conversation do
     GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
   end
 
-  defp create_dialog(intent, event_manager, definitions) do
-    dialog = SpeciesRoutes.specie intent.name
+  defp create_dialog(%Intent{name: name} = intent, event_manager, definitions) do
+    dialog = SpeciesRoutes.specie(name)
     Process.flag(:trap_exit, true)
     {:ok, pid} = dialog.start_link(:root_dialog,
       [event_manager: event_manager, definitions: definitions])

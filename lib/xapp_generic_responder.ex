@@ -9,6 +9,14 @@ defmodule Dobar.Xapp.GenericResponder do
   @location_api "http://maps.googleapis.com/maps/api/geocode/json?sensor=false"
   @timezone_api "http://api.timezonedb.com/v2/get-time-zone?key=MWTIKWN1FRYX&by=position&format=json"
 
+  on %Reaction{about: :question} = reaction do
+    reply interface, {:text, reaction.text}
+  end
+
+  on %Reaction{about: :canceled} = reaction do
+    reply interface, {:text, "oookay, i'm canceling it!"}
+  end
+
   on %Reaction{trigger: %{name: "say_time"}, features: %{where: %{value: nil}}} do
     display_time(interface, @default_where)
   end

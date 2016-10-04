@@ -1,4 +1,3 @@
-# TODO: move to Dobar.Dialog.Species.ChangeFieldDialog
 defmodule Dobar.Dialog.ChangeFieldDialog do
   @moduledoc """
   This specialized dialog will handle "change_field" intents in a special way.
@@ -15,7 +14,7 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
 
   def handle_intent(intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
     GenEvent.notify(
-      Dobar.DialogEvents,
+      state.event_manager,
       %Reaction{about: :meta_as_root,
                 text: "cannot start a dialog with a 'change field' command",
                 trigger: intent})
@@ -26,18 +25,13 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
     {:ok, topic} = Topic.start_link(intent, [definitions: state.definitions])
 
     case Topic.forward(topic) do
-      # %Reaction{type: :question} = reaction ->
       {:question, question} ->
-          GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :question, text: question})
+          GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
         {:topic_output, %{topic: topic}}
 
-      # %Reaction{type: :completed} = reaction ->
       {:completed, intent, features} ->
-        GenEvent.notify(Dobar.DialogEvents, %Reaction{about: :completed, text: "ok"})
-        # GenEvent.notify(Dobar.DialogEvents, %TextReaction{
-        #   about: :completed, text: "ok", topic_reaction: reaction})
+        GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
         unless root_dialog?(self) do
-          # GenServer.cast parent, {:meta, reaction}
           GenServer.cast(parent,
             {:meta, %Dobar.Model.Meta{intent: intent, passthrough: state.passthrough}})
         end

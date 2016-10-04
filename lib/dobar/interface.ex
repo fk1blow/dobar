@@ -20,12 +20,12 @@ defmodule Dobar.Interface do
     end
   end
 
-  # received usually from a responder, after the conversation reacts
+  # the :output comes from a responder, when the user decides it wants to reply
+  # to the interface, and the :input comes from the adapter, when the user inputs
   def handle_info({:output, :text, message}, %{adapter: adapter} = state) do
     Kernel.send adapter, {:text, message}
     {:noreply, state}
   end
-  # received from the adapter and used as a callback for input triggers
   def handle_info({:input, :text, message}, state) do
     case evaluate_text_input(message, state.evaluator) do
       {:ok, intent} ->

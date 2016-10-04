@@ -7,7 +7,6 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Intent
       alias Dobar.Dialog.Topic
       alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
-      alias Dobar.DialogEvents
 
       @confidence_treshold 0.8
 
