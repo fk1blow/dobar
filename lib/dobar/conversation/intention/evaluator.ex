@@ -9,7 +9,7 @@ defmodule Dobar.Conversation.Intention.Evaluator do
   such types of input, services like wit.ai - default, for now
   """
 
-  alias Dobar.Model.Intent
+  alias Dobar.Intent
 
   @default_evaluator Dobar.Conversation.Intention.Evaluator.Wit
 

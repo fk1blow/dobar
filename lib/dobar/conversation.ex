@@ -1,9 +1,12 @@
 defmodule Dobar.Conversation do
   use GenServer
 
+  alias Dobar.Intent
+  alias Dobar.Reaction
   alias Dobar.Conversation
   alias Conversation.DialogEvents
-  alias Dobar.Model.Intent
+  alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
+  alias Dobar.Dialog.GenericDialog
 
   def start_link(opts) do
     GenServer.start_link __MODULE__, opts
@@ -16,25 +19,42 @@ defmodule Dobar.Conversation do
   def init(args) do
     {:ok, pid} = DialogEvents.start_link
     {_id, manager_pid, _, _} = DialogEvents.get_child(pid, :dialog_event_mananger)
-    manager_pid |> start_event_handlers
-    {:ok, %{event_manager: manager_pid, robot: args[:robot]}}
+    _ = manager_pid |> start_event_handlers
+    {:ok, %{event_manager: manager_pid,
+            robot: args[:robot],
+            definitions: args[:definitions],
+            dialog: nil}}
   end
 
-  def handle_cast({:react, %Intent{} = intent}, state) do
-    IO.puts "now i should react to the intent, inside the conversation"
+  def handle_cast({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
+    dialog = case dialog do
+      nil ->
+        dialog = SpeciesRoutes.specie intent.name
+        {:ok, pid} = dialog.start_link(:root_dialog,
+          [event_manager: state.event_manager, definitions: state.definitions])
+        GenericDialog.evaluate(pid, intent)
+        dialog
+      dialog ->
+        GenericDialog.evaluate(dialog, intent)
+        dialog
+    end
+    {:noreply, Map.merge(state, %{dialog: dialog})}
+  end
+
+  def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
+    start_event_handlers(manager)
     {:noreply, state}
   end
-
-  def handle_info({:gen_event_EXIT, _, _}, %{event_mananger: manager} = state) do
-    start_event_handlers(manager)
+  def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
+    send(state.robot, {:dialog_reaction, reaction})
     {:noreply, state}
   end
 
   defp start_event_handlers(manager) do
     # TODO: move the loggers inside the dialog handler, to the logging handler
-    GenEvent.add_mon_handler(manager, Conversation.DialogHandler, [[conversation: self]])
+    GenEvent.add_mon_handler(manager, Conversation.DialogHandler, [conversation: self])
     GenEvent.add_mon_handler(manager, Conversation.TimelineHandler, nil)
-    # GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
+    GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
   end
 
   # defmacro __using__(_opts) do

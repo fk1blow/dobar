@@ -26,8 +26,6 @@ defmodule Dobar.Interface do
     GenServer.cast __MODULE__, {:output, :text, message}
   end
 
-  # def input(:)
-
   # Callbacks
 
   def handle_cast({:output, :text, message}, %{adapter: adapter} = state) do

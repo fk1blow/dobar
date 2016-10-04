@@ -68,7 +68,7 @@ defmodule Dobar.Dialog.Topic do
 
   use GenServer
 
-  alias Dobar.Model.Intent
+  alias Dobar.Intent
   alias Dobar.Dialog.Capability
   alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
@@ -79,10 +79,10 @@ defmodule Dobar.Dialog.Topic do
   Starts a new Topic with a strict set of capabilities handed over by the caller.
   The topic's capabilities will be constructued manually, added to the provided intent.
   """
-  def start_link(%Intent{} = intent) do
-    GenServer.start_link(__MODULE__, intent)
+  def start_link(%Intent{} = intent, [definitions: definitions]) do
+    GenServer.start_link(__MODULE__, [intent: intent, definitions: definitions])
   end
-  def start_link(%Intent{} = intent, capabilities) do
+  def start_link(%Intent{} = intent, [capabilities: capabilities]) do
     GenServer.start_link(__MODULE__, [intent: intent, capabilities: capabilities])
   end
 
@@ -108,8 +108,8 @@ defmodule Dobar.Dialog.Topic do
   """
   def capabilities(pid), do: GenServer.call pid, :get_capabilities
 
-  def init(%Intent{} = intent) do
-    available_capabilities(intent)
+  def init([intent: %Intent{} = intent, definitions: definitions]) do
+    available_capabilities(intent, definitions)
     |> Enum.filter(&(is_tuple(&1)))
     |> Enum.map(&(create_capability(&1, intent)))
     |> build_state(intent)
@@ -191,11 +191,12 @@ defmodule Dobar.Dialog.Topic do
     |> Enum.map(&(&1.capability))
   end
 
-  defp available_capabilities(%Intent{} = intent) do
-    intent_name = String.to_atom(intent.name)
-    intention = IntentionProvider.intention(intent_name)
-    case intention do
-      {:ok, intent_def} -> filter_capabilities(intent_def[intent_name])
+  defp available_capabilities(%Intent{} = intent, definitions) do
+    intent_name = intent.name |> String.to_atom
+
+    case definitions.intention(intent_name) do
+      {:ok, intent_def} ->
+        filter_capabilities(intent_def[intent_name])
       {:error, reason} -> []
     end
   end

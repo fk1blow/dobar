@@ -66,7 +66,7 @@ defmodule Dobar.Dialog.Capability do
 
   use GenServer
 
-  alias Dobar.Model.Intent
+  alias Dobar.Intent
   alias Dobar.Dialog.Capability.Feature
 
   @confidence_treshold 0.8

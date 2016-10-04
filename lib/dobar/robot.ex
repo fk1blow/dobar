@@ -4,7 +4,9 @@ defmodule Dobar.Robot do
   # use Supervisor
 
   alias Dobar.Interface
-  alias Dobar.Model.Intent
+  alias Dobar.Conversation
+  alias Dobar.Intent
+  alias Dobar.Reaction
 
   def start_link(opts \\ []) do
     GenServer.start_link __MODULE__, opts
@@ -18,25 +20,17 @@ defmodule Dobar.Robot do
       false ->
         {:error, "conversation definition module not found"}
       true ->
-        # {:ok, pid} = Dobar.Conversation.Supervisor.start_link
-        # {:ok, pid} = Interface.Supervisor.start_link([adapter: conf[:adapter]])
-
         {:ok, pid} = create_robot(conf)
         {:ok, %{supervisor: pid}}
-
-        # {:ok, pid} = InterfaceSup.start_link([adapter: opts[:adapter]])
-        # create_robot(conf)
     end
   end
 
   def handle_cast({:input, :text, message}, state) do
     case get_child(state.supervisor, :interface_supervisor) do
       nil ->
-        raise "cannot handle text input because the interface is unavailable"
-      {_, pid, _, _} when is_pid(pid) ->
-        Dobar.Interface.Supervisor.process_input(pid, {:input, :text, message})
-      {_, name, _, _} when is_atom(name) ->
-        Dobar.Interface.Supervisor.process_input(name, {:input, :text, message})
+        IO.puts "______________: cannot handle text input with no available interface"
+      {_, name, _, _} when is_pid(name) or is_atom(name) ->
+        Interface.Supervisor.process_input(name, {:input, :text, message})
     end
     {:noreply, state}
   end
@@ -44,14 +38,18 @@ defmodule Dobar.Robot do
   def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
     case get_child(state.supervisor, :conversation) do
       nil ->
-        raise "cannot evaluate the intent because the conversation managers i unavailable"
+        IO.puts "______________: cannot evaluate the intent with no available conversation"
       {_, name, _, _} when is_pid(name) or is_atom(name) ->
-        Dobar.Conversation.react(name, intent)
+        Conversation.react(name, intent)
     end
     {:noreply, state}
   end
   def handle_info({:evaluation_error, reason}, state) do
-    raise ":evaluation_error; reason: #{inspect reason}"
+    IO.puts "______________:evaluation_error; reason: #{inspect reason}"
+    {:noreply, state}
+  end
+  def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
+    IO.puts "dialoooooooooooooooog reaaaaaaaaactiooooooon"
     {:noreply, state}
   end
 
@@ -64,15 +62,16 @@ defmodule Dobar.Robot do
   defp create_robot(conf) do
     import Supervisor.Spec
 
-    evaluator = conf[:evaluator]
-    adapter = conf[:adapter]
-
     children = [
-      supervisor(Dobar.Conversation, [[robot: self]], id: :conversation),
-
-      supervisor(Dobar.Interface.Supervisor,
-        [[robot: self, adapter: adapter, evaluator: evaluator]],
+      # start the interface supervisor
+      supervisor(Interface.Supervisor,
+        [[robot: self, adapter: conf[:adapter], evaluator: conf[:evaluator]]],
         id: :interface_supervisor),
+
+      # start the conversation manager
+      supervisor(Conversation,
+        [[robot: self, definitions: conf[:conversation]]],
+        id: :conversation),
 
       # worker(evaluator_service_mod, [evaluator])
       # Start the Responder

@@ -23,7 +23,7 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
   end
 
   def handle_intent(intent, %{topic: nil, meta: nil, parent: parent} = state) do
-    {:ok, topic} = Topic.start_link(intent)
+    {:ok, topic} = Topic.start_link(intent, [definitions: state.definitions])
 
     case Topic.forward(topic) do
       # %Reaction{type: :question} = reaction ->

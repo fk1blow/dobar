@@ -21,7 +21,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
       {:error, :purge_nomatches}
     else
       intent = %Intent{name: "purge_change_fields", confidence: 1}
-      {:ok, topic} = Topic.start_link(intent, capabilities)
+      {:ok, topic} = Topic.start_link(intent, [capabilities: capabilities])
 
       case Topic.forward(topic) do
         {:question, question} ->
