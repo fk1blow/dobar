@@ -1,3 +1,4 @@
+# TODO: should be moved outside the conversation/intention modules
 defmodule Dobar.Conversation.Intention.Evaluator do
   @moduledoc """
   Conversation Intention Evaluator

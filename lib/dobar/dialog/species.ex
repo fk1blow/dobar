@@ -6,14 +6,10 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Reaction
       alias Dobar.Intent
       alias Dobar.Dialog.Topic
-      alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
       alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
-
       alias Dobar.DialogEvents
 
       @confidence_treshold 0.8
-
-      # Public interface
 
       def start_link(:root_dialog, opts) do
         GenServer.start_link(__MODULE__,
@@ -25,7 +21,6 @@ defmodule Dobar.Dialog.Species do
            event_manager: opts[:event_manager],
            definitions: opts[:definitions]])
       end
-      # TODO: add `name` as process register only if opts[:name] exists
       def start_link([h|t] = params, opts) do
         GenServer.start_link(__MODULE__,
           [parent: params[:parent],
@@ -46,7 +41,6 @@ defmodule Dobar.Dialog.Species do
       # overridable delegates
 
       def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
-        # case IntentionProvider.intention(String.to_atom intent.name) do
         case state.definitions.intention(String.to_atom intent.name) do
           {:error, reason} ->
             GenEvent.notify(state.event_manager,
@@ -119,7 +113,7 @@ defmodule Dobar.Dialog.Species do
             alternative =
               intent.name
               |> String.to_atom
-              |> find_alternative(topic_intent)
+              |> find_alternative(topic_intent, state.definitions)
               |> validate_confidence(intent)
               |> validate_inception(topic_intent)
 
@@ -239,11 +233,11 @@ defmodule Dobar.Dialog.Species do
           %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+                GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
 
               {:completed, features} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
+                GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
             end
         end
@@ -274,10 +268,10 @@ defmodule Dobar.Dialog.Species do
       def handle_meta(:canceled, state) do
         case Topic.forward(state.topic) do
           {:question, question} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+            GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}
           {:completed, features} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
+            GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
             {:topic_end, :completed}
         end
       end
@@ -355,12 +349,12 @@ defmodule Dobar.Dialog.Species do
 
       defp meta_dialog?(name), do: !root_dialog?(name)
 
-      defp find_alternative(intention_name, dialog_intent) do
+      defp find_alternative(intention_name, dialog_intent, definitions) do
         capability_name = intention_name
         topic_intent_name = dialog_intent.name |> String.to_atom
 
         # extract the intention for the current topic
-        {:ok, intention} = IntentionProvider.intention(topic_intent_name)
+        {:ok, intention} = definitions.intention(topic_intent_name)
 
         # extract the capabilities of the current topic
         topic_capabilities = intention[topic_intent_name][capability_name]
@@ -378,7 +372,7 @@ defmodule Dobar.Dialog.Species do
           [_head|_tail] ->
             {:reference, intention_name}
           nil ->
-            case IntentionProvider.intention(capability_name) do
+            case definitions.intention(capability_name) do
               {:ok, intention} ->
                 topic_capabilities = intention[capability_name]
                 # if the capability is contextual and applies only for meta, stop

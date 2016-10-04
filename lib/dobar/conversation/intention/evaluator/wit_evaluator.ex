@@ -1,3 +1,4 @@
+# TODO: should be moved outside the conversation/intention modules
 defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   @moduledoc """
   This module has to communicate with the expression api provided by wit.ai
