@@ -37,8 +37,6 @@ defmodule Dobar.Interface do
     {:noreply, state}
   end
 
-  # Private
-
   defp validate_adapter(adapter) do
     case adapter do
       nil -> {:error, "Cannot start the interface without an adapter!"}

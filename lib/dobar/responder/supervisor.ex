@@ -21,6 +21,7 @@ defmodule Dobar.Responder.Supervisor do
   end
 
   def init(args) do
+    responders = args[:responders]
     children = case responders do
       nil     -> []
       [h | t] ->
@@ -29,9 +30,5 @@ defmodule Dobar.Responder.Supervisor do
         |> Enum.map(fn {name, opts} -> worker(name, [args]) end)
     end
     supervise(children, strategy: :one_for_one)
-  end
-
-  defp responders do
-    :dobar |> Application.get_env(Dobar.Conversation) |> Keyword.get(:responders)
   end
 end

@@ -7,7 +7,7 @@ defmodule Dobar.Robot do
   alias Dobar.Intent
   alias Dobar.Reaction
 
-  def start_link(opts \\ []) do
+  def start_link(opts) do
     GenServer.start_link __MODULE__, opts
   end
 
@@ -68,7 +68,8 @@ defmodule Dobar.Robot do
 
       # start the responder supervisor
       supervisor(Responder.Supervisor,
-        [[interface_module: Interface.Supervisor]],
+        [[interface_module: Interface.Supervisor,
+          responders: conf[:responders]]],
         id: :responder)
     ]
 
