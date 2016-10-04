@@ -5,17 +5,8 @@ defmodule Dobar.Conversation.LoggingHandler do
   alias Dobar.Reaction
   alias Dobar.Dialog.GenericDialog
 
-  # def init(args) do
-  #   case args[:conversation] do
-  #     name when is_atom(name) or is_pid(name) -> {:ok, %{conversation: name}}
-  #     _ -> {:error, "cannot start dialog handler without callback module"}
-  #   end
-  # end
-
   def handle_event(%Reaction{about: :question} = reaction, state) do
     Logger.info "text reaction - dialog question"
-    # Dobar.Interface.output(:text, reaction.text)
-    # send state.callback, "hauuuuuukaaaaaaaarrrrrr"
     {:ok, state}
   end
 
@@ -23,42 +14,17 @@ defmodule Dobar.Conversation.LoggingHandler do
     Logger.info "dialog completed"
     Logger.info "completed features: #{inspect reaction.features}"
     Logger.info "completed intent: #{inspect reaction.trigger}"
-    # Dobar.Responder.Supervisor.respond(reaction)
-    # send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
-  end
-
-  def handle_event(%Reaction{about: :switch_conversation, trigger: trigger} = reaction, _) do
-    Logger.info "switch conversation"
-    Logger.info "evaluate dialog for intent: #{trigger.name}, confidence: #{trigger.confidence}"
-
-    raise "case not according to refactor to robots - must refactor"
-    case Process.whereis(:root_dialog) do
-      nil ->
-        dialog = Dobar.Dialog.Species.Routes.specie trigger.name
-        Logger.info "will evaluate dialog: #{inspect dialog}"
-        {:ok, pid} = dialog.start_link(:root_dialog)
-        GenericDialog.evaluate pid, trigger
-      pid ->
-        GenericDialog.evaluate pid, trigger
-    end
-
-    {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :same_alternative_found} = reaction, _) do
     Logger.info "same alternative found for intent: #{inspect reaction.trigger}"
-    # Dobar.Interface.output :text, "cannot start a dialog identical to the current one"
-    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :purge_nomatches} = reaction, _) do
     Logger.info "cannot purge fields that don't match with parent's capabilities"
     Logger.info "purge nomatches intent: #{inspect reaction.trigger.name}"
-    # Dobar.Responder.Supervisor.respond(reaction)
-    # Dobar.Interface.output :text, "cannot change the fields that dont' appear in the parent"
-    # Dobar.Interface.output :text, "continuing the dialog"
     {:ok, nil}
   end
 
@@ -66,7 +32,6 @@ defmodule Dobar.Conversation.LoggingHandler do
     current_intent = reaction.other.dialog_intent.name
     input_intent = reaction.trigger.name
     Logger.info "no topic match for intent: #{current_intent} and input intent: #{input_intent}"
-    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -74,8 +39,6 @@ defmodule Dobar.Conversation.LoggingHandler do
     intent_name = reaction.trigger.name
     Logger.info "no alternative found"
     Logger.info "current dialog intention: #{intent_name}"
-    # Dobar.Interface.output :text, "no alternative found for current intent #{reaction.trigger.name}"
-    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -102,7 +65,6 @@ defmodule Dobar.Conversation.LoggingHandler do
   def handle_event(%Reaction{about: :canceled} = reaction, _) do
     Logger.info "dialog canceled"
     Logger.info "canceled intent: #{inspect reaction.trigger.name}"
-    Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -115,8 +77,6 @@ defmodule Dobar.Conversation.LoggingHandler do
 
   def handle_event(%Reaction{about: :undefined_intention} = error, _state) do
     Logger.info "undefined intention has been evaluated"
-    # Dobar.Interface.output :text, "DoBar cannot respond to an undefined intention"
-    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 

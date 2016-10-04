@@ -198,8 +198,6 @@ defmodule Dobar.Dialog.Capability do
     {:reply, match, state}
   end
   def handle_call({:complete, %Intent{entities: entities} = intent}, _from, state) do
-    IO.puts "++++++++ will complete: #{state.name} with: #{inspect intent}"
-
     matched_slots =
       state.slots
       |> MapSet.new

@@ -126,7 +126,10 @@ defmodule Dobar.Dialog.Species do
 
                 # dialog = Dobar.Dialog.Species.Routes.specie intention_name
                 dialog = SpeciesRoutes.specie intention_name
-                {:ok, pid} = dialog.start_link([parent: self, name: intention_name])
+                {:ok, pid} = dialog.start_link(
+                  [parent: self, name: intention_name],
+                  [definitions: state.definitions, event_manager: state.event_manager])
+
                 dialog.evaluate(pid, intent)
 
                 {:topic_alternative, %{meta: pid}}
@@ -143,9 +146,11 @@ defmodule Dobar.Dialog.Species do
 
                 # dialog = Dobar.Dialog.Species.Routes.specie(intention_name)
                 dialog = SpeciesRoutes.specie(intention_name)
-                {:ok, pid} = dialog.start_link([name: String.to_existing_atom(switch_intent.name),
-                                                parent: self,
-                                                passthrough: intent])
+                {:ok, pid} = dialog.start_link(
+                  [name: String.to_existing_atom(switch_intent.name),
+                   parent: self,
+                   passthrough: intent],
+                  [definitions: state.definitions, event_manager: state.event_manager])
 
                 dialog.evaluate(pid, switch_intent)
 
@@ -225,7 +230,9 @@ defmodule Dobar.Dialog.Species do
 
             # dialog = Dobar.Dialog.Species.Routes.specie(intent.name)
             dialog = SpeciesRoutes.specie(intent.name)
-            {:ok, pid} = dialog.start_link([name: intent.name, parent: self])
+            {:ok, pid} = dialog.start_link(
+              [name: intent.name, parent: self],
+              [definitions: state.definitions, event_manager: state.event_manager])
             dialog.evaluate(pid, intent)
 
             {:topic_output, %{meta: pid}}
