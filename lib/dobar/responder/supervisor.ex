@@ -3,28 +3,26 @@ defmodule Dobar.Responder.Supervisor do
 
   @sup_name Dobar.Responder.Supervisor
 
-  def start_link do
+  def start_link(opts) do
     # TODO do not register with a name
-    Supervisor.start_link @sup_name, [], name: @sup_name
+    Supervisor.start_link @sup_name, opts
     # Supervisor.start_link @sup_name, []
   end
 
   # def respond(sup, message) do
-  def respond(message) do
+  def respond(pid, {message, interface}) do
     # TODO do not register with a name
     # TODO: pass the pid of the supervisor, directly through `respond` function
-    @sup_name
+    pid
     |> Supervisor.which_children
     |> Enum.each(fn {_, pid, _, _} ->
-      IO.puts "xxxxxxx"
-      GenServer.cast pid, message
+      GenServer.cast pid, {message, interface}
     end)
   end
 
   def init(args) do
     children = case responders do
-      nil ->
-        []
+      nil     -> []
       [h | t] ->
         responders
         |> Enum.filter(fn {module, opts} -> Code.ensure_loaded?(module) end)

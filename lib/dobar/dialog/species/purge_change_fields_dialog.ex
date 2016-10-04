@@ -7,8 +7,6 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
   # this basically tries to match the incoming fields the user wants to change,
   # agains the fields of the parent dialog(the actual target).
   def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
-    Process.flag(:trap_exit, true)
-
     parent_capabilities = GenServer.call(state.parent, :topic_capabilities)
     intent_entities = intent.entities.field_type
     capabilities = prefilled_capabilities(intent_entities, parent_capabilities)
@@ -63,8 +61,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     # take the keys of the feature, filter them, and build a map with them
     # take the map of the keys/feature and build a keyword that contains it
     case MapSet.size(matching_capabilities) do
-      0 ->
-        []
+      0 -> []
       n ->
         capabilities
         |> Enum.filter(fn capability ->

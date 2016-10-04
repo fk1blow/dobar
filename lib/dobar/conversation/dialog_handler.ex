@@ -22,6 +22,8 @@ defmodule Dobar.Conversation.DialogHandler do
   end
 
   def handle_event(%Reaction{about: :switch_conversation, trigger: trigger} = reaction, _) do
+    raise "switch conversation refactor not completed!"
+
     Logger.info "switch conversation"
     Logger.info "evaluate dialog for intent: #{trigger.name}, confidence: #{trigger.confidence}"
 

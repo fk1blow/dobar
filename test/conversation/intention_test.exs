@@ -3,7 +3,7 @@ defmodule Dobar.Conversation.IntentionTest do
 
   @moduletag :intention_case
 
-  alias Dobar.Model.Intent
+  alias Dobar.Intent
   alias Dobar.Conversation.Intention.SendMessage
   alias Dobar.Conversation.Model.Capability
 

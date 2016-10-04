@@ -5,6 +5,7 @@ defmodule Dobar.Robot do
 
   alias Dobar.Interface
   alias Dobar.Conversation
+  alias Dobar.Responder
   alias Dobar.Intent
   alias Dobar.Reaction
 
@@ -26,22 +27,14 @@ defmodule Dobar.Robot do
   end
 
   def handle_cast({:input, :text, message}, state) do
-    case get_child(state.supervisor, :interface_supervisor) do
-      nil ->
-        IO.puts "______________: cannot handle text input with no available interface"
-      {_, name, _, _} when is_pid(name) or is_atom(name) ->
-        Interface.Supervisor.process_input(name, {:input, :text, message})
-    end
+    {_, pid, _, _} = get_child(state.supervisor, :interface)
+    Interface.Supervisor.process_input(pid, {:input, :text, message})
     {:noreply, state}
   end
 
   def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    case get_child(state.supervisor, :conversation) do
-      nil ->
-        IO.puts "______________: cannot evaluate the intent with no available conversation"
-      {_, name, _, _} when is_pid(name) or is_atom(name) ->
-        Conversation.react(name, intent)
-    end
+    {_, pid, _, _} = get_child(state.supervisor, :conversation)
+    Conversation.react(pid, intent)
     {:noreply, state}
   end
   def handle_info({:evaluation_error, reason}, state) do
@@ -49,7 +42,9 @@ defmodule Dobar.Robot do
     {:noreply, state}
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
-    IO.puts "dialoooooooooooooooog reaaaaaaaaactiooooooon"
+    {_, responder, _, _} = get_child(state.supervisor, :responder)
+    {_, interface, _, _} = get_child(state.supervisor, :interface)
+    Responder.Supervisor.respond(responder, {reaction, interface})
     {:noreply, state}
   end
 
@@ -66,12 +61,17 @@ defmodule Dobar.Robot do
       # start the interface supervisor
       supervisor(Interface.Supervisor,
         [[robot: self, adapter: conf[:adapter], evaluator: conf[:evaluator]]],
-        id: :interface_supervisor),
+        id: :interface),
 
       # start the conversation manager
-      supervisor(Conversation,
+      worker(Conversation,
         [[robot: self, definitions: conf[:conversation]]],
         id: :conversation),
+
+      # start the responder supervisor
+      supervisor(Responder.Supervisor,
+        [[interface_module: Interface.Supervisor]],
+        id: :responder)
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)

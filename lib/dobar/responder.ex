@@ -33,26 +33,22 @@ defmodule Dobar.Responder do
     end
   """
 
-  alias Dobar.Reaction
-
   defmacro __using__(_opts) do
     quote do
       use GenServer
       import Dobar.Responder
-      alias Dobar.Reaction
+      alias Dobar.Responder.Interface
 
       @before_compile Dobar.Responder
 
-      def start_link(opts) do
-        GenServer.start_link __MODULE__, [interface: opts[:interface]]
-      end
+      def start_link(opts), do: GenServer.start_link __MODULE__, opts
 
-      def init(args) do
-        {:ok, %{interface: args[:interface]}}
-      end
+      def init(args), do: {:ok, %{interface_module: args[:interface_module]}}
 
-      def handle_cast(message, state) do
-        respond_to(message, state.interface)
+      def handle_cast({message, interface_pid}, state) do
+        interface = %Interface{interface_module: state.interface_module,
+                                  interface_pid: interface_pid}
+        respond_to(message, interface)
         {:noreply, state}
       end
 
@@ -63,10 +59,15 @@ defmodule Dobar.Responder do
       @doc """
       Will output the message to the interface
       """
-      def reply(interface, {type, message}) do
-        apply interface, :output, [type, message]
+      def reply(%Interface{interface_module: mod, interface_pid: pid}, {type, message}) do
+        apply(mod, :process_input, [pid, {:output, type, message}])
       end
     end
+  end
+
+  defmodule Interface do
+    defstruct interface_module: nil,
+              interface_pid: nil
   end
 
   defmacro __before_compile__(_env) do
@@ -79,9 +80,9 @@ defmodule Dobar.Responder do
   @doc """
   Will add an action withing responder's chain. The action is a `[do: block]`
   """
-  defmacro on(reaction, do: block) do
+  defmacro on(message, do: block) do
     quote do
-      def respond_to(unquote(reaction), var!(interface)),
+      def respond_to(unquote(message), var!(interface)),
         do: unquote(block)
     end
   end

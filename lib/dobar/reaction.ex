@@ -1,5 +1,5 @@
 defmodule Dobar.Reaction do
-  alias Dobar.Model.Intent
+  alias Dobar.Intent
 
   @type t :: %__MODULE__{
     about: atom,
