@@ -62,7 +62,14 @@ defmodule Dobar.Responder do
       def reply(%Interface{interface_module: mod, interface_pid: pid}, {type, message}) do
         apply(mod, :process_input, [pid, {:output, type, message}])
       end
+      def reply(_, _) do
+        raise InvalidInterfaceError
+      end
     end
+  end
+
+  defmodule InvalidInterfaceError do
+    defexception message: "cannot reply to an invalid interface"
   end
 
   defmodule Interface do

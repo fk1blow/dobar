@@ -1,7 +1,5 @@
 defmodule Dobar.Robot do
-  # do i really need a server for this? should i use a supervisor only, instead?
   use GenServer
-  # use Supervisor
 
   alias Dobar.Interface
   alias Dobar.Conversation
