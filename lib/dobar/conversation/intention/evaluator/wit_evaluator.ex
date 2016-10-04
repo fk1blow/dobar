@@ -30,7 +30,7 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   defp parse_response({:ok, body}) do
     case Poison.decode(body, keys: :atoms) do
       {:ok, value} -> {:ok, value}
-      error -> {:error, "unable to parse wit response"}
+      _error -> {:error, "unable to parse wit response"}
     end
   end
   defp parse_response({:error, body}) do
@@ -42,7 +42,7 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   end
   defp generate_request(_, _), do: {:error, "the message must be a string"}
 
-  defp build_request(message, opts \\ []) do
+  defp build_request(message, opts) do
     url = "https://api.wit.ai/message?v=20160516&q=#{message}"
     headers = %{"Authorization" => "Bearer #{opts[:token]}"}
     {:ok, %{url: url, headers: headers}}

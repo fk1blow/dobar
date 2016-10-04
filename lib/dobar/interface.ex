@@ -4,7 +4,6 @@ defmodule Dobar.Interface do
   alias Dobar.Conversation.Intention.Evaluator, as: IntentionEvaluator
 
   def start_link(opts) do
-    IO.puts "-----interface opts: #{inspect opts}"
     GenServer.start_link __MODULE__, opts
   end
 
@@ -59,7 +58,6 @@ defmodule Dobar.Interface do
   end
 
   defp evaluate_text_input(input, evaluator) do
-    opts = evaluator
     service = evaluator[:service]
     IntentionEvaluator.evaluate {:text, input, service, evaluator}
   end

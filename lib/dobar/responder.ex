@@ -38,6 +38,7 @@ defmodule Dobar.Responder do
       use GenServer
       import Dobar.Responder
       alias Dobar.Responder.Interface
+      alias Dobar.Responder.InvalidInterfaceError
 
       @before_compile Dobar.Responder
 
