@@ -72,32 +72,6 @@ defmodule Dobar.Robot do
       supervisor(Conversation,
         [[robot: self, definitions: conf[:conversation]]],
         id: :conversation),
-
-      # worker(evaluator_service_mod, [evaluator])
-      # Start the Responder
-      # supervisor(Dobar.Responder.Supervisor, [[interface: Dobar.Interface]]),
-
-      # supervisor(Dobar.Interface.Supervisor, [], id: :interface_supervisor)
-
-      # Start the events manager used by interface and Conversation api
-      # worker(GenEvent, [], id: :input_manager),
-
-      # Start events manager used by the dialog and conversation api
-      # worker(GenEvent, [], id: :dialog_manager),
-
-      # Start the interface of the dialog system
-      # TO BE REFACTORED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # worker(Dobar.Interface, [[
-      #   # event_manager: Dobar.InterfaceEvents,
-      #   event_manager: interface_events_ref,
-      #   # interface_conf: Dobar.Conversation
-      #   interface_conf: [adapter: opts[:adapter]]
-      # ]]),
-
-      # supervisor(Dobar.Interface.Supervisor)
-
-      # Start the conversation definition provided by the user via config
-      # worker(conversation_definition, [], id: opts[:interface_ref])
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)

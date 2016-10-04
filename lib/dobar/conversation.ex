@@ -29,18 +29,22 @@ defmodule Dobar.Conversation do
   def handle_cast({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
-        dialog = SpeciesRoutes.specie intent.name
-        {:ok, pid} = dialog.start_link(:root_dialog,
-          [event_manager: state.event_manager, definitions: state.definitions])
-        GenericDialog.evaluate(pid, intent)
-        dialog
+        create_dialog(intent, state.event_manager, state.definitions)
       dialog ->
-        GenericDialog.evaluate(dialog, intent)
-        dialog
+        if Process.alive?(dialog) do
+          GenericDialog.evaluate(dialog, intent)
+          dialog
+        else
+          create_dialog(intent, state.event_manager, state.definitions)
+        end
     end
+
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
+  def handle_info({:EXIT, _, :normal}, state) do
+    {:noreply, Map.merge(state, %{dialog: nil})}
+  end
   def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
     start_event_handlers(manager)
     {:noreply, state}
@@ -51,10 +55,18 @@ defmodule Dobar.Conversation do
   end
 
   defp start_event_handlers(manager) do
-    # TODO: move the loggers inside the dialog handler, to the logging handler
     GenEvent.add_mon_handler(manager, Conversation.DialogHandler, [conversation: self])
     GenEvent.add_mon_handler(manager, Conversation.TimelineHandler, nil)
     GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
+  end
+
+  defp create_dialog(intent, event_manager, definitions) do
+    dialog = SpeciesRoutes.specie intent.name
+    Process.flag(:trap_exit, true)
+    {:ok, pid} = dialog.start_link(:root_dialog,
+      [event_manager: event_manager, definitions: definitions])
+    GenericDialog.evaluate(pid, intent)
+    pid
   end
 
   # defmacro __using__(_opts) do
