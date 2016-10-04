@@ -17,6 +17,14 @@ defmodule Dobar.Conversation.DialogHandler do
     {:ok, state}
   end
 
+  def handle_event(%Reaction{about: :switch_conversation} = reaction, state) do
+    send(state.conversation, {:swith_conversation, reaction})
+    {:ok, state}
+  end
+
+  # on canceled, you just send a message to the conversation. With this, the conversation
+  # will attempt to recreate the dialog pid and replace the old one
+
   def handle_event(_, state) do
     {:ok, state}
   end

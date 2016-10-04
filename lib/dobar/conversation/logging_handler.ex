@@ -49,14 +49,14 @@ defmodule Dobar.Conversation.LoggingHandler do
   def handle_event(%Reaction{about: :same_alternative_found} = reaction, _) do
     Logger.info "same alternative found for intent: #{inspect reaction.trigger}"
     # Dobar.Interface.output :text, "cannot start a dialog identical to the current one"
-    Dobar.Responder.Supervisor.respond(reaction)
+    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
   def handle_event(%Reaction{about: :purge_nomatches} = reaction, _) do
     Logger.info "cannot purge fields that don't match with parent's capabilities"
     Logger.info "purge nomatches intent: #{inspect reaction.trigger.name}"
-    Dobar.Responder.Supervisor.respond(reaction)
+    # Dobar.Responder.Supervisor.respond(reaction)
     # Dobar.Interface.output :text, "cannot change the fields that dont' appear in the parent"
     # Dobar.Interface.output :text, "continuing the dialog"
     {:ok, nil}
@@ -66,7 +66,7 @@ defmodule Dobar.Conversation.LoggingHandler do
     current_intent = reaction.other.dialog_intent.name
     input_intent = reaction.trigger.name
     Logger.info "no topic match for intent: #{current_intent} and input intent: #{input_intent}"
-    Dobar.Responder.Supervisor.respond(reaction)
+    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 
@@ -75,7 +75,7 @@ defmodule Dobar.Conversation.LoggingHandler do
     Logger.info "no alternative found"
     Logger.info "current dialog intention: #{intent_name}"
     # Dobar.Interface.output :text, "no alternative found for current intent #{reaction.trigger.name}"
-    Dobar.Responder.Supervisor.respond(reaction)
+    # Dobar.Responder.Supervisor.respond(reaction)
     {:ok, nil}
   end
 

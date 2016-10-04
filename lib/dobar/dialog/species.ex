@@ -86,18 +86,18 @@ defmodule Dobar.Dialog.Species do
         end
       end
       def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
-        GenEvent.notify(Dobar.DialogEvents,
+        GenEvent.notify(state.event_manager,
           %Reaction{about: :continue_topic, trigger: intent})
 
         case Topic.forward(state.topic, intent) do
           {:question, question} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+            GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
             {:topic_output, nil}
 
           {:completed, features} ->
             topic_intent = Topic.intent(state.topic)
             if root_dialog?(state.name) do
-              GenEvent.notify(DialogEvents,
+              GenEvent.notify(state.event_manager,
                 %Reaction{about: :completed,
                           text: "dialog completed!",
                           trigger: topic_intent, features: features})
@@ -111,7 +111,7 @@ defmodule Dobar.Dialog.Species do
             {:topic_end, :completed}
 
           {:nomatch, topic_intent} ->
-            GenEvent.notify(DialogEvents,
+            GenEvent.notify(state.event_manager,
               %Reaction{about: :intent_no_match,
                         trigger: intent,
                         other: %{dialog_intent: topic_intent}})
@@ -127,7 +127,7 @@ defmodule Dobar.Dialog.Species do
               {:reference, intention_name} ->
                 Process.flag(:trap_exit, true)
 
-                GenEvent.notify(Dobar.DialogEvents,
+                GenEvent.notify(state.event_manager,
                   %Reaction{about: :alternative_reference_found, trigger: intent})
 
                 # dialog = Dobar.Dialog.Species.Routes.specie intention_name
@@ -140,7 +140,7 @@ defmodule Dobar.Dialog.Species do
               {:alternative, intention_name} ->
                 Process.flag(:trap_exit, true)
 
-                GenEvent.notify(Dobar.DialogEvents,
+                GenEvent.notify(state.event_manager,
                   %Reaction{about: :alternative_meta_found, trigger: intent})
 
                 switch_intent = %Intent{name: "switch_conversation",
@@ -158,12 +158,12 @@ defmodule Dobar.Dialog.Species do
                 {:topic_alternative, %{meta: pid}}
 
               {:noalternative, intention_name} ->
-                GenEvent.notify(DialogEvents,
+                GenEvent.notify(state.event_manager,
                   %Reaction{about: :no_alternative_found, trigger: intent})
                 {:topic_nomatch, intention_name}
 
               {:samealternative, intention_name} ->
-                GenEvent.notify(Dobar.DialogEvents,
+                GenEvent.notify(state.event_manager,
                   %Reaction{about: :same_alternative_found, trigger: intent})
                 {:topic_nomatch, intention_name}
             end
@@ -177,7 +177,7 @@ defmodule Dobar.Dialog.Species do
               do: GenServer.cast(state.parent, {:meta, :canceled})
 
             if root_dialog?(state.name),
-              do: GenEvent.notify(DialogEvents,
+              do: GenEvent.notify(state.event_manager,
                     %Reaction{about: :canceled,
                               text: "dialog completed!",
                               trigger: meta.intent, features: meta.features})
@@ -186,10 +186,10 @@ defmodule Dobar.Dialog.Species do
           %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+                GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
               {:completed, features} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
+                GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
             end
         end
@@ -197,27 +197,27 @@ defmodule Dobar.Dialog.Species do
       def handle_meta(%{intent: %{name: "switch_conversation"}} = meta, state) do
         case meta.features do
           %{approve: %{matched: :confirm}} ->
-            if meta_dialog?(state.name) do
-              GenServer.cast(state.parent, {:meta, meta})
-            else
-              GenEvent.notify(DialogEvents,
+            if root_dialog?(state.name) do
+              GenEvent.notify(state.event_manager,
                 %Reaction{about: :switch_conversation,
                           text: "switch the conversation",
                           trigger: meta.passthrough})
+            else
+              GenServer.cast(state.parent, {:meta, meta})
             end
             {:topic_end, :completed}
 
           %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+                GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
 
               # It could be a bug if this will ever match, because it should be
               # impossible to try to switch to a new conversation while the
               # dialog has already been completed(or the state is broken!)
               {:completed, features} ->
-                GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
+                GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
             end
         end
@@ -264,10 +264,10 @@ defmodule Dobar.Dialog.Species do
 
         case Topic.forward(state.topic, carrier_intent) do
           {:question, question} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :question, text: question})
+            GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
             {:topic_output, %{meta: nil}}
           {:completed, features} ->
-            GenEvent.notify(DialogEvents, %Reaction{about: :completed, text: "ok"})
+            GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
             {:topic_end, :completed}
         end
       end
