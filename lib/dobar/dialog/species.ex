@@ -5,6 +5,7 @@ defmodule Dobar.Dialog.Species do
 
       alias Dobar.Reaction
       alias Dobar.Intent
+      alias Dobar.Dialog.Meta
       alias Dobar.Dialog.Topic
       alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
 
@@ -65,7 +66,7 @@ defmodule Dobar.Dialog.Species do
 
                 if meta_dialog?(state.name) do
                   GenServer.cast(state.parent,
-                    {:meta, %{intent: intent,
+                    {:meta, %Meta{intent: intent,
                               features: features,
                               passthrough: state.passthrough}})
                 else
@@ -97,7 +98,7 @@ defmodule Dobar.Dialog.Species do
             end
             if meta_dialog?(state.name) do
               GenServer.cast(state.parent,
-                {:meta, %{intent: topic_intent,
+                {:meta, %Meta{intent: topic_intent,
                           features: features,
                           passthrough: state.passthrough}})
             end
@@ -332,7 +333,7 @@ defmodule Dobar.Dialog.Species do
         GenServer.cast(meta, {:evaluate, intent})
         {:noreply, state}
       end
-      def handle_cast({:meta, %{} = meta}, state) do
+      def handle_cast({:meta, %Meta{} = meta}, state) do
         case handle_meta(meta, state) do
           {:topic_output, some_state} ->
             {:noreply, Map.merge(state, some_state)}

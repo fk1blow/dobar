@@ -1,4 +1,4 @@
-defmodule Dobar.Model.Meta do
+defmodule Dobar.Dialog.Meta do
   defstruct intent: nil,
             features: nil,
             passthrough: nil
