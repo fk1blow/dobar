@@ -1,4 +1,3 @@
-# TODO: should be moved outside the conversation/intention modules
 defmodule Dobar.Conversation.Intention.Evaluator.Wit do
   @moduledoc """
   This module has to communicate with the expression api provided by wit.ai
@@ -22,6 +21,9 @@ defmodule Dobar.Conversation.Intention.Evaluator.Wit do
 
   defp handle_response({:ok, %Response{status_code: 200, body: body}}) do
     {:ok, body}
+  end
+  defp handle_response({:ok, %Response{status_code: _}}) do
+    {:error, "unable to process request"}
   end
   defp handle_response({:error, %Error{reason: reason}}) do
     {:error, reason}

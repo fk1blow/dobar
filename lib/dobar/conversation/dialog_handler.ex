@@ -27,11 +27,6 @@ defmodule Dobar.Conversation.DialogHandler do
     {:ok, state}
   end
 
-  # def handle_event(%Reaction{about: :intent_no_match} = reaction, state) do
-  #   send(state.conversation, {:dialog_reaction, reaction})
-  #   {:ok, state}
-  # end
-
   def handle_event(%Reaction{about: :no_alternative_found} = reaction, state) do
     send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
@@ -48,6 +43,11 @@ defmodule Dobar.Conversation.DialogHandler do
   end
 
   def handle_event(%Reaction{about: :meta_as_root} = reaction, state) do
+    send(state.conversation, {:dialog_reaction, reaction})
+    {:ok, state}
+  end
+
+  def handle_event(%Reaction{about: :purge_nomatches} = reaction, state) do
     send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
   end

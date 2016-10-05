@@ -6,6 +6,7 @@ defmodule Dobar.Robot do
   alias Dobar.Responder
   alias Dobar.Intent
   alias Dobar.Reaction
+  alias Dobar.EvaluationError
 
   def start_link(opts) do
     GenServer.start_link __MODULE__, opts
@@ -30,11 +31,8 @@ defmodule Dobar.Robot do
     {:noreply, state}
   end
 
-  # must have to send a struct instead of a tuple, in order to describve the error
-  # so use something like `%Error{}` when sending from the interface
-  def handle_info({:evaluation_error, reason}, state) do
-    # Responder.Supervisor.respond(respomnder, {%EvaluationError, etc})
-    IO.puts "______________:evaluation_error; reason: #{inspect reason}"
+  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
+    message_responders(state.supervisor, error)
     {:noreply, state}
   end
   def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
@@ -43,9 +41,7 @@ defmodule Dobar.Robot do
     {:noreply, state}
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
-    {_, responder, _, _} = get_child(state.supervisor, :responder)
-    {_, interface, _, _} = get_child(state.supervisor, :interface)
-    Responder.Supervisor.respond(responder, {reaction, interface})
+    message_responders(state.supervisor, reaction)
     {:noreply, state}
   end
 
@@ -53,6 +49,12 @@ defmodule Dobar.Robot do
     sup
     |> Supervisor.which_children
     |> Enum.find(nil, fn x -> elem(x, 0) == type end)
+  end
+
+  defp message_responders(supervisor, message) do
+    {_, responder, _, _} = get_child(supervisor, :responder)
+    {_, interface, _, _} = get_child(supervisor, :interface)
+    Responder.Supervisor.respond(responder, {message, interface})
   end
 
   defp create_robot(conf) do

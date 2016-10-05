@@ -1,10 +1,7 @@
-# this module should be the user's own intentions definitions but for the time being,
-# it can be declared here inside Dobar's Conversation app
+# this module is only for testing purpose only or acting as an example of how
+# to define a conversation
 defmodule Dobar.Xapp.Definition do
-  # use Dobar.Conversation
   use Dobar.Conversation.Definition
-
-  # intention :approve ?????
 
   intention :cancel_command do
     relationship :meta
@@ -69,7 +66,4 @@ defmodule Dobar.Xapp.Definition do
   end
 
   intention :quote_of_the_day
-
-  # IO.inspect @intentions
-  # IO.puts "quote_of_the_day: #{inspect @intentions[:quote_of_the_day]}"
 end
