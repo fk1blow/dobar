@@ -40,6 +40,9 @@ defmodule Dobar.Dialog.Species do
       # overridable delegates
 
       def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
+        IO.puts "=========== begin new dialog"
+        IO.inspect intent
+
         case state.definitions.intention(String.to_atom intent.name) do
           {:error, reason} ->
             GenEvent.notify(state.event_manager,

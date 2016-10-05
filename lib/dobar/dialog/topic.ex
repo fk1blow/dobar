@@ -70,7 +70,6 @@ defmodule Dobar.Dialog.Topic do
 
   alias Dobar.Intent
   alias Dobar.Dialog.Capability
-  alias Dobar.Conversation.Intention.Provider, as: IntentionProvider
 
   @doc """
   Starts a new Topic that represents the given `Dobar.Modal.Intent` while

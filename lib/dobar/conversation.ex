@@ -29,20 +29,20 @@ defmodule Dobar.Conversation do
   def handle_cast({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
-        create_dialog(intent, state.event_manager, state.definitions)
+        create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
       dialog ->
         if Process.alive?(dialog) do
           GenericDialog.evaluate(dialog, intent)
           dialog
         else
-          create_dialog(intent, state.event_manager, state.definitions)
+          create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
         end
     end
 
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
-  def handle_info({:EXIT, pid, :normal}, state) do
+  def handle_info({:EXIT, _pid, :normal}, state) do
     {:noreply, Map.merge(state, %{dialog: nil})}
   end
   def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
@@ -53,9 +53,8 @@ defmodule Dobar.Conversation do
     send(state.robot, {:dialog_reaction, reaction})
     {:noreply, state}
   end
-  def handle_info({:switch_dialog, %Reaction{trigger: %Intent{} = intent}}, state) do
-    dialog = create_dialog(intent, state.event_manager, state.definitions)
-    GenericDialog.evaluate(dialog, intent)
+  def handle_info({:switch_dialog, %Reaction{trigger: %Intent{} = intent} = reaction}, state) do
+    dialog = create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
@@ -65,12 +64,12 @@ defmodule Dobar.Conversation do
     GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
   end
 
-  defp create_dialog(%Intent{name: name} = intent, event_manager, definitions) do
+  defp create_and_evaluate_dialog(%Intent{name: name} = intent, event_manager, definitions) do
     dialog = SpeciesRoutes.specie(name)
     Process.flag(:trap_exit, true)
-    {:ok, pid} = dialog.start_link(:root_dialog,
+    {:ok, dialog_pid} = dialog.start_link(:root_dialog,
       [event_manager: event_manager, definitions: definitions])
-    GenericDialog.evaluate(pid, intent)
-    pid
+    GenericDialog.evaluate(dialog_pid, intent)
+    dialog_pid
   end
 end

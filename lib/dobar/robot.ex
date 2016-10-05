@@ -17,7 +17,7 @@ defmodule Dobar.Robot do
   def init(conf) do
     case Code.ensure_loaded?(conf[:conversation]) do
       false ->
-        {:error, "conversation definition module not found"}
+        {:stop, "Robot cannot start - unable to load conversation definition"}
       true ->
         {:ok, pid} = create_robot(conf)
         {:ok, %{supervisor: pid}}
@@ -35,6 +35,8 @@ defmodule Dobar.Robot do
     Conversation.react(pid, intent)
     {:noreply, state}
   end
+  # must have to send a struct instead of a tuple, in order to describve the error
+  # so use something like `%Error{}` when sending from the interface
   def handle_info({:evaluation_error, reason}, state) do
     IO.puts "______________:evaluation_error; reason: #{inspect reason}"
     {:noreply, state}

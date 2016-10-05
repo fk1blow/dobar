@@ -18,14 +18,40 @@ defmodule Dobar.Conversation.DialogHandler do
   end
 
   def handle_event(%Reaction{about: :question} = reaction, state) do
+    IO.puts "+++++++++++++++ question reaction, #{inspect reaction}"
     send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
   end
 
-  def handle_event(%Reaction{about: :canceled} = reaction, state) do
-    send(state.conversation, {:dialog_reaction, reaction})
-    {:ok, state}
-  end
+  # def handle_event(%Reaction{about: :canceled} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
+
+  # def handle_event(%Reaction{about: :intent_no_match} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
+
+  # def handle_event(%Reaction{about: :no_alternative_found} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
+
+  # def handle_event(%Reaction{about: :low_confidence_intent} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
+
+  # def handle_event(%Reaction{about: :undefined_intention} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
+
+  # def handle_event(%Reaction{about: :meta_as_root} = reaction, state) do
+  #   send(state.conversation, {:dialog_reaction, reaction})
+  #   {:ok, state}
+  # end
 
   def handle_event(%Reaction{about: :switch_conversation, trigger: trigger} = reaction, state) do
     send(state.conversation, {:switch_dialog, reaction})

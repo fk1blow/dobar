@@ -13,8 +13,28 @@ defmodule Dobar.Xapp.GenericResponder do
     reply interface, {:text, reaction.text}
   end
 
-  on %Reaction{about: :canceled} = reaction do
-    reply interface, {:text, "oookay, i'm canceling it!"}
+  # on %Reaction{about: :canceled} do
+  #   reply interface, {:text, "oookay, i'm canceling it!"}
+  # end
+
+  # on %Reaction{about: :intent_no_match} do
+  #   reply interface, {:text, "Sorry, i didn't get that"}
+  # end
+
+  # on %Reaction{about: :no_alternative_found} do
+  #   reply interface, {:text, "Sorry, i didn't get that"}
+  # end
+
+  on %Reaction{about: :low_confidence_intent} do
+    reply interface, {:text, "Sorry, i didn't get that"}
+  end
+
+  on %Reaction{about: :undefined_intention} do
+    reply interface, {:text, "Sorry, i didn't get that"}
+  end
+
+  on %Reaction{about: :meta_as_root} do
+    reply interface, {:text, "Sorry, i didn't get that"}
   end
 
   on %Reaction{trigger: %{name: "say_time"}, features: %{where: %{value: nil}}} do
