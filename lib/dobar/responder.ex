@@ -42,9 +42,11 @@ defmodule Dobar.Responder do
 
       @before_compile Dobar.Responder
 
-      def start_link(opts), do: GenServer.start_link __MODULE__, opts
+      def start_link(opts), do: GenServer.start_link __MODULE__, [opts]
 
-      def init(args), do: {:ok, %{interface_module: args[:interface_module]}}
+      def init(args) do
+        {:ok, %{interface_module: args[:interface_module]}}
+      end
 
       def handle_cast({message, interface_pid}, state) do
         interface = %Interface{interface_module: state.interface_module,
