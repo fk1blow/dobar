@@ -1,7 +1,7 @@
 defmodule Dobar.Dialog.CancelCommandDialog do
   use Dobar.Dialog.Species
 
-  def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil, name: :root_dialog} = state) do
+  def handle_intent(%Intent{}, %{topic: nil, meta: nil, name: :root_dialog} = state) do
     GenEvent.notify(
       state.event_manager,
       %Reaction{about: :meta_as_root,

@@ -29,7 +29,7 @@ defmodule Dobar.Dialog.ChangeFieldDialog do
           GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
         {:topic_output, %{topic: topic}}
 
-      {:completed, intent, features} ->
+      {:completed, intent, _features} ->
         GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
         unless root_dialog?(self) do
           GenServer.cast(parent,

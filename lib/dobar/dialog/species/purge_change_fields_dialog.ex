@@ -25,7 +25,7 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
           GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
           {:topic_output, %{topic: topic}}
 
-        {:completed, intent, features} ->
+        {:completed, intent, _features} ->
           GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
           unless root_dialog?(self) do
             GenServer.cast(state.parent,
@@ -61,11 +61,11 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
     # take the map of the keys/feature and build a keyword that contains it
     case MapSet.size(matching_capabilities) do
       0 -> []
-      n ->
+      _n ->
         capabilities
         |> Enum.filter(fn capability ->
           case capability.slots do
-            [h | t] = slots ->
+            [_ | _] = slots ->
               MapSet.new(slots)
               |> MapSet.intersection(matching_capabilities)
               |> MapSet.size > 0
@@ -87,12 +87,5 @@ defmodule Dobar.Dialog.PurgeChangeFieldsDialog do
           {feature.name, entity}
         end)
     end
-  end
-
-  defp entities_matches([h|t] = entity, capabilities) do
-    MapSet.new(entity) |> MapSet.intersection(capabilities) |> MapSet.size > 0
-  end
-  defp entities_matches(entity, capabilities) do
-    Enum.any?(capabilities, fn x -> x == entity end)
   end
 end
