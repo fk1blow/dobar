@@ -55,6 +55,8 @@ defmodule Dobar.Responder do
         {:noreply, state}
       end
 
+      # added here in order to supress compile-time warnings of:
+      # "cannot make function respond_to/2 overridable because it was not defined"
       def respond_to(_, _), do: :ok
 
       defoverridable [respond_to: 2]
@@ -76,6 +78,11 @@ defmodule Dobar.Responder do
   end
 
   defmodule Interface do
+    @type t :: %__MODULE__{
+      interface_module: atom,
+      interface_pid: pid | atom
+    }
+
     defstruct interface_module: nil,
               interface_pid: nil
   end
