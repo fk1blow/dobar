@@ -8,9 +8,7 @@ defmodule Dobar.Responder.Supervisor do
   def respond(pid, {message, interface}) do
     pid
     |> Supervisor.which_children
-    |> Enum.each(fn {_, pid, _, _} ->
-      GenServer.cast pid, {message, interface}
-    end)
+    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast pid, {message, interface} end)
   end
 
   def init(args) do
@@ -21,8 +19,8 @@ defmodule Dobar.Responder.Supervisor do
       [_ | _] ->
         responders
         |> Enum.filter(fn {module, _} -> Code.ensure_loaded?(module) end)
-        |> Enum.map(fn {name, opts} ->
-          worker(name, Keyword.put(opts, :interface_module, interface_module))
+        |> Enum.map(fn {module, opts} ->
+          worker(module, Keyword.put(opts, :interface_module, interface_module))
         end)
     end
     supervise(children, strategy: :one_for_one)
