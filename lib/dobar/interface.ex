@@ -12,11 +12,7 @@ defmodule Dobar.Interface do
   end
 
   def init(args) do
-    adapter =
-      args[:adapter]
-      |> validate_adapter
-      |> start_adapter(self)
-    case adapter do
+    case adapter = args[:adapter] |> validate_adapter |> start_adapter(self) do
       {:ok, adapter} ->
         {:ok, %{adapter: adapter, robot: args[:robot], evaluator: args[:evaluator]}}
       {:error, reason} ->
