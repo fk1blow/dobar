@@ -30,15 +30,16 @@ defmodule Dobar.Robot do
     {:noreply, state}
   end
 
-  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    {_, pid, _, _} = get_child(state.supervisor, :conversation)
-    Conversation.react(pid, intent)
-    {:noreply, state}
-  end
   # must have to send a struct instead of a tuple, in order to describve the error
   # so use something like `%Error{}` when sending from the interface
   def handle_info({:evaluation_error, reason}, state) do
+    # Responder.Supervisor.respond(respomnder, {%EvaluationError, etc})
     IO.puts "______________:evaluation_error; reason: #{inspect reason}"
+    {:noreply, state}
+  end
+  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
+    {_, pid, _, _} = get_child(state.supervisor, :conversation)
+    Conversation.react(pid, intent)
     {:noreply, state}
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do

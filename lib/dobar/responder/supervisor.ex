@@ -1,18 +1,11 @@
 defmodule Dobar.Responder.Supervisor do
   use Supervisor
 
-  @sup_name Dobar.Responder.Supervisor
-
   def start_link(opts) do
-    # TODO do not register with a name
-    Supervisor.start_link @sup_name, opts
-    # Supervisor.start_link @sup_name, []
+    Supervisor.start_link __MODULE__, opts
   end
 
-  # def respond(sup, message) do
   def respond(pid, {message, interface}) do
-    # TODO do not register with a name
-    # TODO: pass the pid of the supervisor, directly through `respond` function
     pid
     |> Supervisor.which_children
     |> Enum.each(fn {_, pid, _, _} ->
