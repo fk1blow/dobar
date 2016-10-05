@@ -16,7 +16,7 @@ defmodule Dobar.Interface do
       {:ok, adapter} ->
         {:ok, %{adapter: adapter, robot: args[:robot], evaluator: args[:evaluator]}}
       {:error, reason} ->
-        {:error, reason}
+        {:stop, reason}
     end
   end
 
@@ -47,13 +47,13 @@ defmodule Dobar.Interface do
     end
   end
 
-  def start_adapter({:error, reason}, _, _) do
-    {:stop, reason}
+  def start_adapter({:error, reason}, _) do
+    {:error, reason}
   end
   def start_adapter({:ok, adapter}, interface) do
     case Adapter.start_adapter(adapter, interface) do
       {:ok, pid} -> {:ok, pid}
-      {:error, reason} -> {:stop, reason}
+      {:error, reason} -> {:error, reason}
     end
   end
 
