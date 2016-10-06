@@ -21,7 +21,7 @@ config :logger, :console,
 
 # Configures Dobar's conversation interface
 config :dobar, Dobar.Conversation,
-  adapter: Dobar.Interface.Adapter.Console,
+adapter: [module: Dobar.Interface.Adapter.Console, opts: nil],
   definition: Dobar.Xapp.Definition,
   responders: [
     {Dobar.Xapp.GenericResponder, []},
@@ -31,7 +31,7 @@ config :dobar, Dobar.Conversation,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 config :dobar, Robot.Waka,
-  adapter: Dobar.Interface.Adapter.Console,
+  adapter: [module: Dobar.Interface.Adapter.Console, opts: [mambo: "jambo"]],
   conversation: Dobar.Xapp.Definition,
   responders: [
     {Dobar.Xapp.GenericResponder, []},

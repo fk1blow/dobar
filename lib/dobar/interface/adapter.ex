@@ -8,17 +8,22 @@ defmodule Dobar.Interface.Adapter do
 
   # I don't like that starting is api interface but connecting - maybe make them
   # both message-passing(or the other way around)
-  def start_adapter(module, interface), do: module |> validate |> start(interface)
+  def start_adapter(conf, interface), do: conf |> validate |> start(interface)
 
-  defp validate(nil), do: {:error, "unable to use undefined or nil interface adapter"}
-  defp validate(module) do
-    case Code.ensure_loaded? module do
-      true -> {:ok, module}
+  defp validate(nil), do: {:error, "unable to read the adapter configuration"}
+  defp validate(conf) do
+    case Code.ensure_loaded? conf[:module] do
+      true -> {:ok, conf}
       false -> {:error, "adapter module does not exist"}
     end
   end
 
   defp start({:error, reason}, _), do: {:error, reason}
-  defp start({:ok, module}, interface_pid),
-    do: apply(module, :start_link, [[adapter_interface: interface_pid]])
+  defp start({:ok, conf}, interface_pid) do
+    opts = Keyword.merge([adapter_interface: interface_pid], optionals(conf[:opts]))
+    apply(conf[:module], :start_link, [opts])
+  end
+
+  defp optionals(opts) when is_list(opts), do: opts
+  defp optionals(_), do: []
 end

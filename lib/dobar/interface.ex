@@ -7,8 +7,8 @@ defmodule Dobar.Interface do
   alias Dobar.Interface.Adapter
   alias Dobar.Conversation.Intention.Evaluator, as: IntentionEvaluator
 
-  def start_link(opts) do
-    GenServer.start_link __MODULE__, opts
+  def start_link(conf) do
+    GenServer.start_link __MODULE__, conf
   end
 
   def init(args) do
@@ -37,20 +37,18 @@ defmodule Dobar.Interface do
     {:noreply, state}
   end
 
-  defp validate_adapter(adapter) do
-    case adapter do
+  defp validate_adapter(adapter_conf) do
+    case adapter_mod = adapter_conf[:module] do
       nil -> {:error, "Cannot start the interface without an adapter!"}
       adapter ->
-        case Code.ensure_loaded?(adapter) do
-          true -> {:ok, adapter}
+        case Code.ensure_loaded?(adapter_mod) do
+          true -> {:ok, adapter_conf}
           false -> {:error, "Cannot start the interface without an adapter!"}
         end
     end
   end
 
-  def start_adapter({:error, reason}, _) do
-    {:error, reason}
-  end
+  def start_adapter({:error, reason}, _), do: {:error, reason}
   def start_adapter({:ok, adapter}, interface) do
     case Adapter.start_adapter(adapter, interface) do
       {:ok, pid} -> {:ok, pid}
