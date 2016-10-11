@@ -4,7 +4,7 @@ defmodule Dobar.Xapp.GenericResponder do
   alias HTTPoison.Response
   alias HTTPoison.Error
   alias Dobar.Reaction
-  alias Dobar.EvaluationError
+  alias Dobar.Error.EvaluationError
 
   @default_where "Bucharest"
   @location_api "http://maps.googleapis.com/maps/api/geocode/json?sensor=false"

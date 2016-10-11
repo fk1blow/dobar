@@ -3,7 +3,7 @@ defmodule Dobar.Interface do
 
   require Logger
 
-  alias Dobar.EvaluationError
+  alias Dobar.Error.EvaluationError
   alias Dobar.Interface.Adapter
   alias Dobar.Conversation.Intention.Evaluator, as: IntentionEvaluator
 

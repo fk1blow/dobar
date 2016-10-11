@@ -1,43 +1,16 @@
 defmodule Dobar do
-  defmodule Intent do
-    @type t :: %__MODULE__{
-      name: binary,
-      input: binary,
-      entities: map,
-      confidence: float
-    }
+  use Application
 
-    defstruct name: nil,
-              input: nil,
-              entities: %{},
-              confidence: 0.0
-  end
+  def start(_type, _args) do
+    import Supervisor.Spec
 
-  defmodule Reaction do
-    alias Dobar.Intent
+    children = [
+      supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
+      supervisor(Dobar.Robot.Supervisor, []),
+      worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]])
+    ]
 
-    @type t :: %__MODULE__{
-      about: atom,
-      text: binary,
-      features: map,
-      trigger: Intent.t,
-      other: any
-    }
-
-    defstruct about: nil,
-              text: nil,
-              features: %{},
-              trigger: %Intent{},
-              other: nil
-  end
-
-  defmodule EvaluationError do
-    @type t :: %__MODULE__{
-      reason: binary,
-      other: any
-    }
-
-    defstruct reason: nil,
-              other: nil
+    opts = [strategy: :one_for_one, name: Dobar.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end

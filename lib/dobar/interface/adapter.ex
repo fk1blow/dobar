@@ -6,8 +6,6 @@ defmodule Dobar.Interface.Adapter do
   it facilitates conversations input and output, reactive and proactive.
   """
 
-  # I don't like that starting is api interface but connecting - maybe make them
-  # both message-passing(or the other way around)
   def start_adapter(conf, interface), do: conf |> validate |> start(interface)
 
   defp validate(nil), do: {:error, "unable to read the adapter configuration"}

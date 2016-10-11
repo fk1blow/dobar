@@ -42,8 +42,12 @@ defmodule Dobar.Conversation do
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 
-  def handle_info({:EXIT, _pid, :normal}, state) do
-    {:noreply, Map.merge(state, %{dialog: nil})}
+  def handle_info({:EXIT, pid, :normal}, %{dialog: dialog} = state) do
+    # this should never happen, actually
+    state = if dialog === pid,
+      do: Map.merge(state, %{dialog: nil}),
+    else: state
+    {:noreply, state}
   end
   def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
     start_event_handlers(manager)

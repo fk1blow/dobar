@@ -20,22 +20,26 @@ config :logger, :console,
   metadata: [:request_id]
 
 # Configures Dobar's conversation interface
-config :dobar, Dobar.Conversation,
-adapter: [module: Dobar.Interface.Adapter.Console, opts: nil],
-  definition: Dobar.Xapp.Definition,
-  responders: [
-    {Dobar.Xapp.GenericResponder, []},
-    {Dobar.Xapp.AnotherGenericResponder, []}
-  ],
-  evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
-              token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
+# config :dobar, Dobar.Conversation,
+# adapter: [module: Dobar.Interface.Adapter.Console, opts: nil],
+#   definition: Dobar.Xapp.Definition,
+#   responders: [
+#     {Dobar.Xapp.GenericResponder, []},
+#     {Dobar.Xapp.AnotherGenericResponder, []}
+#   ],
+#   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
+#               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 
 config :dobar, Robot.Waka,
   adapter: [module: Dobar.Interface.Adapter.Console, opts: [mambo: "jambo"]],
   conversation: Dobar.Xapp.Definition,
-  responders: [
-    {Dobar.Xapp.GenericResponder, []},
-    {Dobar.Xapp.AnotherGenericResponder, []}
+  # responders: [
+  #   {Dobar.Xapp.GenericResponder, []},
+  #   {Dobar.Xapp.AnotherGenericResponder, []},
+  # ],
+  effects: [
+    Dobar.Xapp.FirstEffect,
+    Dobar.Xapp.SecondEffect,
   ],
   # the service module should be shorter and not necessary included inside the intention
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,

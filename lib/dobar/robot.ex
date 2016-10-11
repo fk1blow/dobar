@@ -1,83 +1,26 @@
 defmodule Dobar.Robot do
+  @type t :: %__MODULE__{
+    pid: pid | atom,
+    responders: []
+  }
+
+  defstruct pid: nil,
+     responders: []
+
   use GenServer
 
-  alias Dobar.Interface
-  alias Dobar.Conversation
-  alias Dobar.Responder
-  alias Dobar.Intent
-  alias Dobar.Reaction
-  alias Dobar.EvaluationError
-
-  def start_link(opts) do
-    GenServer.start_link __MODULE__, opts
+  def start_link(conf) do
+    GenServer.start_link __MODULE__, conf
   end
 
-  def say(robot, {:text, message}),  do: GenServer.cast robot, {:input, :text, message}
-  def say(robot, {:audio, message}), do: GenServer.cast robot, {:input, :audio, message}
+  def new(robot_config) do
+    Dobar.Robot.Supervisor.start_child(Dobar.Robot.Supervisor, robot_config)
+  end
 
   def init(conf) do
-    case Code.ensure_loaded?(conf[:conversation]) do
-      false ->
-        {:stop, "Robot cannot start - unable to load conversation definition"}
-      true ->
-        {:ok, pid} = create_robot(conf)
-        {:ok, %{supervisor: pid}}
-    end
-  end
-
-  def handle_cast({:input, :text, message}, state) do
-    {_, pid, _, _} = get_child(state.supervisor, :interface)
-    Interface.Supervisor.process_input(pid, {:input, :text, message})
-    {:noreply, state}
-  end
-
-  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
-    message_responders(state.supervisor, error)
-    {:noreply, state}
-  end
-  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    {_, pid, _, _} = get_child(state.supervisor, :conversation)
-    Conversation.react(pid, intent)
-    {:noreply, state}
-  end
-  def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
-    message_responders(state.supervisor, reaction)
-    {:noreply, state}
-  end
-
-  defp get_child(sup, type) do
-    sup
-    |> Supervisor.which_children
-    |> Enum.find(nil, fn x -> elem(x, 0) == type end)
-  end
-
-  defp message_responders(supervisor, message) do
-    {_, responder, _, _} = get_child(supervisor, :responder)
-    {_, interface, _, _} = get_child(supervisor, :interface)
-    Responder.Supervisor.respond(responder, {message, interface})
-  end
-
-  defp create_robot(conf) do
-    import Supervisor.Spec
-
-    children = [
-      # start the interface supervisor
-      supervisor(Interface.Supervisor,
-        [[robot: self, adapter: conf[:adapter], evaluator: conf[:evaluator]]],
-        id: :interface),
-
-      # start the conversation manager
-      worker(Conversation,
-        [[robot: self, definitions: conf[:conversation]]],
-        id: :conversation),
-
-      # start the responder supervisor
-      supervisor(Responder.Supervisor,
-        [[interface_module: Interface.Supervisor,
-          responders: conf[:responders]]],
-        id: :responder)
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one)
+    {:ok, %{adapter: conf[:adapter],
+            responders: conf[:effects],
+            conversation: conf[:conversation],
+            evaluator: conf[:evaluator]}}
   end
 end
