@@ -5,5 +5,6 @@ defmodule Dobar.Xapp.SecondEffect do
 
   on %Reaction{about: :question} do
     IO.puts "should i do something to handle the ':question' reaction"
+    send interface, {:output, :text, "xxxxxxxxxxxxxxxx"}
   end
 end

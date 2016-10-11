@@ -10,7 +10,7 @@ defmodule Dobar.Xapp.FirstEffect do
 
   on %Reaction{about: :question} = reaction do
     IO.puts "can i haz reaction: #{inspect reaction}"
-    IO.puts "this shit matched"
+    # IO.puts "this shit matched"
   end
 
   # on %Reaction{text: "xxx"} do

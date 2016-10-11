@@ -30,6 +30,7 @@ defmodule Dobar.Effect do
     quote do
       # catch non-matches thereby avoiding runtime errors
       def handle_on(_), do: nil
+      def handle_on(_, _), do: nil
     end
   end
 end

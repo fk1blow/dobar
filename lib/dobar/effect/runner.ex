@@ -8,18 +8,18 @@ defmodule Dobar.Effect.Runner do
     GenServer.start_link __MODULE__, [], name: opts[:name]
   end
 
-  def run(pid, %Effect{} = effect) do
-    GenServer.cast pid, {:start_effect, effect}
+  def run(pid, %Effect{} = effect, optional) do
+    GenServer.cast pid, {:start_effect, effect, optional}
   end
 
   def init(_) do
     {:ok, []}
   end
 
-  def handle_cast({:start_effect, %Effect{} = effect}, pool) do
+  def handle_cast({:start_effect, %Effect{} = effect, optional}, pool) do
     pool =
       effect.responders
-      |> Enum.map(&(apply(&1, :handle_on, [effect.reaction, %{x: "interface"}])))
+      |> Enum.map(&(apply(&1, :handle_on, [effect.reaction, optional])))
       |> Enum.map(&(Task.Supervisor.async_nolink Dobar.Effect.Task, &1))
       |> Enum.map(&new_entry/1)
       |> Enum.concat(pool)
@@ -46,6 +46,9 @@ defmodule Dobar.Effect.Runner do
       %Entry{timer: timer}     -> :erlang.cancel_timer timer
     end
     {:noreply, entry |> remove_entry(pool)}
+  end
+  def handle_info({ref, _msg}, state) when is_reference(ref) do
+    {:noreply, state}
   end
 
   defp new_entry(task) do
