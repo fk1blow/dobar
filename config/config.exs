@@ -5,38 +5,15 @@
 # is restricted to this project.
 use Mix.Config
 
-# # Configures the endpoint
-# config :dobar, Dobar.Endpoint,
-#   url: [host: "localhost"],
-#   root: Path.dirname(__DIR__),
-#   secret_key_base: "r8j41QSJNrq2ZqivWM/AoAAJg6VGeVIA9MBFx4VLKV8fPR/jnlz85CMdSnRLBvp0",
-#   render_errors: [accepts: ~w(html json)],
-#   pubsub: [name: Dobar.PubSub,
-#            adapter: Phoenix.PubSub.PG2]
-
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
-# Configures Dobar's conversation interface
-# config :dobar, Dobar.Conversation,
-# adapter: [module: Dobar.Interface.Adapter.Console, opts: nil],
-#   definition: Dobar.Xapp.Definition,
-#   responders: [
-#     {Dobar.Xapp.GenericResponder, []},
-#     {Dobar.Xapp.AnotherGenericResponder, []}
-#   ],
-#   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
-#               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
-
+# example config
 config :dobar, Robot.Waka,
   adapter: [module: Dobar.Interface.Adapter.Console, opts: [mambo: "jambo"]],
   definitions: Dobar.Xapp.Definition,
-  # responders: [
-  #   {Dobar.Xapp.GenericResponder, []},
-  #   {Dobar.Xapp.AnotherGenericResponder, []},
-  # ],
   effects: [
     Dobar.Xapp.FirstEffect,
   ],
