@@ -3,10 +3,10 @@
 defmodule Dobar.Xapp.Definition do
   use Dobar.Conversation.Definition
 
-  intention :cancel_command do
-    relationship :meta
-    topic :approve, entity: [:confirm, :infirm]
-  end
+  # intention :cancel_command do
+  #   relationship :meta
+  #   topic :approve, entity: [:confirm, :infirm]
+  # end
 
   intention :change_field do
     relationship :meta

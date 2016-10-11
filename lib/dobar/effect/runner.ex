@@ -20,9 +20,10 @@ defmodule Dobar.Effect.Runner do
     pool =
       effect.responders
       |> Enum.map(&(apply(&1, :handle_on, [effect.reaction, optional])))
-      |> Enum.map(&(Task.Supervisor.async_nolink Dobar.Effect.Task, &1))
+      |> Enum.map(&create_task/1)
       |> Enum.map(&new_entry/1)
       |> Enum.concat(pool)
+      |> Enum.filter(&(is_nil(&1) === false))
     {:noreply, pool}
   end
 
@@ -51,11 +52,17 @@ defmodule Dobar.Effect.Runner do
     {:noreply, state}
   end
 
-  defp new_entry(task) do
+  defp create_task(cb) when is_function cb do
+    Task.Supervisor.async_nolink Dobar.Effect.Task, cb
+  end
+  defp create_task(_), do: nil
+
+  defp new_entry(%Task{} = task) do
     timer_ref = make_ref
     timer = Process.send_after self, {:effect_timeout, timer_ref}, 5000
     %Entry{id_ref: timer_ref, timer: timer, task: task}
   end
+  defp new_entry(_), do: nil
 
   defp find_entry_task(ref, [_|_] = pool) do
     pool |> Enum.find(nil, fn %Entry{task: task} -> ref === task.ref end)

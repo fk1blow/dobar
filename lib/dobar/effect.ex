@@ -1,11 +1,16 @@
 defmodule Dobar.Effect do
+  alias Dobar.Error
+  alias Dobar.Reaction
+
   @type t :: %__MODULE__{
-    reaction:   Dobar.Reaction.t,
+    reaction:   Reaction.t,
+    error:      Error.EvaluationError.t | nil,
     responders: [...],
     robot:      binary | atom
   }
 
   defstruct reaction: %Dobar.Reaction{},
+               error: nil,
           responders: [],
                robot: :undefined_waka
 

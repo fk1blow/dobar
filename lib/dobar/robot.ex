@@ -16,29 +16,21 @@ defmodule Dobar.Robot do
     Dobar.Robot.Supervisor.start_child(Dobar.Robot.Supervisor, robot_config)
   end
 
-  def hear(robot, {:text, message}),  do: GenServer.cast robot, {:input, :text, message}
-  def hear(robot, {:audio, message}), do: GenServer.cast robot, {:input, :audio, message}
-
-  def say(robot, {:text, message}), do: GenServer.cast robot, {:output, :text, message}
-  def say(robot, {:audio, message}), do: GenServer.cast robot, {:output, :audio, message}
+  def react(robot, {:text, message}),  do: GenServer.cast robot, {:input, :text, message}
+  def react(robot, {:audio, message}), do: GenServer.cast robot, {:input, :audio, message}
 
   def handle_cast({:input, :text, message}, state) do
-    # TODO: build a clear api for the interface module
     send state.interface, {:input, :text, message}
-    # {_, pid, _, _} = get_child(state.supervisor, :interface)
-    # Interface.Supervisor.process_input(pid, {:input, :text, message})
     {:noreply, state}
   end
 
-  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
-    # message_responders(state.supervisor, error)
+  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
+    send state.conversation, {:react, intent}
     {:noreply, state}
   end
-  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    # {_, pid, _, _} = get_child(state.supervisor, :conversation)
-    # Conversation.react(pid, intent)
-    # TODO: build a clear api for the conversation module
-    send state.conversation, {:react, intent}
+  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
+    effect = %Effect{error: error, responders: state.responders}
+    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
     {:noreply, state}
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
