@@ -33,8 +33,7 @@ defmodule Dobar.Effect do
 
   defmacro __before_compile__(_env) do
     quote do
-      # catch non-matches thereby avoiding runtime errors
-      def handle_on(_), do: nil
+      # catch non-matches to avoid runtime errors
       def handle_on(_, _), do: nil
     end
   end

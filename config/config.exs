@@ -39,9 +39,7 @@ config :dobar, Robot.Waka,
   # ],
   effects: [
     Dobar.Xapp.FirstEffect,
-    Dobar.Xapp.SecondEffect,
   ],
-  # the service module should be shorter and not necessary included inside the intention
   evaluator: [service: Dobar.Conversation.Intention.Evaluator.Wit,
               token: "YH3PPLSK2L3QRTFMWNAY5NTGUJGWOKJ6"]
 

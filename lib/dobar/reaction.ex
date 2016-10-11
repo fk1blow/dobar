@@ -12,6 +12,6 @@ defmodule Dobar.Reaction do
   defstruct about: nil,
             text: nil,
             features: %{},
-            trigger: %Intent{},
+            trigger: nil,
             other: nil
 end

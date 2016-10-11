@@ -25,6 +25,7 @@ defmodule Dobar.Robot do
   end
 
   def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
+    IO.puts "intent evaluated to: #{inspect intent}"
     send state.conversation, {:react, intent}
     {:noreply, state}
   end

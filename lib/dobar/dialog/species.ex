@@ -58,7 +58,7 @@ defmodule Dobar.Dialog.Species do
             case Topic.forward(topic) do
               {:question, question} ->
                 GenEvent.notify(state.event_manager,
-                  %Reaction{about: :question, text: question})
+                  %Reaction{about: :question, text: question, trigger: intent})
                 {:topic_output, %{topic: topic}}
 
               {:completed, features} ->
@@ -85,7 +85,8 @@ defmodule Dobar.Dialog.Species do
 
         case Topic.forward(state.topic, intent) do
           {:question, question} ->
-            GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
+            GenEvent.notify(state.event_manager,
+              %Reaction{about: :question, text: question, trigger: intent})
             {:topic_output, nil}
 
           {:completed, features} ->
@@ -179,16 +180,20 @@ defmodule Dobar.Dialog.Species do
               do: GenEvent.notify(state.event_manager,
                     %Reaction{about: :canceled,
                               text: "dialog completed!",
-                              trigger: meta.intent, features: meta.features})
+                              trigger: meta.intent,
+                              features: meta.features})
             {:topic_end, :completed}
 
           %{approve: %{matched: :infirm}} ->
             case Topic.forward(state.topic) do
               {:question, question} ->
-                GenEvent.notify(state.event_manager, %Reaction{about: :question, text: question})
+                GenEvent.notify(state.event_manager,
+                  %Reaction{about: :question, text: question})
                 {:topic_output, %{meta: nil}}
+
               {:completed, features} ->
-                GenEvent.notify(state.event_manager, %Reaction{about: :completed, text: "ok"})
+                GenEvent.notify(state.event_manager,
+                  %Reaction{about: :completed, text: "ok"})
                 {:topic_end, :completed}
             end
         end
