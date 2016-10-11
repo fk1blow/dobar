@@ -2,93 +2,77 @@ defmodule Dobar.Effect.Runner do
   use GenServer
 
   alias Dobar.Effect
-  alias Dobar.Robot
+  alias Dobar.Effect.Runner.Entry
 
   def start_link(opts \\ [name: __MODULE__]) do
-    IO.puts "____________"
     GenServer.start_link __MODULE__, [], name: opts[:name]
   end
 
-  def start_effect(pid, [robot: %Robot{} = robot, effect: %Effect{} = effect]) do
-    GenServer.cast pid, {:start_effect, robot, effect}
+  def run(pid, %Effect{} = effect) do
+    GenServer.cast pid, {:start_effect, effect}
   end
 
   def init(_) do
-    {:ok, %{tasks: []}}
+    {:ok, []}
   end
 
-  def handle_cast({:start_effect, robot, effect}, %{tasks: tasks} = state) do
-    ref = make_ref
-    timer = Process.send_after self, {:effect_timeout, ref}, 1000
+  def handle_cast({:start_effect, %Effect{} = effect}, pool) do
+    pool =
+      effect.responders
+      |> Enum.map(&(apply(&1, :handle_on, [effect.reaction, %{x: "interface"}])))
+      |> Enum.map(&(Task.Supervisor.async_nolink Dobar.Effect.Task, &1))
+      |> Enum.map(&new_entry/1)
+      |> Enum.concat(pool)
+    {:noreply, pool}
+  end
 
-    task = Task.Supervisor.async_nolink Dobar.Effect.Task, fn ->
-      # raise "so let's see"
-      # 20 / 0
-      :timer.sleep 2000
-      IO.puts "hoooorayyyyyyyyyyyy"
+  def handle_info({:effect_timeout, ref}, pool) do
+    pool =
+      ref
+      |> find_entry_ref(pool)
+      |> shutdown_entry_task
+      |> remove_entry(pool)
+    {:noreply, pool}
+  end
+
+  def handle_info({ref, :ok}, pool) do
+    {:noreply, pool}
+  end
+
+  def handle_info({:DOWN, ref, :process, pid, _reason}, pool) do
+    entry = ref |> find_entry_task(pool)
+    case entry do
+      entry when is_nil(entry) -> nil
+      %Entry{timer: timer}     -> :erlang.cancel_timer timer
     end
-
-    IO.puts "task created: #{inspect task}"
-
-    {:noreply, Map.merge(state, %{tasks: [{ref, task} | tasks]})}
+    {:noreply, entry |> remove_entry(pool)}
   end
 
-  def handle_info({:effect_timeout, ref}, state) do
-    IO.puts "task timed out: #{inspect ref}"
-    IO.puts "state is: #{inspect state}"
-    {:noreply, state}
+  defp new_entry(task) do
+    timer_ref = make_ref
+    timer = Process.send_after self, {:effect_timeout, timer_ref}, 5000
+    %Entry{id_ref: timer_ref, timer: timer, task: task}
   end
 
-  def handle_info({reference, :ok}, state) do
-    IO.puts "message from task: #{inspect reference}"
-    {:noreply, state}
+  defp find_entry_task(ref, [_|_] = pool) do
+    pool |> Enum.find(nil, fn %Entry{task: task} -> ref === task.ref end)
+  end
+  defp find_entry_task(_ref, _pool), do: nil
+
+  defp find_entry_ref(ref, [_|_] = pool) do
+    pool |> Enum.find(nil, fn %Entry{id_ref: id_ref} -> ref === id_ref end)
+  end
+  defp find_entry_ref(_ref, _pool), do: nil
+
+  defp shutdown_entry_task(nil), do: nil
+  defp shutdown_entry_task(%Entry{task: task} = entry) do
+    Task.shutdown(task, 0)
+    entry
   end
 
-  def handle_info({:DOWN, ref, :process, pid, :normal}, state) do
-    IO.puts "task finished: #{inspect ref}"
-    {:noreply, state}
+  defp remove_entry(nil, pool), do: pool
+  defp remove_entry(%Entry{id_ref: ref} = entry, [_|_] = pool) do
+    pool |> Enum.filter(fn %{id_ref: id_ref} -> id_ref !== ref end)
   end
-
-  def handle_info({:DOWN, ref, :process, pid, reason}, state) do
-    IO.puts "task finished: #{inspect ref}"
-    {:noreply, state}
-  end
-
-  # use Supervisor
-
-  # alias Dobar.Effect
-  # alias Dobar.Robot
-
-  # def start_link(opts \\ [name: __MODULE__]) do
-  #   Supervisor.start_link __MODULE__, [], name: opts[:name]
-  # end
-
-  # # def start_link(opts) do
-  # #   import Supervisor.Spec
-  # #   children = [
-  # #     supervisor(Task.Supervisor, [[name: Effector.Tasks]])
-  # #   ]
-  # #   Task.Supervisor.start_link children
-  # #   # supervise(children, name: opts[:name], strategy: :simple_one_for_one)
-  # # end
-
-  # def start_child(pid, [robot: %Robot{} = robot, effect: %Effect{} = effect]) do
-  #   # IO.puts "robot: #{inspect robot}"
-  #   # IO.puts "effect: #{inspect effect}"
-  #   # Supervisor.start_child(pid, [[effect: effect]])
-  #   # IO.puts "pid: #{inspect pid}"
-
-  #   Task.Supervisor.start_child pid, fn ->
-  #   #   # if random >= 5, do: raise "not so okkkkkkkkkkk"
-  #     IO.puts "ok...."
-  #   end
-  # end
-
-  # def init(_) do
-  #   children = [
-  #     # this should be a dynamic task instead of this sthi
-  #     supervisor(Task.Supervisor, [[name: Effector.Supervisor]])
-  #   ]
-  #   supervise(children, strategy: :one_for_one)
-  # end
+  defp remove_entry(_, pool), do: pool
 end

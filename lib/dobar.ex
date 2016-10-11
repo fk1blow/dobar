@@ -7,6 +7,8 @@ defmodule Dobar do
     children = [
       supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
       supervisor(Dobar.Robot.Supervisor, []),
+      supervisor(Dobar.Interface.Supervisor, []),
+      supervisor(Dobar.Conversation.Supervisor, []),
       worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]])
     ]
 

@@ -1,11 +1,13 @@
 defmodule Dobar.Effect do
   @type t :: %__MODULE__{
-    reaction: Dobar.Reaction.t,
-    callback: term # should be function
+    reaction:   Dobar.Reaction.t,
+    responders: [...],
+    robot:      binary | atom
   }
 
   defstruct reaction: %Dobar.Reaction{},
-            callback: nil
+          responders: [],
+               robot: :undefined_waka
 
   defmacro __using__(_) do
     quote do
@@ -16,7 +18,7 @@ defmodule Dobar.Effect do
 
   defmacro on(message, do: block) do
     quote do
-      def handle_on(unquote(message)), do: fn -> unquote(block) end
+      def handle_on(unquote(message), var!(interface)), do: fn -> unquote(block) end
     end
   end
 

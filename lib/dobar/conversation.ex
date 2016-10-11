@@ -12,10 +12,6 @@ defmodule Dobar.Conversation do
     GenServer.start_link __MODULE__, opts
   end
 
-  def react(pid, %Intent{} = intent) do
-    GenServer.cast pid, {:react, intent}
-  end
-
   def init(args) do
     {:ok, pid} = DialogEvents.start_link
     {_id, manager_pid, _, _} = DialogEvents.get_child(pid, :dialog_event_mananger)
@@ -26,7 +22,7 @@ defmodule Dobar.Conversation do
             dialog: nil}}
   end
 
-  def handle_cast({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
+  def handle_info({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
         create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
@@ -41,7 +37,6 @@ defmodule Dobar.Conversation do
 
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
-
   def handle_info({:EXIT, pid, :normal}, %{dialog: dialog} = state) do
     # this should never happen, actually
     state = if dialog === pid,

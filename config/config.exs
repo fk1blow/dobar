@@ -32,7 +32,7 @@ config :logger, :console,
 
 config :dobar, Robot.Waka,
   adapter: [module: Dobar.Interface.Adapter.Console, opts: [mambo: "jambo"]],
-  conversation: Dobar.Xapp.Definition,
+  definitions: Dobar.Xapp.Definition,
   # responders: [
   #   {Dobar.Xapp.GenericResponder, []},
   #   {Dobar.Xapp.AnotherGenericResponder, []},
