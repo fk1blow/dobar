@@ -21,12 +21,15 @@ defmodule Dobar.Robot do
   Creates a new robot with the given config as keyword list or by giving
   the config namespace as atom.
   """
-  def new(config) when is_list(config) do
+  def new(config) do
     Dobar.Robot.Supervisor.start_robot(Dobar.Robot.Supervisor, config)
   end
-  def new(robot) when is_atom(robot) do
-    conf = Application.get_env(:dobar, robot)
-    Dobar.Robot.Supervisor.start_robot(Dobar.Robot.Supervisor, conf)
+
+  @doc """
+  Same as `new/1` except it merges `opts` with the config
+  """
+  def new(config, opts) when is_list(config) do
+    Dobar.Robot.Supervisor.start_robot(Dobar.Robot.Supervisor, config)
   end
 
   @doc """
@@ -40,27 +43,6 @@ defmodule Dobar.Robot do
   Tells the robot to react when receiving a text message.
   """
   def react(robot, {:text, message}),  do: GenServer.cast robot, {:input, :text, message}
-
-  def handle_cast({:input, :text, message}, state) do
-    send state.interface, {:input, :text, message}
-    {:noreply, state}
-  end
-
-  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    # send state.conversation, {:provide_intent, intent}
-    Conversation.provide(state.conversation, intent)
-    {:noreply, state}
-  end
-  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
-    effect = %Effect{error: error, responders: state.responders}
-    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
-    {:noreply, state}
-  end
-  def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
-    effect = %Effect{reaction: reaction, responders: state.responders}
-    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
-    {:noreply, state}
-  end
 
   def init(conf) do
     interface_conf = [
@@ -86,5 +68,25 @@ defmodule Dobar.Robot do
             responders: conf[:effects],
             conversation: conversation,
             interface: interface}}
+  end
+
+  def handle_cast({:input, :text, message}, state) do
+    send state.interface, {:input, :text, message}
+    {:noreply, state}
+  end
+
+  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
+    Conversation.provide(state.conversation, intent)
+    {:noreply, state}
+  end
+  def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
+    effect = %Effect{error: error, responders: state.responders}
+    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
+    {:noreply, state}
+  end
+  def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
+    effect = %Effect{reaction: reaction, responders: state.responders}
+    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
+    {:noreply, state}
   end
 end

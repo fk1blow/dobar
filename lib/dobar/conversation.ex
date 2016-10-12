@@ -4,7 +4,6 @@ defmodule Dobar.Conversation do
   alias Dobar.Intent
   alias Dobar.Reaction
   alias Dobar.Conversation
-  alias Conversation.DialogEvents
   alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
   alias Dobar.Dialog.GenericDialog
 
@@ -23,12 +22,8 @@ defmodule Dobar.Conversation do
   end
 
   def init(args) do
-    {:ok, pid} = DialogEvents.start_link
-    {_id, manager_pid, _, _} = DialogEvents.get_child(pid, :dialog_event_mananger)
-    _ = manager_pid |> start_event_handlers
-
-    {:ok, %{event_manager: manager_pid,
-            robot: args[:robot],
+    start_event_handlers(:dialog_events_mananger)
+    {:ok, %{robot: args[:robot],
             definitions: args[:definitions],
             dialog: nil}}
   end
@@ -36,13 +31,13 @@ defmodule Dobar.Conversation do
   def handle_cast({:provide_intent, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
-        create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
+        create_and_evaluate_dialog(intent, :dialog_events_mananger, state.definitions)
       dialog ->
         if Process.alive?(dialog) do
           GenericDialog.evaluate(dialog, intent)
           dialog
         else
-          create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
+          create_and_evaluate_dialog(intent, :dialog_events_mananger, state.definitions)
         end
     end
     {:noreply, Map.merge(state, %{dialog: dialog})}
@@ -55,16 +50,16 @@ defmodule Dobar.Conversation do
     else: state
     {:noreply, state}
   end
-  def handle_info({:gen_event_EXIT, _, _}, %{event_manager: manager} = state) do
-    start_event_handlers(manager)
+  def handle_info({:gen_event_EXIT, _, _}, state) do
+    start_event_handlers(:dialog_events_mananger)
     {:noreply, state}
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
     send(state.robot, {:dialog_reaction, reaction})
     {:noreply, state}
   end
-  def handle_info({:switch_dialog, %Reaction{trigger: %Intent{} = intent} = reaction}, state) do
-    dialog = create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
+  def handle_info({:switch_dialog, %Reaction{trigger: %Intent{} = intent}}, state) do
+    dialog = create_and_evaluate_dialog(intent, :dialog_events_mananger, state.definitions)
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
 

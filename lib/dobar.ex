@@ -5,13 +5,13 @@ defmodule Dobar do
     import Supervisor.Spec
 
     children = [
-      supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
+      # start the robot's supervisor
       supervisor(Dobar.Robot.Supervisor, []),
-
-      # volatile
-      # supervisor(Dobar.Interface.Supervisor, []),
-      # supervisor(Dobar.Conversation.Supervisor, []),
-
+      # start the effector runner task supervisor
+      supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
+      # start the dialog events manager
+      worker(GenEvent, [[name: :dialog_events_mananger]]),
+      # start the effector runner
       worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]])
     ]
 
