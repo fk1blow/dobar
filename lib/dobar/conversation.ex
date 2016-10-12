@@ -8,21 +8,32 @@ defmodule Dobar.Conversation do
   alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
   alias Dobar.Dialog.GenericDialog
 
-  def start_link(opts) do
-    GenServer.start_link __MODULE__, opts
+  @doc """
+  Start a new conversation with the given configuration keyword list.
+  """
+  def start_link(conf) do
+    GenServer.start_link __MODULE__, conf
+  end
+
+  @doc """
+  Provide an intent to the conversation.
+  """
+  def provide(pid, %Intent{} = intent) do
+    GenServer.cast pid, {:provide_intent, intent}
   end
 
   def init(args) do
     {:ok, pid} = DialogEvents.start_link
     {_id, manager_pid, _, _} = DialogEvents.get_child(pid, :dialog_event_mananger)
     _ = manager_pid |> start_event_handlers
+
     {:ok, %{event_manager: manager_pid,
             robot: args[:robot],
             definitions: args[:definitions],
             dialog: nil}}
   end
 
-  def handle_info({:react, %Intent{} = intent}, %{dialog: dialog} = state) do
+  def handle_cast({:provide_intent, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
         create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
@@ -34,9 +45,9 @@ defmodule Dobar.Conversation do
           create_and_evaluate_dialog(intent, state.event_manager, state.definitions)
         end
     end
-
     {:noreply, Map.merge(state, %{dialog: dialog})}
   end
+
   def handle_info({:EXIT, pid, :normal}, %{dialog: dialog} = state) do
     # this should never happen, actually
     state = if dialog === pid,
@@ -59,7 +70,6 @@ defmodule Dobar.Conversation do
 
   defp start_event_handlers(manager) do
     GenEvent.add_mon_handler(manager, Conversation.DialogHandler, [conversation: self])
-    GenEvent.add_mon_handler(manager, Conversation.TimelineHandler, nil)
     GenEvent.add_mon_handler(manager, Conversation.LoggingHandler, nil)
   end
 

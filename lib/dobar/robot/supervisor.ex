@@ -5,13 +5,17 @@ defmodule Dobar.Robot.Supervisor do
     Supervisor.start_link __MODULE__, [], name: __MODULE__
   end
 
-  def start_child(pid, robot_conf) do
-    Supervisor.start_child pid, [robot_conf]
+  def start_robot(sup, robot_conf) do
+    Supervisor.start_child sup, [robot_conf]
+  end
+
+  def shutdown_robot(sup, pid) do
+    Supervisor.terminate_child(sup, pid)
   end
 
   def init(_) do
     children = [
-      worker(Dobar.Robot, [])
+      worker(Dobar.Robot, [], restart: :transient)
     ]
     supervise children, strategy: :simple_one_for_one
   end

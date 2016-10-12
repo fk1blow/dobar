@@ -11,7 +11,7 @@ defmodule Dobar.Conversation.Supervisor do
 
   def init(args) do
     children = [
-      worker(Dobar.Conversation, [])
+      worker(Dobar.Conversation, [], restart: :transient)
     ]
     supervise(children, strategy: :simple_one_for_one)
   end
