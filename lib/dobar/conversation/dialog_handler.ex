@@ -13,12 +13,13 @@ defmodule Dobar.Conversation.DialogHandler do
   end
 
   def handle_event(%Reaction{about: :completed} = reaction, state) do
+    IO.puts "+++++++++++++++++++++:completed: #{inspect reaction}"
+    raise "xxx"
     send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
   end
 
   def handle_event(%Reaction{about: :question} = reaction, state) do
-    IO.puts ":question: #{inspect reaction}"
     send(state.conversation, {:dialog_reaction, reaction})
     {:ok, state}
   end

@@ -45,24 +45,14 @@ defmodule Dobar.Robot do
   def react(robot, {:text, message}),  do: GenServer.cast robot, {:input, :text, message}
 
   def init(conf) do
-    interface_conf = [
+    {:ok, interface} = Interface.start_link([
       robot: self,
       adapter: conf[:adapter],
-      evaluator: conf[:evaluator]
-    ]
-    {:ok, interface} = Interface.start_link interface_conf
+      evaluator: conf[:evaluator]])
 
-    conversation_conf = [
+    {:ok, conversation} = Conversation.start_link([
       robot: self,
-      definitions: conf[:definitions]
-    ]
-    {:ok, conversation} = Conversation.start_link conversation_conf
-
-    # {:ok, interface} = Interface.Supervisor.start_child Interface.Supervisor,
-    #   [robot: self, adapter: conf[:adapter], evaluator: conf[:evaluator]]
-
-    # {:ok, conversation} = Conversation.Supervisor.start_child(Conversation.Supervisor,
-    #   [robot: self, definitions: conf[:definitions]])
+      definitions: conf[:definitions]])
 
     {:ok, %{adapter: conf[:adapter],
             responders: conf[:effects],

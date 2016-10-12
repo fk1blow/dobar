@@ -9,8 +9,6 @@ defmodule Dobar do
       supervisor(Dobar.Robot.Supervisor, []),
       # start the effector runner task supervisor
       supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
-      # start the dialog events manager
-      worker(GenEvent, [[name: :dialog_events_mananger]]),
       # start the effector runner
       worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]])
     ]
