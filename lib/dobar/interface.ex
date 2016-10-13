@@ -1,8 +1,6 @@
 defmodule Dobar.Interface do
   use GenServer
 
-  require Logger
-
   alias Dobar.Error.EvaluationError
   alias Dobar.Interface.Adapter
   alias Dobar.Conversation.Intention.Evaluator, as: IntentionEvaluator
@@ -31,7 +29,6 @@ defmodule Dobar.Interface do
       {:ok, intent} ->
         send(state.robot, {:evaluate_intent, intent})
       {:error, reason} ->
-        Logger.info("intent evaluation error, reason: #{inspect reason}")
         send(state.robot, {:evaluation_error, %EvaluationError{reason: reason}})
     end
     {:noreply, state}

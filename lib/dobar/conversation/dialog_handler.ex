@@ -1,6 +1,5 @@
 defmodule Dobar.Conversation.DialogHandler do
   use GenEvent
-  require Logger
 
   alias Dobar.Reaction
   alias Dobar.Dialog.GenericDialog

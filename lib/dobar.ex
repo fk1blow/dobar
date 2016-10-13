@@ -10,7 +10,9 @@ defmodule Dobar do
       # start the effector runner task supervisor
       supervisor(Task.Supervisor, [[name: Dobar.Effect.Task]]),
       # start the effector runner
-      worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]])
+      worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]]),
+      # start the robot registry
+      worker(Dobar.Robot.Registry, []),
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]

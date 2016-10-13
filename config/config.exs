@@ -12,6 +12,7 @@ config :logger, :console,
 
 # example config
 config :dobar, Robot.Waka,
+  name: "waka",
   adapter: [module: Dobar.Interface.Adapter.Console, opts: [mambo: "jambo"]],
   definitions: Dobar.Xapp.Definition,
   effects: [

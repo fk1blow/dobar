@@ -5,8 +5,8 @@ defmodule Dobar.Robot.Supervisor do
     Supervisor.start_link __MODULE__, [], name: __MODULE__
   end
 
-  def start_robot(sup, robot_conf) do
-    Supervisor.start_child sup, [robot_conf]
+  def start_robot(sup, conf) do
+    Supervisor.start_child sup, [conf]
   end
 
   def shutdown_robot(sup, pid) do
