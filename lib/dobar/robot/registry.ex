@@ -9,6 +9,10 @@ defmodule Dobar.Robot.Registry do
     GenServer.call(__MODULE__, {:register_name, name, pid})
   end
 
+  def unregister_name(name) do
+    GenServer.cast(__MODULE__, {:unregister_name, name})
+  end
+
   def whereis_name(name) do
     GenServer.call(__MODULE__, {:whereis_name, name})
   end
@@ -39,6 +43,10 @@ defmodule Dobar.Robot.Registry do
       _ ->
         {:reply, :no, state}
     end
+  end
+
+  def handle_cast({:unregister_name, name}, state) do
+    {:noreply, Map.delete(state, name)}
   end
 
   def handle_info({:DOWN, _, :process, pid, _}, state) do

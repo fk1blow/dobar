@@ -35,6 +35,7 @@ defmodule Dobar.Robot do
       :undefined ->
         {:error, "cannot stop undefined robot #{inspect robot}"}
       robot ->
+        Dobar.Robot.Registry.unregister_name(robot)
         Dobar.Robot.Supervisor.shutdown_robot(Dobar.Robot.Supervisor, robot)
     end
   end
