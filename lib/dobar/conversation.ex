@@ -51,7 +51,6 @@ defmodule Dobar.Conversation do
   end
 
   def handle_info({:gen_event_EXIT, _, _}, state) do
-    # {ok, manager} = GenEvent.start_link
     start_event_handlers(state.event_manager)
     {:noreply, state}
   end
