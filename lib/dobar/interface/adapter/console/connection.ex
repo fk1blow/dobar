@@ -7,42 +7,41 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
   Hedwig-IM homepage: https://github.com/hedwig-im
   """
 
-  use GenServer
-
-  @prompt_messages "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
+  @prompts "µ˜ßåœ∑¬˚∆®©∑¡™¥£†¢ø∞π¬…ππø¡™∞†≤µåß≥≤µ∂ƒ∫©æ"
 
   def start_link(opts) do
     {user, 0} = System.cmd("whoami", [])
-    clear_screen()
+    clear_console()
     show_banner()
-    prompt_message = prompt_message(@prompt_messages)
-    GenServer.start_link(
-      __MODULE__,
-      [String.strip(user), opts[:adapter], prompt_message])
+    prompt_message = prompt_message(@prompts)
+    opts = [String.strip(user), opts[:adapter], prompt_message]
+    pid = spawn_link(__MODULE__, :init, opts)
+    {:ok, pid}
   end
 
-  def init([user, adapter, prompt]) do
-    Task.async(__MODULE__, :loop, [user, adapter, prompt])
-    {:ok, %{user: user, adapter: adapter, prompt: prompt}}
+  def init(user, adapter, prompt) do
+    Task.async(__MODULE__, :repl, [user, adapter, prompt])
+    loop(user, adapter, prompt)
   end
 
-  def loop(user, adapter, post) do
+  def loop(user, adapter, prompt) do
+    receive do
+      {:output, message} ->
+        output(message, user, prompt)
+        loop(user, adapter, prompt)
+      _ ->
+        loop(user, adapter, prompt)
+    end
+  end
+
+  def repl(user, adapter, prompt) do
     user
-    |> prompt(post)
+    |> prompt(prompt)
     |> IO.ANSI.format
     |> IO.gets
     |> String.strip
     |> send_message(adapter)
-    loop(user, adapter, post)
-  end
-
-  def send(pid, message) do
-    GenServer.cast pid, message
-  end
-
-  def handle_cast(message, state) do
-    output(message, state.user, state.prompt)
-    {:noreply, state}
+    repl(user, adapter, prompt)
   end
 
   defp send_message(message, adapter) do
@@ -58,12 +57,12 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     print [:green, msg, :default_color]
   end
 
-  defp clear_screen do
-    print [:clear, :home]
-  end
-
   defp prompt(name, prompt_message) do
     [:white, :bright, name, prompt_message, :normal, :default_color]
+  end
+
+  defp clear_console do
+    print [:clear, :home]
   end
 
   defp show_banner do
@@ -72,8 +71,8 @@ defmodule Dobar.Interface.Adapter.Console.Connection do
     """
   end
 
-  defp prompt_message(messages) do
-    messages
+  defp prompt_message(prompts) do
+    prompts
     |> String.codepoints
     |> Enum.uniq
     |> Enum.random

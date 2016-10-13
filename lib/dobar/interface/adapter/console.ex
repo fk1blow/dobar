@@ -17,7 +17,7 @@ defmodule Dobar.Interface.Adapter.Console do
   end
 
   def handle_info({:text, message}, %{connection: connection} = state) do
-    Connection.send connection, message
+    send connection, {:output, message}
     {:noreply, state}
   end
 end
