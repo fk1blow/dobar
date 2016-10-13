@@ -10,11 +10,8 @@ defmodule Dobar.Robot do
 
   @doc """
   Start a new robot with the given configuration keyword list.
-
-  TODO: should validate the entire configuration before trying to start a new robot!
   """
   def start_link(conf) do
-    # IO.puts "opts: #{inspect opts[:name]}"
     GenServer.start_link __MODULE__, conf, name: via_tuple(conf[:name])
   end
 
