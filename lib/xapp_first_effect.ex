@@ -10,7 +10,7 @@ defmodule Dobar.Xapp.FirstEffect do
   @location_api "http://maps.googleapis.com/maps/api/geocode/json?sensor=false"
   @timezone_api "http://api.timezonedb.com/v2/get-time-zone?key=MWTIKWN1FRYX&by=position&format=json"
 
-  on %EvaluationError{} = error do
+  on %EvaluationError{} do
     send interface, {:output, :text, "sorry but i was unable to process your input"}
     send interface, {:output, :text, "please try again"}
   end

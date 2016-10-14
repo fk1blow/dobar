@@ -34,7 +34,6 @@ defmodule Dobar.Robot.Registry do
   def handle_call({:whereis_name, name}, _from, state) do
     {:reply, Map.get(state, name, :undefined), state}
   end
-
   def handle_call({:register_name, name, pid}, _from, state) do
     case Map.get(state, name) do
       nil ->

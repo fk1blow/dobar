@@ -76,7 +76,7 @@ defmodule Dobar.Robot do
   end
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
     effect = %Effect{reaction: reaction, responders: state.responders}
-    Dobar.Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
+    Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
     {:noreply, state}
   end
 

@@ -8,8 +8,7 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Dialog.Meta
       alias Dobar.Dialog.Topic
       alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
-
-      @confidence_treshold 0.8
+      alias Dobar.Dialog.Alternative
 
       def start_link(:root_dialog, opts) do
         GenServer.start_link(__MODULE__,
@@ -111,21 +110,13 @@ defmodule Dobar.Dialog.Species do
                         trigger: intent,
                         other: %{dialog_intent: topic_intent}})
 
-            alternative =
-              intent.name
-              |> String.to_atom
-              |> find_alternative(topic_intent, state.definitions)
-              |> validate_confidence(intent)
-              |> validate_inception(topic_intent)
-
-            case alternative do
+            case Alternative.dialog(state.definitions, topic_intent, intent) do
               {:reference, intention_name} ->
                 Process.flag(:trap_exit, true)
 
                 GenEvent.notify(state.event_manager,
                   %Reaction{about: :alternative_reference_found, trigger: intent})
 
-                # dialog = Dobar.Dialog.Species.Routes.specie intention_name
                 dialog = SpeciesRoutes.specie intention_name
                 {:ok, pid} = dialog.start_link(
                   [parent: self, name: intention_name],
@@ -145,7 +136,6 @@ defmodule Dobar.Dialog.Species do
                                         confidence: 1,
                                         input: "confirm your shit"}
 
-                # dialog = Dobar.Dialog.Species.Routes.specie(intention_name)
                 dialog = SpeciesRoutes.specie(intention_name)
                 {:ok, pid} = dialog.start_link(
                   [name: String.to_existing_atom(switch_intent.name),
@@ -360,76 +350,6 @@ defmodule Dobar.Dialog.Species do
       defp root_dialog?(name), do: name == :root_dialog
 
       defp meta_dialog?(name), do: !root_dialog?(name)
-
-      defp find_alternative(intention_name, dialog_intent, definitions) do
-        capability_name = intention_name
-        topic_intent_name = dialog_intent.name |> String.to_atom
-
-        # extract the intention for the current topic
-        {:ok, intention} = definitions.intention(topic_intent_name)
-
-        # extract the capabilities of the current topic
-        topic_capabilities = intention[topic_intent_name][capability_name]
-
-        # it searches first inside the current topic's capabilities and if
-        # nothing found, search for an alternative in the global registery.
-        #
-        # if there's a list expressed in the `topic_capabilities`, it means the topic's
-        # current intention has a reference to the input intent - the case will
-        # return a {:refernce, intention}. If no list present, it searches for
-        # an intention named after `capability_name` and will return an
-        # {:alternative, intention}. If that doesn't find an intention, it finally
-        # returns a {:noalternative, intention}
-        case topic_capabilities do
-          [_head|_tail] ->
-            {:reference, intention_name}
-          nil ->
-            case definitions.intention(capability_name) do
-              {:ok, intention} ->
-                topic_capabilities = intention[capability_name]
-                # if the capability is contextual and applies only for meta, stop
-                # searching the global registry - no intention capability found!
-                if topic_capabilities[:relationship] == :meta do
-                  {:noalternative, intention_name}
-                else
-                  {:alternative, intention_name}
-                end
-              {:error, _reason} ->
-                {:noalternative, intention_name}
-            end
-        end
-      end
-
-      defp validate_confidence({:reference, intention_name}, input_intent) do
-        case input_intent do
-          %{confidence: conf} when conf > @confidence_treshold ->
-            {:reference, intention_name}
-          _ ->
-            {:noalternative, intention_name}
-        end
-      end
-      defp validate_confidence({:alternative, intention_name}, input_intent) do
-        case input_intent do
-          %{confidence: conf} when conf > @confidence_treshold ->
-            {:alternative, intention_name}
-          _ ->
-            {:noalternative, intention_name}
-        end
-      end
-      defp validate_confidence({:noalternative, intention_name}, _) do
-        {:noalternative, intention_name}
-      end
-
-      # tests whether the input intent is the same as the current intent
-      defp validate_inception({:alternative, intention_name}, input_intent) do
-        cond do
-          intention_name == String.to_existing_atom(input_intent.name) ->
-            {:samealternative, intention_name}
-          true ->
-            {:alternative, intention_name}
-        end
-      end
-      defp validate_inception(current, _input_intent), do: current
     end
   end
 end
