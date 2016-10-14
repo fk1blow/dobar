@@ -196,7 +196,7 @@ defmodule Dobar.Dialog.Topic do
     case definitions.intention(intent_name) do
       {:ok, intent_def} ->
         filter_capabilities(intent_def[intent_name])
-      {:error, reason} -> []
+      {:nodefinition, _reason} -> []
     end
   end
 

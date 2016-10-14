@@ -10,6 +10,8 @@ defmodule Dobar.Dialog.Species do
       alias Dobar.Dialog.Species.Routes, as: SpeciesRoutes
       alias Dobar.Dialog.Alternative
 
+      @confidence_treshold 0.8
+
       def start_link(:root_dialog, opts) do
         GenServer.start_link(__MODULE__,
           [parent: nil,
@@ -40,20 +42,10 @@ defmodule Dobar.Dialog.Species do
       # overridable delegates
 
       def handle_intent(%Intent{} = intent, %{topic: nil, meta: nil} = state) do
-        case state.definitions.intention(String.to_atom intent.name) do
-          {:error, reason} ->
-            GenEvent.notify(state.event_manager,
-              %Reaction{about: :undefined_intention, trigger: intent})
-            {:error, :no_intention}
-
-          {:ok, intention} ->
-            GenEvent.notify(state.event_manager,
-              %Reaction{about: :begin_topic, trigger: intent})
-
-            Process.flag(:trap_exit, true)
-
+        with {:ok, _}   <- state.definitions.intention(String.to_atom intent.name),
+             :confident <- validate_confidence(intent)
+          do
             {:ok, topic} = Topic.start_link(intent, [definitions: state.definitions])
-
             case Topic.forward(topic) do
               {:question, question} ->
                 GenEvent.notify(state.event_manager,
@@ -76,7 +68,17 @@ defmodule Dobar.Dialog.Species do
                 end
                 {:topic_end, :completed}
             end
-        end
+          else
+            :unconfident ->
+              GenEvent.notify(state.event_manager,
+                %Reaction{about: :low_confidence_intent, trigger: intent})
+              {:error, :no_intention}
+
+            {:nodefinition, reason} ->
+              GenEvent.notify(state.event_manager,
+                %Reaction{about: :undefined_intention, trigger: intent})
+              {:error, :no_intention}
+          end
       end
       def handle_intent(%Intent{} = intent, %{meta: nil} = state) do
         GenEvent.notify(state.event_manager,
@@ -350,6 +352,13 @@ defmodule Dobar.Dialog.Species do
       defp root_dialog?(name), do: name == :root_dialog
 
       defp meta_dialog?(name), do: !root_dialog?(name)
+
+      defp validate_confidence(%Intent{confidence: confidence}) do
+        case confidence > @confidence_treshold do
+          true -> :confident
+          false -> :unconfident
+        end
+      end
     end
   end
 end

@@ -49,7 +49,7 @@ defmodule Dobar.Dialog.Alternative do
             else
               {:alternative, intention_name}
             end
-          {:error, _reason} ->
+          {:nodefinition, _reason} ->
             {:noalternative, intention_name}
         end
     end

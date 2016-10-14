@@ -21,10 +21,11 @@ defmodule Dobar.Conversation.Definition do
       defp intention_definitions, do: @intentions
 
       defp validate_intention(nil, key_name),
-        do: {:error, "cannot provide intention for key name: #{inspect key_name}"}
+        do: {:nodefinition, "intention not defined for key name: #{inspect key_name}"}
       defp validate_intention(definition, _key_name), do: {:ok, definition}
 
-      defp normalize_structure({:error, reason}, _key_name), do: {:error, reason}
+      defp normalize_structure({:nodefinition, reason}, _key_name),
+        do: {:nodefinition, reason}
       defp normalize_structure({:ok, definition}, key_name) do
         {:ok, Map.put(%{}, key_name, definition)}
       end
