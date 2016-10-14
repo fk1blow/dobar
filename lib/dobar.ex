@@ -13,9 +13,6 @@ defmodule Dobar do
       worker(Dobar.Effect.Runner, [[name: Dobar.Effect.Runner]]),
       # start the robot registry
       worker(Dobar.Robot.Registry, []),
-
-      # TESTING PURPOSE ONLY!
-      worker(Dobar.Robot, [Application.get_env(:dobar, Robot.Waka)])
     ]
 
     opts = [strategy: :one_for_one, name: Dobar.Supervisor]
