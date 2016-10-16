@@ -49,7 +49,7 @@ defmodule Dobar.Xapp.FirstEffect do
 
   on %Reaction{trigger: %{name: "say_time"}, features: %{where: %{value: [head | _] = cities}}} do
     # should actually get the time for each of the cities in the `value` but for
-    # the time being, take just the first
+    # the time being, just take the first one
     display_time(interface, head)
   end
 

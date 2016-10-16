@@ -27,7 +27,7 @@ defmodule Dobar.Interface do
   def handle_info({:input, :text, message}, state) do
     case evaluate_text_input(message, state.evaluator) do
       {:ok, intent} ->
-        send(state.robot, {:evaluate_intent, intent})
+        send(state.robot, {:intent_evaluated, intent})
       {:error, reason} ->
         send(state.robot, {:evaluation_error, %EvaluationError{reason: reason}})
     end

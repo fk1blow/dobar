@@ -17,8 +17,8 @@ defmodule Dobar.Conversation do
   @doc """
   Provide an intent to the conversation.
   """
-  def provide(pid, %Intent{} = intent) do
-    GenServer.cast pid, {:provide_intent, intent}
+  def forward(pid, %Intent{} = intent) do
+    GenServer.cast pid, {:forward, intent}
   end
 
   def init(args) do
@@ -31,7 +31,7 @@ defmodule Dobar.Conversation do
       event_manager: manager}}
   end
 
-  def handle_cast({:provide_intent, %Intent{} = intent}, %{dialog: dialog} = state) do
+  def handle_cast({:forward, %Intent{} = intent}, %{dialog: dialog} = state) do
     dialog = case dialog do
       nil ->
         {:ok, dialog} = create_dialog(intent, state.event_manager, state.definitions)

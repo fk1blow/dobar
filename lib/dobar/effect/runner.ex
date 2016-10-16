@@ -48,6 +48,7 @@ defmodule Dobar.Effect.Runner do
     end
     {:noreply, entry |> remove_entry(pool)}
   end
+  # this is when the task finishes and calls with a result(`_msg` in this case)
   def handle_info({ref, _msg}, state) when is_reference(ref) do
     {:noreply, state}
   end

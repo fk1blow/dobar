@@ -40,7 +40,7 @@ defmodule Dobar.Robot do
   @doc """
   Tells the robot to react when receiving a text message.
   """
-  def react(robot, {:text, message}) do
+  def say(robot, {:text, message}) do
     GenServer.cast via_tuple(robot), {:input, :text, message}
   end
 
@@ -65,8 +65,8 @@ defmodule Dobar.Robot do
     {:noreply, state}
   end
 
-  def handle_info({:evaluate_intent, %Intent{} = intent}, state) do
-    Conversation.provide(state.conversation, intent)
+  def handle_info({:intent_evaluated, %Intent{} = intent}, state) do
+    Conversation.forward(state.conversation, intent)
     {:noreply, state}
   end
   def handle_info({:evaluation_error, %EvaluationError{} = error}, state) do
