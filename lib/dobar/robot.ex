@@ -45,19 +45,37 @@ defmodule Dobar.Robot do
   end
 
   def init(conf) do
-    {:ok, interface} = Interface.start_link([
-      robot: self,
-      adapter: conf[:adapter],
-      evaluator: conf[:evaluator]])
+    with {:ok, interface} = Interface.start_adapter(conf[:adapter]),
+         {:ok, conversation} = Conversation.start_link([
+           robot: self,
+           definitions: conf[:definitions]]),
+    do
+      {:ok, %{adapter: conf[:adapter],
+              responders: conf[:effects],
+              evaluator: conf[:evaluator],
+              conversation: conversation,
+              interface: interface}}
+    else
+      {:error, reason} ->
+        {:stop, reason}
+      _ ->
+        {:stop, "unknown reason"}
+    end
 
-    {:ok, conversation} = Conversation.start_link([
-      robot: self,
-      definitions: conf[:definitions]])
+    # {:ok, interface} = Interface.start_link([
+    #   robot: self,
+    #   adapter: conf[:adapter],
+    #   evaluator: conf[:evaluator]])
 
-    {:ok, %{adapter: conf[:adapter],
-            responders: conf[:effects],
-            conversation: conversation,
-            interface: interface}}
+    # {:ok, conversation} = Conversation.start_link([
+    #   robot: self,
+    #   definitions: conf[:definitions]])
+
+    # {:ok, %{adapter: conf[:adapter],
+    #         responders: conf[:effects],
+    #         evaluator: conf[:evaluator],
+    #         conversation: conversation,
+    #         interface: interface}}
   end
 
   def handle_cast({:input, :text, message}, state) do
@@ -77,6 +95,19 @@ defmodule Dobar.Robot do
   def handle_info({:dialog_reaction, %Reaction{} = reaction}, state) do
     effect = %Effect{reaction: reaction, responders: state.responders}
     Effect.Runner.run(Dobar.Effect.Runner, effect, state.interface)
+    {:noreply, state}
+  end
+  def handle_info({:output, :text, message}, %{adapter: adapter} = state) do
+    Kernel.send adapter, {:text, message}
+    {:noreply, state}
+  end
+  def handle_info({:input, :text, message}, state) do
+    case Interface.evaluate_input(message, state.evaluator) do
+      {:ok, intent} ->
+        send(state.robot, {:intent_evaluated, intent})
+      {:error, reason} ->
+        send(state.robot, {:evaluation_error, %EvaluationError{reason: reason}})
+    end
     {:noreply, state}
   end
 
