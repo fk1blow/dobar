@@ -1,3 +1,9 @@
+# TODO: this module needs massive refactoring.
+# First of all, it doesn't need to store the 'adapter' and the 'evaluator' because
+# each of them can be read from the application env.
+# Secondly, the only thing needed now is the `robot` process ref that could easily
+# be passed directly to the adapter(and so you can send message directly to it,
+# completely avoiding the interface module)
 defmodule Dobar.Interface do
   use GenServer
 
