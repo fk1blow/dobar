@@ -27,7 +27,7 @@ defmodule Dobar.Robot do
   @doc """
   Shuts down a robot given its process pid.
   """
-  def shutdown(robot) do
+  def shutdown(robot) when is_bitstring robot do
     case Dobar.Robot.Registry.whereis_name(robot) do
       :undefined ->
         {:error, "cannot stop undefined robot #{inspect robot}"}
@@ -40,7 +40,7 @@ defmodule Dobar.Robot do
   @doc """
   Tells the robot to react when receiving a text message.
   """
-  def say(robot, {:text, message}) do
+  def react(robot, {:text, message}) when is_bitstring robot do
     GenServer.cast via_tuple(robot), {:input, :text, message}
   end
 

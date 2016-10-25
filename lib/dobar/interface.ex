@@ -25,7 +25,7 @@ defmodule Dobar.Interface do
   end
 
   # the :output comes from a responder, when the user decides it wants to reply
-  # to the interface, and the :input comes from the adapter, when the user inputs
+  # to the interface, and the :input comes from the user through the adapter
   def handle_info({:output, :text, message}, %{adapter: adapter} = state) do
     Kernel.send adapter, {:text, message}
     {:noreply, state}

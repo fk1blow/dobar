@@ -17,7 +17,6 @@ defmodule Dobar.Conversation.Intention.Evaluator do
   def evaluate({:text, input, evaluator, opts}),
     do: evaluator |> do_evaluate(@default_evaluator, :text_query, input, opts) |> parse
 
-  # "nil" represents the context wich was deprecated by wit.ai
   defp do_evaluate(nil, default_evaluator, input_type, input, opts),
     do: apply(default_evaluator, input_type, [input, opts])
   defp do_evaluate(evaluator, _default_evaluator, input_type, input, opts),
