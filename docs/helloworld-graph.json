@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {
+      "component": "Dobar.Flow.Component.RootComponent",
+      "is_root": true,
+      "id": "kicker"
+    },
+
+    {
+      "component": "Dobar.Flow.Component.IOComponent",
+      "id": "logger"
+    }
+  ],
+
+  "connections": [
+    {
+      "from": "root",
+      "to": "io"
+    }
+  ]
+}
