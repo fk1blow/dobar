@@ -39,13 +39,6 @@ defmodule Dobar.Flow.Scheduler do
       network.connections
       |> Enum.map(fn c -> {c, GenServer.start(Dobar.Flow.Port, [])} end)
       |> Enum.map(fn {c, {:ok, pid}} -> {c, pid} end)
-      # |> Enum.reduce(%{output: %{}, input: %{}}, fn {connection, {:ok, pid}}, acc ->
-      #   %{
-      #     acc
-      #     | output: Map.put(acc.output, connection.from, pid),
-      #       input: Map.put(acc.input, connection.to, pid)
-      #   }
-      # end)
 
     output_ports =
       ports
@@ -55,14 +48,26 @@ defmodule Dobar.Flow.Scheduler do
         else
           Map.put(acc, conn.from, %{conn.to => pid})
         end
-
-        # acc
       end)
 
-    IO.inspect(output_ports)
+    input_ports =
+      ports
+      |> Enum.reduce(%{}, fn {conn, pid}, acc ->
+        if Map.has_key?(acc, conn.to) do
+          %{acc | conn.to => Map.put(acc[conn.to], conn.from, pid)}
+        else
+          Map.put(acc, conn.to, %{conn.from => pid})
+        end
+      end)
 
-    # network.nodes
-    # |> Enum.each(fn node -> SchedulerSupervisor.start_node(node) end)
+    # IO.inspect(input_ports)
+    # IO.inspect(output_ports)
+
+    network.nodes
+    |> Enum.each(fn node ->
+      # IO.inspect "starting node: #{node.name}"
+      SchedulerSupervisor.start_node(node)
+    end)
 
     # no need to find root node b/c they're self reliant
     # root_node = network.nodes |> Enum.find(fn node -> node.is_root === true end)

@@ -25,10 +25,12 @@ defmodule Dobar.Flow.Component do
 
       @behaviour Dobar.Flow.Component
 
+      @registry Dobar.Flow.Scheduler.Registry
+
       # api
 
       def start_link(node) do
-        GenServer.start_link(__MODULE__, [node_name: node.name],
+        GenServer.start_link(__MODULE__, node,
           name: {:via, Registry, {Dobar.Flow.Scheduler.Registry, node.name}}
         )
       end
@@ -45,13 +47,22 @@ defmodule Dobar.Flow.Component do
 
       # callbacks
 
-      def init(node_name: name) do
-        {:ok, %{name: name, status: :pristine}}
+      def init(node) do
+        {:ok, %{node: node, status: :pristine}, {:continue, :am_i_root}}
       end
 
-      def handle_call(:execute, _from, state) do
+      def handle_continue(:am_i_root, state) do
+        case state.node.is_root do
+          true -> GenServer.cast(self(), :execute)
+          _ -> nil
+        end
+
+        {:noreply, state}
+      end
+
+      def handle_cast(:execute, state) do
         execute()
-        {:reply, :ok, Map.put(state, :status, :inactive)}
+        {:noreply, Map.put(state, :status, :inactive)}
       end
     end
   end

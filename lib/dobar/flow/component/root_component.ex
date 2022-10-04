@@ -7,7 +7,7 @@ defmodule Dobar.Flow.Component.RootComponent do
 
   @impl true
   def execute do
-    IO.inspect "fnally"
+    IO.puts "oooo i should be the kick"
     {:ok, "next is: Dobar.Flow.Component.IO"}
   end
 end

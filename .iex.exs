@@ -12,7 +12,7 @@ hello_flow = %{
   ],
   nodes: [
     %Node{name: "kicker", module: Dobar.Flow.Component.RootComponent, is_root: true},
-    %Node{name: "slacker", module: Dobar.Flow.Component.HTTPComponent},
+    %Node{name: "slacker", module: Dobar.Flow.Component.HttpComponent},
     %Node{name: "printer", module: Dobar.Flow.Component.IOComponent},
   ]
 }
@@ -23,4 +23,8 @@ revery = fn () ->
   r Dobar.Flow.Scheduler
   r Dobar.Flow.Component
   r Dobar.Flow.Port
+
+  start_flow.()
 end
+
+revery.()
