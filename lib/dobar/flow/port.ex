@@ -1,4 +1,14 @@
 defmodule Dobar.Flow.Port do
+  use GenServer
+
+  # def start(args) do
+  #   GenServer.start(__MODULE__, [args])
+  # end
+
+  def init(args) do
+    {:ok, args}
+  end
+
   @moduledoc """
   Ports are the points of contact between processes and connections
   """

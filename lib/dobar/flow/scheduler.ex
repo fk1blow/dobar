@@ -30,10 +30,39 @@ defmodule Dobar.Flow.Scheduler do
   end
 
   def handle_cast({:start_network, network}, state) do
-    IO.inspect network
+    # IO.inspect(network)
 
-    network.nodes
-    |> Enum.each(fn node -> SchedulerSupervisor.start_node(node) end)
+    # res = GenServer.start(Dobar.Flow.Port, [])
+    # IO.inspect res
+
+    ports =
+      network.connections
+      |> Enum.map(fn c -> {c, GenServer.start(Dobar.Flow.Port, [])} end)
+      |> Enum.map(fn {c, {:ok, pid}} -> {c, pid} end)
+      # |> Enum.reduce(%{output: %{}, input: %{}}, fn {connection, {:ok, pid}}, acc ->
+      #   %{
+      #     acc
+      #     | output: Map.put(acc.output, connection.from, pid),
+      #       input: Map.put(acc.input, connection.to, pid)
+      #   }
+      # end)
+
+    output_ports =
+      ports
+      |> Enum.reduce(%{}, fn {conn, pid}, acc ->
+        if Map.has_key?(acc, conn.from) do
+          %{acc | conn.from => Map.put(acc[conn.from], conn.to, pid)}
+        else
+          Map.put(acc, conn.from, %{conn.to => pid})
+        end
+
+        # acc
+      end)
+
+    IO.inspect(output_ports)
+
+    # network.nodes
+    # |> Enum.each(fn node -> SchedulerSupervisor.start_node(node) end)
 
     # no need to find root node b/c they're self reliant
     # root_node = network.nodes |> Enum.find(fn node -> node.is_root === true end)
