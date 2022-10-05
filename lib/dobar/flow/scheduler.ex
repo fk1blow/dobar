@@ -60,13 +60,18 @@ defmodule Dobar.Flow.Scheduler do
         end
       end)
 
-    # IO.inspect(input_ports)
-    # IO.inspect(output_ports)
+    IO.inspect(input_ports)
+    IO.inspect(output_ports)
 
     network.nodes
     |> Enum.each(fn node ->
       # IO.inspect "starting node: #{node.name}"
       SchedulerSupervisor.start_node(node)
+      # SchedulerSupervisor.start_node([
+      #   node: node,
+      #   input_ports: input_ports,
+      #   output_ports: output_ports
+      # ])
     end)
 
     # no need to find root node b/c they're self reliant

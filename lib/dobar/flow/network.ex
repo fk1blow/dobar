@@ -1,4 +1,6 @@
 defmodule Dobar.Flow.Network do
+  @deprecated "use the Dobar.Saga.t() instead"
+
   @moduledoc """
   It manages parsing, loading and initializing a network
 

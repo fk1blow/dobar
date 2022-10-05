@@ -1,8 +1,8 @@
 defmodule Dobar.Flow.Scheduler.SchedulerSupervisor do
   use DynamicSupervisor
 
-  def start_link(init_arg) do
-    DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
+  def start_link(args) do
+    DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
   @spec start_node(Dobar.Saga.Node.t()) :: atom()
