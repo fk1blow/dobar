@@ -11,4 +11,6 @@ defmodule Dobar.Saga do
         }
 
   defstruct [:name, :version, :nodes, :connections]
+
+  use ExConstructor
 end

@@ -6,7 +6,7 @@ alias Dobar.Saga.Node
 hello_flow = %{
   name: "hello dobar",
   connections: [
-    %Connection{from: "kicker", to: "slacker"}, 
+    %Connection{from: "kicker", to: "slacker"},
     %Connection{from: "slacker", to: "printer"},
     %Connection{from: "slacker", to: "another"}
   ],
@@ -27,4 +27,4 @@ revery = fn () ->
   start_flow.()
 end
 
-revery.()
+# revery.()

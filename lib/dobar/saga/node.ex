@@ -1,9 +1,9 @@
 defmodule Dobar.Saga.Node do
   @type t :: %__MODULE__{
           module: atom(),
-          name: String.t(),
+          id: String.t(),
           is_root: boolean()
         }
 
-  defstruct [:module, :name, :is_root]
+  defstruct [:module, :id, :is_root]
 end
