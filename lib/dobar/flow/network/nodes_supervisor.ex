@@ -1,4 +1,4 @@
-defmodule Dobar.Flow.Scheduler.SchedulerSupervisor do
+defmodule Dobar.Flow.Network.NodeSupervisor do
   use DynamicSupervisor
 
   def start_link(args) do

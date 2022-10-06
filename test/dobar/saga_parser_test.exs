@@ -4,12 +4,16 @@ defmodule Dobar.SagaTests do
   alias Dobar.Saga
 
   describe "from_json/1" do
-    test "returns {:error, :invalid} Saga when inputing invalid JSON" do
-      assert Saga.Parser.from_json(invalid_json_fixture) == {:error, :connections}
+    test "returns {:error, :connections} Saga when no connections are defined" do
+      assert Saga.Parser.from_json(invalid_connections_fixture()) == {:error, :connections}
+    end
+
+    test "returns {:error, :nodes} Saga when no nodes are defined" do
+      assert Saga.Parser.from_json(invalid_nodes_fixture()) == {:error, :nodes}
     end
 
     test "returns {:ok, %Saga{}} Saga when inputing valid JSON" do
-      assert Saga.Parser.from_json(valid_json_fixture) ==
+      assert Saga.Parser.from_json(valid_json_fixture()) ==
                {:ok,
                 %Dobar.Saga{
                   connections: [%{"from" => "root", "to" => "io"}],
@@ -51,11 +55,22 @@ defmodule Dobar.SagaTests do
     })
   end
 
-  defp invalid_json_fixture do
+  defp invalid_connections_fixture do
+    ~s({
+      "nodes": [{
+        "component": "Dobar.Flow.Component.IOComponent",
+        "id": "logger"
+      }],
+
+      "connections": []
+    })
+  end
+
+  defp invalid_nodes_fixture do
     ~s({
       "nodes": [],
 
-      "connections": []
+      "connections": [{"from": "root", "to": "io"}]
     })
   end
 end

@@ -16,14 +16,23 @@ defmodule Dobar.Application do
       {Phoenix.PubSub, name: Dobar.PubSub},
       # Start the Endpoint (http/https)
       DobarWeb.Endpoint,
+
       # this is the Flow scheduler
+      # %{
+      #   id: Dobar.Flow.Scheduler,
+      #   start: {Dobar.Flow.Scheduler, :start_link, [[name: Flow.Scheduler]]}
+      # },
+
+      # Network, Scheduler and Scheduler supervisor
       %{
-        id: Dobar.Flow.Scheduler,
-        start: {Dobar.Flow.Scheduler, :start_link, [[name: Flow.Scheduler]]}
+        id: Dobar.Flow.Network,
+        start: {Dobar.Flow.Network, :start_link, [[]]}
       },
-      Dobar.Flow.Scheduler.SchedulerSupervisor,
-      # Scheduler's Registry
-      {Registry, keys: :unique, name: Dobar.Flow.Scheduler.Registry}
+      {Registry, keys: :unique, name: Dobar.Flow.Network.SchedulerRegistry},
+      Dobar.Flow.Network.SchedulerSupervisor,
+      {Registry, keys: :unique, name: Dobar.Flow.Network.NodesRegistry},
+      Dobar.Flow.Network.NodeSupervisor,
+
       # Start a worker by calling: Dobar.Worker.start_link(arg)
       # {Dobar.Worker, arg}
     ]

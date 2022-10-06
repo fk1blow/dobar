@@ -1,29 +1,11 @@
 defmodule Dobar.Flow.Port do
-  use GenServer
+  @type node_name :: String.t()
+  @type node_pid :: term()#pid()
 
-  # def start(args) do
-  #   GenServer.start(__MODULE__, [args])
-  # end
+  @type t :: %__MODULE__{
+          input: %{required(node_name()) => node_pid()},
+          output: %{required(node_name()) => node_pid()}
+        }
 
-  def init(args) do
-    {:ok, args}
-  end
-
-  @moduledoc """
-  Ports are the points of contact between processes and connections
-  """
-
-  @doc """
-  Reads the IN port's (incoming) packets
-  """
-  def receive do
-    #
-  end
-
-  @doc """
-  Sends a packet to the OUT port
-  """
-  def send do
-    #
-  end
+  defstruct [:input, :output]
 end

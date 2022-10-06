@@ -4,7 +4,11 @@ defmodule Dobar.Saga.Parser do
   """
 
   @type valid_saga :: {:ok, Dobar.Saga.t()}
-  @type invalid_saga :: {:invalid, :nodes} | {:invalid, :connections}
+  @type invalid_reason :: :empty_nodes | :empty_connections | :no_name
+  @type invalid_saga ::
+          {:error, invalid_reason()}
+          | {:error, invalid_reason()}
+          | {:error, invalid_reason()}
 
   @spec from_json(binary()) :: valid_saga() | invalid_saga()
   def from_json(json) when is_binary(json) do
@@ -22,11 +26,17 @@ defmodule Dobar.Saga.Parser do
 
   defp validate_saga(saga) do
     cond do
-      Enum.count(Map.get(saga, :connections)) == 0 ->
-        {:invalid, :connections}
+      Map.get(saga, :name) == nil ->
+        {:invalid, :no_name}
 
-      Enum.count(Map.get(saga, :nodes)) == 0 ->
-        {:invalid, :nodes}
+      Map.get(saga, :name) |> String.length() == 0 ->
+        {:invalid, :no_name}
+
+      Map.get(saga, :connections) |> Enum.count() == 0 ->
+        {:invalid, :empty_connections}
+
+      Map.get(saga, :nodes) |> Enum.count() == 0 ->
+        {:invalid, :empty_nodes}
 
       true ->
         :valid

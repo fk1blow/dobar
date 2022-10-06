@@ -1,19 +1,17 @@
 defmodule Dobar.Flow.Network do
-  @deprecated "use the Dobar.Saga.t() instead"
+  use GenServer
 
-  @moduledoc """
-  It manages parsing, loading and initializing a network
+  def start_link(_args) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
 
-  The network is responsible of handling graphs, loading, parsing them and mostly
-  transforming them into a network of nodes and connections, to be handled by
-  the flow Scheduler
-  """
+  @spec create_network(pid(), binary()) :: term()
+  def create_network(server, saga) do
+    # GenServer.call(server, {:create, saga})
+  end
 
-  @type t :: %__MODULE__{
-          name: String.t(),
-          nodes: [Dobar.Saga.Node.t()],
-          connections: [Dobar.Saga.Connection.t()]
-        }
-
-  defstruct [:name, :nodes, :connections]
+  @impl GenServer
+  def init(init_arg) do
+    {:ok, init_arg}
+  end
 end

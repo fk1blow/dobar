@@ -1,7 +1,15 @@
 defmodule Dobar.Flow do
   @moduledoc """
-  Represents the main Flow Based Programming entities, like the
-  Component, Ports, Connection, Processes(not to confuse with erlang's)
-  and irrespective of the graph representation(even tho might intersect)
+  Main entrypoint to the saga network
+  Passing a json binary representation, it will try to parse then
+  create a new network based on that
   """
+
+  @spec from_json(binary()) :: term()
+  def from_json(json) do
+    case Dobar.Saga.Parser.from_json(json) do
+      {:ok, saga} -> IO.inspect(saga)
+      {:error, reason} -> IO.inspect(reason)
+    end
+  end
 end
