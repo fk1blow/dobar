@@ -1,4 +1,4 @@
-defmodule Dobar.Flow.Scheduler do
+defmodule Dobar.Flow.Old_Scheduler do
   alias Dobar.Flow.Network
   alias Dobar.Flow.Scheduler.SchedulerSupervisor
 

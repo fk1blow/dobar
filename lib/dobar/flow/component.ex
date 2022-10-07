@@ -17,21 +17,27 @@ defmodule Dobar.Flow.Component do
   execute a component inside a process
   it also changes is status from :pristine to :active
   """
-  @callback execute() :: result()
+  @callback execute(term()) :: result()
 
   defmacro __using__(_opts) do
     quote do
       use GenServer
 
+      alias Dobar.Flow.Network.{Node}
+
       @behaviour Dobar.Flow.Component
 
-      @registry Dobar.Flow.Scheduler.Registry
+      @registry Dobar.Flow.Network.NodesRegistry
+
+      @type node_state :: %{node: Node.t(), status: atom()}
 
       # api
 
-      def start_link(node) do
-        GenServer.start_link(__MODULE__, node,
-          name: {:via, Registry, {Dobar.Flow.Scheduler.Registry, node.name}}
+      def start_link([node: node] = args) do
+        # IO.inspect(node.id)
+
+        GenServer.start_link(__MODULE__, args,
+          name: {:via, Registry, {Dobar.Flow.Network.NodesRegistry, node.id}}
         )
       end
 
@@ -41,28 +47,34 @@ defmodule Dobar.Flow.Component do
       This should call the connection actor which knows about the destination
       component/node
       """
-      def send_to_output(_stuff) do
-        #
+      # @spec send_to_output(term(), node_state()) :: any()
+      def send_to_output(to_port, msg, state) do
+        destination_port = Map.get(state.node.ports, to_port)
+        [{pid, _}] = Registry.lookup(Dobar.Flow.Network.ConnectionsRegistry, destination_port)
+        Dobar.Flow.Network.Connection.send(pid, msg)
+      end
+
+      def fetch_from_input(from_port, state) do
+        destination_port = Map.get(state.node.ports, from_port)
+        [{pid, _}] = Registry.lookup(Dobar.Flow.Network.ConnectionsRegistry, destination_port)
+        Dobar.Flow.Network.Connection.receive(pid)
       end
 
       # callbacks
 
-      def init(node) do
-        {:ok, %{node: node, status: :pristine}, {:continue, :am_i_root}}
+      @typep init_args :: [node: Node.t()]
+
+      @impl true
+      @spec init(init_args()) :: {:ok, node_state(), {:continue, term()}}
+      def init(node: node) do
+        {:ok, %{node: node, status: :pristine}}
       end
 
-      def handle_continue(:am_i_root, state) do
-        case state.node.is_root do
-          true -> GenServer.cast(self(), :execute)
-          _ -> nil
-        end
 
-        {:noreply, state}
-      end
-
+      @impl true
       def handle_cast(:execute, state) do
-        execute()
-        {:noreply, Map.put(state, :status, :inactive)}
+        {:ok, status} = execute(state)
+        {:noreply, Map.put(state, :status, status)}
       end
     end
   end

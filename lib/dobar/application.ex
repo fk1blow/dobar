@@ -28,10 +28,12 @@ defmodule Dobar.Application do
         id: Dobar.Flow.Network,
         start: {Dobar.Flow.Network, :start_link, [[]]}
       },
-      {Registry, keys: :unique, name: Dobar.Flow.Network.SchedulerRegistry},
+      {Registry, keys: :unique, name: Dobar.Flow.Network.SchedulersRegistry},
       Dobar.Flow.Network.SchedulerSupervisor,
       {Registry, keys: :unique, name: Dobar.Flow.Network.NodesRegistry},
+      {Registry, keys: :unique, name: Dobar.Flow.Network.ConnectionsRegistry},
       Dobar.Flow.Network.NodeSupervisor,
+      Dobar.Flow.Network.ConnectionSupervisor,
 
       # Start a worker by calling: Dobar.Worker.start_link(arg)
       # {Dobar.Worker, arg}

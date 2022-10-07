@@ -38,21 +38,60 @@ saga_json = ~s({
     {
       "id": "kicker",
       "component": "Dobar.Flow.Component.RootComponent",
-      "is_root": true
+      "is_root": true,
+      "ports": {
+        "output": 1
+      }
+    },
+
+    {
+      "component": "Dobar.Flow.Component.HttpComponent",
+      "id": "http_call",
+      "ports": {
+        "input": 1,
+        "result": 2,
+        "error": 3
+      }
     },
 
     {
       "component": "Dobar.Flow.Component.IOComponent",
-      "id": "logger"
+      "id": "result_logger",
+      "ports": {
+        "input": 2
+      }
+    },
+
+    {
+      "component": "Dobar.Flow.Component.IOComponent",
+      "id": "error_logger",
+      "ports": {
+        "input": 3
+      }
     }
   ],
 
   "connections": [
     {
-      "from": "root",
-      "to": "logger"
+      "id": 1,
+      "from": "kicker",
+      "to": "http_call"
+    },
+
+    {
+      "id": 2,
+      "from": "http_call",
+      "to": "result_logger"
+    },
+
+    {
+      "id": 3,
+      "from": "http_call",
+      "to": "error_logger"
     }
   ]
 })
 
 Flow.from_json(saga_json)
+
+# :observer.start

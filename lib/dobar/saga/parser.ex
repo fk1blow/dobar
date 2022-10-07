@@ -12,7 +12,23 @@ defmodule Dobar.Saga.Parser do
 
   @spec from_json(binary()) :: valid_saga() | invalid_saga()
   def from_json(json) when is_binary(json) do
-    saga = Dobar.Saga.new(Jason.decode!(json))
+    decoded_json = Jason.decode!(json)
+
+    connections =
+      decoded_json
+      |> Map.get("connections")
+      |> Enum.map(&Dobar.Saga.Connection.new/1)
+
+    nodes =
+      decoded_json
+      |> Map.get("nodes")
+      |> Enum.map(fn c -> Dobar.Saga.Node.new(c) end)
+
+    version = decoded_json |> Map.get("version")
+
+    name = decoded_json |> Map.get("name")
+
+    saga = %Dobar.Saga{nodes: nodes, connections: connections, version: version, name: name}
 
     case validate_saga(saga) do
       :valid -> {:ok, saga}

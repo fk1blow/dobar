@@ -1,9 +1,12 @@
 defmodule Dobar.Saga.Node do
   @type t :: %__MODULE__{
-          module: atom(),
+          component: String.t(),
           id: String.t(),
-          is_root: boolean()
+          is_root: boolean(),
+          ports: Map.t()
         }
 
-  defstruct [:module, :id, :is_root]
+  defstruct [:component, :id, :is_root, :ports]
+
+  use ExConstructor
 end
