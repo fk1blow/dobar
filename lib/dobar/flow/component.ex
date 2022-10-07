@@ -34,8 +34,6 @@ defmodule Dobar.Flow.Component do
       # api
 
       def start_link([node: node] = args) do
-        # IO.inspect(node.id)
-
         GenServer.start_link(__MODULE__, args,
           name: {:via, Registry, {Dobar.Flow.Network.NodesRegistry, node.id}}
         )

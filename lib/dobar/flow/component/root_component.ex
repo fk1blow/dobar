@@ -9,7 +9,6 @@ defmodule Dobar.Flow.Component.RootComponent do
 
   @impl true
   def execute(state) do
-    IO.puts "gonna start with 'hello dobar'"
     send_to_output("output", "hello dobar", state)
     {:ok, :inactive}
   end

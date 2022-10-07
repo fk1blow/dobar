@@ -45,12 +45,30 @@ saga_json = ~s({
     },
 
     {
+      "id": "la_intervale",
+      "component": "Dobar.Flow.Component.PeriodicalComponent",
+      "ports": {
+        "input": 1,
+        "output": 2,
+        "ended": 5
+      }
+    },
+
+    {
       "component": "Dobar.Flow.Component.HttpComponent",
       "id": "http_call",
       "ports": {
-        "input": 1,
-        "result": 2,
-        "error": 3
+        "input": 2,
+        "result": 3,
+        "error": 4
+      }
+    },
+
+    {
+      "component": "Dobar.Flow.Component.IOComponent",
+      "id": "network_ended_logger",
+      "ports": {
+        "input": 5
       }
     },
 
@@ -58,7 +76,7 @@ saga_json = ~s({
       "component": "Dobar.Flow.Component.IOComponent",
       "id": "result_logger",
       "ports": {
-        "input": 2
+        "input": 3
       }
     },
 
@@ -66,7 +84,7 @@ saga_json = ~s({
       "component": "Dobar.Flow.Component.IOComponent",
       "id": "error_logger",
       "ports": {
-        "input": 3
+        "input": 4
       }
     }
   ],
@@ -75,19 +93,31 @@ saga_json = ~s({
     {
       "id": 1,
       "from": "kicker",
-      "to": "http_call"
+      "to": "la_intervale"
     },
 
     {
       "id": 2,
-      "from": "http_call",
-      "to": "result_logger"
+      "from": "la_intervale",
+      "to": "http_call"
     },
 
     {
       "id": 3,
       "from": "http_call",
+      "to": "result_logger"
+    },
+
+    {
+      "id": 4,
+      "from": "http_call",
       "to": "error_logger"
+    },
+
+    {
+      "id": 5,
+      "from": "la_intervale",
+      "to": "network_ended_logger"
     }
   ]
 })
